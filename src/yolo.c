@@ -17,7 +17,7 @@ image voc_labels[CLASS_NUM];
 
 void train_yolo(char *cfgfile, char *weightfile)
 {
-    char *train_images = "/home/ubuntu/DATA/darknet/data_folder/train.txt";
+    char *train_images = "/home/ubuntu/DATA/Datasets/FDDB/train.txt";
     char *backup_directory = "/home/ubuntu/DATA/darknet/darknet_vision/backup/";
     srand(time(0));
     data_seed = time(0);

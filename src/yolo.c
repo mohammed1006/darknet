@@ -10,9 +10,9 @@
 #include "opencv2/highgui/highgui_c.h"
 #endif
 
-#define CLASS_NUM 2
+#define CLASS_NUM 1
 
-char *voc_names[] = {"person", "face"};
+char *voc_names[] = {"face"};
 image voc_labels[CLASS_NUM];
 
 void train_yolo(char *cfgfile, char *weightfile)

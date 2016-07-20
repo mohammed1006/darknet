@@ -292,7 +292,6 @@ void run_imagenet(int argc, char **argv)
     if(0==strcmp(argv[2], "test")) test_imagenet(cfg, weights, filename);
     else if(0==strcmp(argv[2], "train")) train_imagenet(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_imagenet(cfg, weights);
-    else if(0==strcmp(argv[2], "demo")) demo_imagenet(cfg, weights);
 }
 
 /*

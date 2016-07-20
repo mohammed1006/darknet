@@ -12,16 +12,17 @@ void train_imagenet(char *cfgfile, char *weightfile)
     srand(time(0));
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
-    char *backup_directory = "/home/pjreddie/backup/";
+    char *backup_directory = "/home/ubuntu/DATA/Datasets/LFW/backup/";
     printf("%s\n", base);
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
     }
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
-    int imgs = 1024;
-    char **labels = get_labels("data/inet.labels.list");
-    list *plist = get_paths("data/inet.train.list");
+    int imgs = 1024*8;
+
+    char **labels = get_labels("/home/ubuntu/DATA/Datasets/faceScrub/label.txt");
+    list *plist = get_paths("/home/ubuntu/DATA/Datasets/faceScrub/images_train.txt");
     char **paths = (char **)list_to_array(plist);
     printf("%d\n", plist->size);
     int N = plist->size;
@@ -34,7 +35,7 @@ void train_imagenet(char *cfgfile, char *weightfile)
     args.w = net.w;
     args.h = net.h;
     args.paths = paths;
-    args.classes = 1000;
+    args.classes = 530;
     args.n = imgs;
     args.m = N;
     args.labels = labels;
@@ -61,6 +62,8 @@ void train_imagenet(char *cfgfile, char *weightfile)
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights",backup_directory,base, epoch);
             save_weights(net, buff);
+            printf("--- Validation epoch = %d ---\n", epoch);
+            validate_imagenet_with_net(net);
         }
         if(*net.seen%1000 == 0){
             char buff[256];
@@ -81,6 +84,59 @@ void train_imagenet(char *cfgfile, char *weightfile)
     free(base);
 }
 
+void validate_imagenet_with_net(network net){
+	int i = 0;
+	//list *plist = get_paths("data/inet.suppress.list");
+	char **labels = get_labels("/home/ubuntu/DATA/Datasets/faceScrub/label.txt");
+	list *plist = get_paths("/home/ubuntu/DATA/Datasets/faceScrub/images_val.txt");
+
+	char **paths = (char **)list_to_array(plist);
+	int m = plist->size;
+	free_list(plist);
+
+	clock_t time;
+	float avg_acc = 0;
+	float avg_top5 = 0;
+	int splits = 5;
+	int num = (i+1)*m/splits - i*m/splits;
+
+	data val, buffer;
+
+	load_args args = {0};
+	args.w = net.w;
+	args.h = net.h;
+	args.paths = paths;
+	args.classes = 530;
+	args.n = num;
+	args.m = 0;
+	args.labels = labels;
+	args.d = &buffer;
+	args.type = OLD_CLASSIFICATION_DATA;
+
+	pthread_t load_thread = load_data_in_thread(args);
+	for(i = 1; i <= splits; ++i){
+		time=clock();
+
+		pthread_join(load_thread, 0);
+		val = buffer;
+
+		num = (i+1)*m/splits - i*m/splits;
+		char **part = paths+(i*m/splits);
+		if(i != splits){
+			args.paths = part;
+			load_thread = load_data_in_thread(args);
+		}
+		printf("Loaded: %d images in %lf seconds\n", val.X.rows, sec(clock()-time));
+
+		time=clock();
+		float *acc = network_accuracies(net, val, 5);
+		avg_acc += acc[0];
+		avg_top5 += acc[1];
+		printf("%d: top1: %f, top5: %f, %lf seconds, %d images\n", i, avg_acc/i, avg_top5/i, sec(clock()-time), val.X.rows);
+		free_data(val);
+	}
+}
+
 void validate_imagenet(char *filename, char *weightfile)
 {
     int i = 0;
@@ -90,9 +146,9 @@ void validate_imagenet(char *filename, char *weightfile)
     }
     srand(time(0));
 
-    char **labels = get_labels("data/inet.labels.list");
     //list *plist = get_paths("data/inet.suppress.list");
-    list *plist = get_paths("data/inet.val.list");
+	char **labels = get_labels("/home/ubuntu/DATA/Datasets/faceScrub/label.txt");
+	list *plist = get_paths("/home/ubuntu/DATA/Datasets/faceScrub/images_val.txt");
 
     char **paths = (char **)list_to_array(plist);
     int m = plist->size;
@@ -101,7 +157,7 @@ void validate_imagenet(char *filename, char *weightfile)
     clock_t time;
     float avg_acc = 0;
     float avg_top5 = 0;
-    int splits = 50;
+    int splits = 5;
     int num = (i+1)*m/splits - i*m/splits;
 
     data val, buffer;
@@ -110,7 +166,7 @@ void validate_imagenet(char *filename, char *weightfile)
     args.w = net.w;
     args.h = net.h;
     args.paths = paths;
-    args.classes = 1000;
+    args.classes = 530;
     args.n = num;
     args.m = 0;
     args.labels = labels;
@@ -150,7 +206,7 @@ void test_imagenet(char *cfgfile, char *weightfile, char *filename)
     set_batch_network(&net, 1);
     srand(2222222);
     int i = 0;
-    char **names = get_labels("data/shortnames.txt");
+	char **names = get_labels("/home/ubuntu/DATA/Datasets/faceScrub/label.txt");
     clock_t time;
     int indexes[10];
     char buff[256];
@@ -165,7 +221,50 @@ void test_imagenet(char *cfgfile, char *weightfile, char *filename)
             if(!input) return;
             strtok(input, "\n");
         }
-        image im = load_image_color(input, 256, 256);
+
+        image im = load_image_color(input, 224, 224);
+
+        float *X = im.data;
+        time=clock();
+        float *predictions = network_predict(net, X);
+        top_predictions(net, 10, indexes);
+        printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
+        for(i = 0; i < 10; ++i){
+            int index = indexes[i];
+            printf("%s: %f\n", names[index], predictions[index]);
+        }
+        free_image(im);
+        if (filename) break;
+    }
+}
+
+void demo_imagenet(char *cfgfile, char *weightfile, char *filename)
+{
+    network net = parse_network_cfg(cfgfile);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    set_batch_network(&net, 1);
+    srand(2222222);
+    int i = 0;
+	char **names = get_labels("/home/ubuntu/DATA/Datasets/faceScrub/label.txt");
+    clock_t time;
+    int indexes[10];
+    char buff[256];
+    char *input = buff;
+    while(1){
+        if(filename){
+            strncpy(input, filename, 256);
+        }else{
+            printf("Enter Image Path: ");
+            fflush(stdout);
+            input = fgets(input, 256, stdin);
+            if(!input) return;
+            strtok(input, "\n");
+        }
+
+        image im = load_image_color(input, 224, 224);
+
         float *X = im.data;
         time=clock();
         float *predictions = network_predict(net, X);
@@ -193,6 +292,7 @@ void run_imagenet(int argc, char **argv)
     if(0==strcmp(argv[2], "test")) test_imagenet(cfg, weights, filename);
     else if(0==strcmp(argv[2], "train")) train_imagenet(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_imagenet(cfg, weights);
+    else if(0==strcmp(argv[2], "demo")) demo_imagenet(cfg, weights);
 }
 
 /*

@@ -365,11 +365,31 @@ void fill_truth(char *path, char **labels, int k, float *truth)
     int i;
     memset(truth, 0, k*sizeof(float));
     int count = 0;
+
+    int idx_count_0 = -1;
+
     for(i = 0; i < k; ++i){
-        if(strstr(path, labels[i])){
+
+//    	int len = strlen(labels[i]);
+//    	char * new_label = (char*) malloc( (len + 1) * sizeof(char) );
+//
+//    	printf("label %s len %d \n", labels[i], len);
+//
+//    	strcpy( new_label, labels[i] );
+//    	strcat( new_label, "/" );
+
+    	if(strstr(path, labels[i])){
             truth[i] = 1;
             ++count;
+
+            if ( count > 1 ){
+                printf(" k = %d idx %d i %d labels[idx] %s label =%s path = %s \n", k, idx_count_0, i, labels[idx_count_0], labels[i], path);
+            } else {
+                idx_count_0 = i;
+            }
         }
+
+//    	free(new_label);
     }
     if(count != 1) printf("Too many or too few labels: %d, %s\n", count, path);
 }

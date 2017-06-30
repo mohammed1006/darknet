@@ -7,9 +7,9 @@
 #include "demo.h"
 
 #ifdef OPENCV
-#pragma comment(lib, "opencv_core249.lib")  
-#pragma comment(lib, "opencv_imgproc249.lib")  
-#pragma comment(lib, "opencv_highgui249.lib")  
+#pragma comment(lib, "opencv_core2410d.lib")  
+#pragma comment(lib, "opencv_imgproc2410d.lib")  
+#pragma comment(lib, "opencv_highgui2410d.lib")  
 //#pragma comment(lib, "opencv_gpu249.lib")  
 //#pragma comment(lib, "opencv_photo249.lib")  
 //#pragma comment(lib, "opencv_video249.lib")  

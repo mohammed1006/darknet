@@ -1,11 +1,6 @@
-#include "network.h"
-#include "cost_layer.h"
-#include "utils.h"
-#include "parser.h"
-#include "blas.h"
+#include "darknet.h"
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
 image get_image_from_stream(CvCapture *cap);
 image ipl_to_image(IplImage* src);
 
@@ -104,7 +99,9 @@ void train_vid_rnn(char *cfgfile, char *weightfile)
         time=clock();
         float_pair p = get_rnn_vid_data(extractor, paths, N, batch, steps);
 
-        float loss = train_network_datum(net, p.x, p.y) / (net.batch);
+        copy_cpu(net.inputs*net.batch, p.x, 1, net.input, 1);
+        copy_cpu(net.truths*net.batch, p.y, 1, net.truth, 1);
+        float loss = train_network_datum(net) / (net.batch);
 
 
         free(p.x);
@@ -163,7 +160,6 @@ void generate_vid_rnn(char *cfgfile, char *weightfile)
     CvCapture *cap = cvCaptureFromFile("/extra/vid/ILSVRC2015/Data/VID/snippets/val/ILSVRC2015_val_00007030.mp4");
     float *feat;
     float *next;
-	next = NULL;
     image last;
     for(i = 0; i < 25; ++i){
         image im = get_image_from_stream(cap);

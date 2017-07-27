@@ -132,9 +132,9 @@ void *detect_loop(void *ptr)
         detect_in_thread(0);
     }
 }
-
 void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
 {
+    	
     demo_delay = delay;
     demo_frame = avg_frames;
     predictions = calloc(demo_frame, sizeof(float*));

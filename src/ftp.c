@@ -42,7 +42,7 @@ int ftp_get(int sck,char *pDownloadFileName);
 int ftp_put(int sck,char *pUploadFileName_s);
 void cmd_tcp(int sockfd);
 
-
+/*
 int main(int argc,char *argv[])
 {
     int fd;
@@ -65,7 +65,7 @@ int main(int argc,char *argv[])
     cmd_tcp(fd);
     exit(0);
 }
-
+*/
 int ftp(char* ip,char* name,char* pwd,char* data){
 
     int fd;
@@ -76,16 +76,13 @@ int ftp(char* ip,char* name,char* pwd,char* data){
     wbuf1 = (char *)malloc(MAXBUF*sizeof(char));
     
     fd = cliopen(ip,21);
-    //cmd_tcp(fd,"",name);
-   // cmd_tcp(fd,"",pwd);
-   // cmd_tcp(fd,"",data);
 
-}/*}}}*/
+}
 
 
 
 
-int cliopen(char *host,int port)/*{{{*/
+int cliopen(char *host,int port)
 {
     int control_sock;
     struct hostent *ht = NULL;
@@ -100,7 +97,6 @@ int cliopen(char *host,int port)/*{{{*/
     { 
         return -1;
     }
-    //memcpy(&servaddr.sin_addr.s_addr,ht->h_addr,ht->h_length);
    
     memset(&servaddr,0,sizeof(struct sockaddr_in));
     memcpy(&servaddr.sin_addr.s_addr,ht->h_addr,ht->h_length);
@@ -112,13 +108,11 @@ int cliopen(char *host,int port)/*{{{*/
         return -1;
     }
     return control_sock;
-}/*}}}*/
+}
 
 
-int s(char *str,char *s2)/*{{{*/
+int s(char *str,char *s2)
 {
-    //char s1[100];
-     
     return sscanf(str," get %s",s2) == 1;
    
 }
@@ -127,22 +121,21 @@ int s(char *str,char *s2)/*{{{*/
 int st(char *str,char *s1)
 {
     return sscanf(str," put %s",s1) == 1;
-}/*}}}*/
+}
 
 
-int strtosrv(char *str)/*{{{*/
+int strtosrv(char *str)
 {
    int addr[6];
-   //printf("%s\n",str);
    sscanf(str,"%*[^(](%d,%d,%d,%d,%d,%d)",&addr[0],&addr[1],&addr[2],&addr[3],&addr[4],&addr[5]);
    bzero(host,strlen(host));
    sprintf(host,"%d.%d.%d.%d",addr[0],addr[1],addr[2],addr[3]);
    int port = addr[4]*256 + addr[5];
    return port;
-}/*}}}*/
+}
 
 
-void ftp_list(int sockfd)/*{{{*/
+void ftp_list(int sockfd)
 {
     int nread;
     for(;;)
@@ -153,26 +146,21 @@ void ftp_list(int sockfd)/*{{{*/
         }
         else if(nread == 0)
         {
-            //printf("over\n");
             break;
         }
         if(write(STDOUT_FILENO,rbuf1,nread) != nread)
             printf("send error to stdout\n");
-        /*else
-            printf("read something\n");*/
     }
     if(close(sockfd) < 0)
         printf("close error\n");
-}/*}}}*/
+}
 
 
-int ftp_get(int sck,char *pDownloadFileName)/*{{{*/
+int ftp_get(int sck,char *pDownloadFileName)
 {
    int handle = open(pDownloadFileName,O_WRONLY | O_CREAT | O_TRUNC, S_IREAD| S_IWRITE);
    int nread;
    printf("%d\n",handle);
-   /*if(handle == -1) 
-       return -1;*/
    for(;;)
    {
        if((nread = recv(sck,rbuf1,MAXBUF,0)) < 0)
@@ -184,7 +172,6 @@ int ftp_get(int sck,char *pDownloadFileName)/*{{{*/
           printf("over\n");
           break;
        }
-    //   printf("%s\n",rbuf1);
        if(write(handle,rbuf1,nread) != nread)
            printf("receive error from server!");
        if(write(STDOUT_FILENO,rbuf1,nread) != nread)
@@ -192,36 +179,29 @@ int ftp_get(int sck,char *pDownloadFileName)/*{{{*/
    }
        if(close(sck) < 0)
            printf("close error\n");
-}/*}}}*/
+}
 
 
-int ftp_put(int sck,char *pUploadFileName_s)/*{{{*/
+int ftp_put(int sck,char *pUploadFileName_s)
 {
-   //int c_sock;
-  // int handle = open(pUploadFileName_s,O_RDWR);
    int nread;
-  // if(handle == -1)
-    //   return -1;
-   //ftp_type(c_sock,"I");
    char mem[1024*3];
-   int i=MAXBUF;
+   int i=0;
     int sum=strlen(mem);	   
-   for(;i<=sum;i=i+MAXBUF)
+   for(;;)
    {
-	   printf("adf");
-     /*  if((nread = read(handle,rbuf1,MAXBUF)) < 0)
-       {
-            printf("read error!");
-       }
-       else if(nread == 0)
-          break;
-       if(write(STDOUT_FILENO,rbuf1,nread) != nread)
-            printf("send error!");*/
+	if(i+MAXBUF<sum){   
 	   nread=MAXBUF;
-       if(write(sck,rbuf1,MAXBUF) != nread)
-            printf("send error!");
+	   i+=MAXBUF;
+	}else{
+	  nread=sum-i;
+          i+=nread;	  
+        }
+        if(write(sck,rbuf1,nread) != nread)
+                printf("send error!");
+	if(i<=sum)
+	    break;	
    }
-   printf("asd123124124f");
       nread=i-sum;
       printf("sum:%d",nread);
      if(i>sum)
@@ -272,7 +252,7 @@ void cmd_tcp(int sockfd)
 	     // nread=4;
 	     // printf("%s\n",rbuf1);
               nwrite = nread + 5;
-              //printf("%dddf,%d\n",nread,replycode);      
+              printf("%dddf,%d\n",nread,replycode);      
               if(replycode == USERNAME)
               {  
 	          nwrite+=4;
@@ -310,7 +290,7 @@ void cmd_tcp(int sockfd)
 	      
 		  strcpy(rbuf1,"put\n");
 	      }
-	      if(replycode == ACTIONOK){
+	      if(replycode == CLOSEDATA){
 	        strcpy(rbuf1,"quit\n");
 	      }
               if(replycode == 550 || replycode == LOGIN || replycode == CLOSEDATA || replycode == PATHNAME || replycode == ACTIONOK)

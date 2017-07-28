@@ -9,6 +9,11 @@
 #include <cJson.h>
 int sockfd;
 extern float demo_thresh;
+extern char* ftp_ip;
+extern char* ftp_name;
+extern char* ftp_pwd;
+extern char* server;
+extern int port;
 char* request(char* param,char* url){
     cJSON * pJsonRoot = NULL;
     pJsonRoot = cJSON_CreateObject();
@@ -51,7 +56,7 @@ char* getParam(char* pMsg){
     cJSON_Delete(pJson);
     return p;
 }
-void setupSocket(char* ip ,int port){
+void setupSocket(){
 
     int     n,rec_len;  
     char    recvline[4096], sendline[4096];  
@@ -67,8 +72,8 @@ void setupSocket(char* ip ,int port){
     memset(&servaddr, 0, sizeof(servaddr));  
     servaddr.sin_family = AF_INET;  
     servaddr.sin_port = htons(port);  
-    if( inet_pton(AF_INET,ip, &servaddr.sin_addr) <= 0){  
-    printf("inet_pton error for %s\n",argv[1]);  
+    if( inet_pton(AF_INET,server, &servaddr.sin_addr) <= 0){  
+    printf("inet_pton error for %s\n",server);  
     exit(0);  
     }  
   
@@ -93,7 +98,7 @@ void setupSocket(char* ip ,int port){
     buf[rec_len]  = '\0';  
     free(sj);
 }
-void sendData(char* data)
+void sendData(char* data,int size)
 {
     if(NULL==data){
       char * sj=request("pdHeart",NULL);
@@ -103,7 +108,7 @@ void sendData(char* data)
       }
       free(sj);  
     }else{
-      ftp(ip,name,pwd,data);
+	    ftp(ftp_ip,ftp_name,ftp_pwd,data,size);
     }
     fd_set fdR;
     FD_ZERO(&fdR); 
@@ -127,4 +132,8 @@ void sendData(char* data)
 	   demo_thresh=per/100.00;
        } 
     } 
+}
+void destroys(){
+   if(close(sockfd) < 0)
+        printf("close error\n");
 }

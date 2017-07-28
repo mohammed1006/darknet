@@ -132,7 +132,7 @@ void *detect_loop(void *ptr)
         detect_in_thread(0);
     }
 }
-void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
+void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const char *filename_video, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
 {
     	
     demo_delay = delay;
@@ -155,9 +155,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 
     srand(2222222);
 
-    if(filename){
-        printf("video file: %s\n", filename);
-        cap = cvCaptureFromFile(filename);
+    if(filename_video){
+        printf("video file: %s\n", filename_video);
+        cap = cvCaptureFromFile(filename_video);
     }else{
         cap = cvCreateFileCapture(cam_index);
 

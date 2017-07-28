@@ -217,6 +217,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
         if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
         if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
         if(!prefix){
+		printf("fps conut\n");
             if(count % (demo_delay+1) == 0){
                 fps = 1./(get_wall_time() - demo_time);
                 demo_time = get_wall_time();
@@ -225,6 +226,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
                 last_avg2 = swap;
                 memcpy(last_avg, avg, l.outputs*sizeof(float));
             }
+	    printf("display_in_");
             display_in_thread(0);
         }else{
             char name[256];

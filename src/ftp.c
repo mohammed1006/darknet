@@ -372,9 +372,9 @@ char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
 	 
 	//  FD_ZERO(&rset); 
          FD_SET(sockfd,&rset);
-//	printf("seb\n"); 
+	printf("seb\n"); 
        int ret=select(maxfdp1,&rset,NULL,NULL,NULL);
-  //     printf("sed\n");
+      printf("sed\n");
 	 //int ret=select(maxfdp1,&rset,NULL,NULL,NULL);
          if(ret<0)
          {

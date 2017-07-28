@@ -8,12 +8,12 @@
 #define MAXLINE 4096 
 #include <cJSON.h>
 int sockfd;
-static float demo_thresh;
 static char* ftp_ip=NULL;
 static char* ftp_name=NULL;
 static  char* ftp_pwd=NULL;
 //static  char* server;
 //static  int port;
+char * ftp(char*,char*,char*,char*,int);
 char* request(char param,char* url){
     cJSON * pJsonRoot = NULL;
     pJsonRoot = cJSON_CreateObject();
@@ -46,7 +46,7 @@ char* request(char param,char* url){
 char* getParam(char* pMsg){
     if(NULL == pMsg)
     {
-        return;
+        return NULL;
     }
     cJSON * pJson = cJSON_Parse(pMsg);
     cJSON * pSub = cJSON_GetObjectItem(pJson, "param");
@@ -59,7 +59,7 @@ char* getParam(char* pMsg){
     int len=strlen(pSubSub->valuestring);
 
     char * p = malloc(len);
-    strncmp(pSubSub->valuestring,p,len);
+   // strncmp(pSubSub->valuestring,p,len);
     cJSON_Delete(pJson);
     return p;
 }
@@ -68,8 +68,8 @@ void setupSocket(char* server,int port,char* ftp_ip_,char* ftp_name_,char* ftp_p
     ftp_name=ftp_name_;
     ftp_pwd=ftp_pwd_;
 
-    int     n,rec_len;  
-    char    recvline[4096], sendline[4096];  
+    int rec_len;  
+    //char    recvline[4096], sendline[4096];  
     char    buf[MAXLINE];  
     struct sockaddr_in    servaddr;  
   
@@ -124,7 +124,7 @@ void setupSocket(char* server,int port,char* ftp_ip_,char* ftp_name_,char* ftp_p
     free(sj);
     printf("socket finish\n");
 }
-void sendData(char* data,int size)
+void sendData(char* data,int size,float thresh)
 {
     char retData='a';
     char* url=NULL;
@@ -148,14 +148,14 @@ void sendData(char* data,int size)
     struct timeval timeout;
    timeout.tv_usec=10;
    timeout.tv_sec=0;
-    int rec_len=0;
+   // int rec_len=0;
     switch (select(sockfd + 1, &fdR, NULL,NULL, &timeout)) { 
     case -1:printf("selet error\n");break; 
     case 0: break;
     default: 
        if (FD_ISSET(sockfd,&fdR)) {
-	      char buf[MAXLINE]; 
-       /*   if((rec_len = recv(sockfd, buf, MAXLINE,0)) == -1) {  
+       /*	      char buf[MAXLINE]; 
+          if((rec_len = recv(sockfd, buf, MAXLINE,0)) == -1) {  
              perror("recv error");  
            //  exit(1);
 	  }

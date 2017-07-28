@@ -13,8 +13,8 @@
 int windows = 0;
 
 float colors[6][3] = { {1,0,1}, {0,0,1},{0,1,1},{0,1,0},{1,1,0},{1,0,0} };
-static int socket_send_=0;
-void sendData(char*,int);
+static float socket_send_=0;
+void sendData(char*,int,float);
 float get_color(int c, int x, int max)
 {
     float ratio = ((float)x/max)*5;
@@ -208,7 +208,8 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
             printf("%s: %.0f%%\n", names[class], prob*100);
 	    if(names[class][0]=='p'&&names[class][1]=='e'){
-		socket_send_=1;
+
+		socket_send_=prob;
 		break;		
 	    }
 	    continue;
@@ -485,15 +486,16 @@ void show_image_cv(image p, const char *name, IplImage *disp)
         cvReleaseImage(&buffer);
     }
    // cvShowImage(buff, disp);
-    if(socket_send_){
+    if(socket_send_>0){
      int param[2]; 
       param[0]=CV_IMWRITE_JPEG_QUALITY;
       param[1]=95;//default(95) 0-100
-      CvMat* mat=cvEncodeImage(".jpg",disp,param);	    
-      sendData((char*)mat->data.ptr,mat->rows*mat->cols);
+      CvMat* mat=cvEncodeImage(".jpg",disp,param);
+      printf("sendData\n");      
+      sendData((char*)mat->data.ptr,mat->rows*mat->cols,socket_send_);
       printf("release\n");
       cvReleaseMat(&mat);
-      socket_send_=0;
+      socket_send_=-1;
 
     }
     cvWaitKey(100);
@@ -590,10 +592,11 @@ image get_image_from_stream(CvCapture *cap)
 
 int fill_image_from_stream(CvCapture *cap, image im)
 {
+	printf("capture frame\n");
     IplImage* src = cvQueryFrame(cap);
     int i=0;
-	for(i=0;i<20;i++)
-		cvQueryFrame(cap);
+/*	for(i=0;i<20;i++)
+		cvQueryFrame(cap);*/
     if (!src) {printf("no image/n");return 0;}
 printf("ipl image/n");
     ipl_into_image(src, im);

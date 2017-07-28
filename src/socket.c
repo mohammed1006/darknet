@@ -75,7 +75,8 @@ void setupSocket(char* server,int port,char* ftp_ip_,char* ftp_name_,char* ftp_p
   
     if( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){  
     printf("create socket error: %s(errno: %d)\n", strerror(errno),errno);  
-    exit(0);  
+
+   // exit(0);  
     }  
   
   
@@ -84,29 +85,44 @@ void setupSocket(char* server,int port,char* ftp_ip_,char* ftp_name_,char* ftp_p
     servaddr.sin_port = htons(port);  
     if( inet_pton(AF_INET,server, &servaddr.sin_addr) <= 0){  
     printf("inet_pton error for %s\n",server);  
-    exit(0);  
+   // exit(0);  
     }  
   
   
     if( connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0){  
     printf("connect error: %s(errno: %d)\n",strerror(errno),errno);  
-    exit(0);  
+  //  exit(0); a
+     sockfd=-1;
+      return; 
     }  
   
   
     printf("send msg to server: \n");  
     //fgets(sendline, 4096, stdin);  
     char * sj=request("loginMainServer",NULL);
+    printf("sj finish\n");
     if( send(sockfd, sj, strlen(sj), 0) < 0){
     printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);  
-    exit(0);  
-    }  
+ //   exit(0);  
+    } 
+
+
+    printf("sj1 finish\n");
+
+
     if((rec_len = recv(sockfd, buf, MAXLINE,0)) == -1) {  
        perror("recv error");  
-       exit(1);  
-    }  
+//       exit(1);  
+    }
+
+    printf("sj2 finish\n");
+
+
+
+
     buf[rec_len]  = '\0';  
     free(sj);
+    printf("socket finish\n");
 }
 void sendData(char* data,int size)
 {
@@ -118,10 +134,12 @@ void sendData(char* data,int size)
 	retData='b';
     }
 
+	if(-1==sockfd)
+		return;
       char * sj=request(retData,url);
       if( send(sockfd, sj, strlen(sj), 0) < 0){
        printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);  
-       exit(0);  
+      // exit(0);  
       }
       free(sj);  
     fd_set fdR;
@@ -137,16 +155,20 @@ void sendData(char* data,int size)
     default: 
        if (FD_ISSET(sockfd,&fdR)) {
 	      char buf[MAXLINE]; 
-          if((rec_len = recv(sockfd, buf, MAXLINE,0)) == -1) {  
+       /*   if((rec_len = recv(sockfd, buf, MAXLINE,0)) == -1) {  
              perror("recv error");  
-             exit(1);
-	  } 
+           //  exit(1);
+	  }
 	   char * para = getParam(&buf[0]);
            int per=atoi(para);
 	   demo_thresh=per/100.00;
+	   free(para);*/
        } 
-    } 
+    
+    }
+   printf("socket finsh\n"); 
 }
+
 void destroy(){
    if(close(sockfd) < 0)
         printf("close error\n");

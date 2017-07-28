@@ -208,7 +208,8 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             //printf("%d %s: %.0f%%\n", i, names[class], prob*100);
             printf("%s: %.0f%%\n", names[class], prob*100);
 	    if(names[class][0]=='p'&&names[class][1]=='e'){
-		socket_send_=1;							
+		socket_send_=1;
+		break;		
 	    }
 	    continue;
             int offset = class*123457 % classes;
@@ -461,7 +462,7 @@ void show_image_cv(image p, const char *name, IplImage *disp)
     sprintf(buff, "%s", name);
 
     int step = disp->widthStep;
-    cvNamedWindow(buff, CV_WINDOW_NORMAL); 
+   // cvNamedWindow(buff, CV_WINDOW_NORMAL); 
     //cvMoveWindow(buff, 100*(windows%10) + 200*(windows/10), 100*(windows%10));
     ++windows;
     for(y = 0; y < p.h; ++y){
@@ -490,6 +491,7 @@ void show_image_cv(image p, const char *name, IplImage *disp)
       param[1]=95;//default(95) 0-100
       CvMat* mat=cvEncodeImage(".jpg",disp,param);	    
       sendData((char*)mat->data.ptr,mat->rows*mat->cols);
+      printf("release\n");
       cvReleaseMat(&mat);
       socket_send_=0;
 

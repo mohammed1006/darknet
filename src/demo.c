@@ -159,6 +159,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
         printf("video file: %s\n", filename_video);
         cap = cvCaptureFromFile(filename_video);
     }else{
+	    printf("cam:%s\n",cam_index);
 	if('-'==cam_index[0])
 	    cap = cvCaptureFromCAM(-1);	
 	else
@@ -200,7 +201,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 
     int count = 0;
     if(!prefix){
-        cvNamedWindow("Demo", CV_WINDOW_NORMAL); 
+        //cvNamedWindow("Demo", CV_WINDOW_NORMAL); 
         if(fullscreen){
             cvSetWindowProperty("Demo", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
         } else {

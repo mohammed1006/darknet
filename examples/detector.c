@@ -1,5 +1,4 @@
 #include "darknet.h"
-
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
 //static char* ftp_ip;
@@ -652,15 +651,15 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         if (filename) break;
     }
 }
-void addN(char* p){
-	char* temp=malloc(strlen(p)+1);
-	strcpy(temp,p);
-	strcat(temp,"\n");
-	char* t=p;
-	p=temp;
-	free(t);
-
+char* addN(char* p){
+       // p=(char*)realloc(p,strnlen(p,20)+1);
+        char* temp=(char*)malloc(100);
+	strncpy(temp,p,strnlen(p,20));
+	strncat(temp,"\n",2);
+//	strncat(temp,0,1);
+      return temp;
 }
+
 void run_detector(int argc, char **argv)
 {
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
@@ -717,14 +716,22 @@ void run_detector(int argc, char **argv)
         int classes = option_find_int(options, "classes", 20);
         char *name_list = option_find_str(options, "names", "data/names.list");
         char **names = get_labels(name_list);
-	char* ftp_ip = option_find_str(options,"ftp_ip","localhost");
-	char* ftp_name = option_find_str(options,"ftp_name","xyz");
-        addN(ftp_name);
-        char* ftp_pwd = option_find_str(options,"ftp_pwd","1");
-        addN(ftp_pwd);
-	char* server = option_find_str(options,"server_ip","localhost");
-        int port = option_find_int(options,"server_port",66666);
+	char* ftp_ip = option_find_str(options,"ftp_ip","127.0.0.1");
+	printf("%s\n",ftp_ip);
+       printf("%d\n",	strnlen(ftp_ip,20));
+	char* ftp_name1 = option_find_str(options,"ftp_name","xyz");
+       // char* ftp_name=addN(ftp_name1);
+       char ftp_name[20],ftp_pwd[20];
+       sprintf(ftp_name,"%s\n",ftp_name1);
+	printf("%sf\n",ftp_name);
+        char* ftp_pwd1 = option_find_str(options,"ftp_pwd","1");
+       // char* ftp_pwd=addN(ftp_pwd1);
+       sprintf(ftp_pwd,"%s\n",ftp_pwd1);
+	printf("%sf\n",ftp_pwd);
+	char* server = option_find_str(options,"server_ip","127.0.0.1");
+        int port = option_find_int(options,"server_port",6666);
 	setupSocket(server,port,ftp_ip,ftp_name,ftp_pwd);
+	
         demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
         destroy();
     }

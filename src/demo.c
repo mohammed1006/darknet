@@ -159,7 +159,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
         printf("video file: %s\n", filename_video);
         cap = cvCaptureFromFile(filename_video);
     }else{
-        cap = cvCreateFileCapture(cam_index);
+	if('-'==cam_index[0])
+	    cap = cvCaptureFromCAM(-1);	
+	else
+            cap = cvCreateFileCapture(cam_index);
 
         if(w){
             cvSetCaptureProperty(cap, CV_CAP_PROP_FRAME_WIDTH, w);

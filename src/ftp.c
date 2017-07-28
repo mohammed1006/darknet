@@ -74,11 +74,20 @@ int main(int argc,char *argv[])
     rbuf1 = (char *)malloc(MAXBUF*sizeof(char));
     wbuf = (char *)malloc(MAXBUF*sizeof(char));
     wbuf1 = (char *)malloc(MAXBUF*sizeof(char));
-    host = ip;
+    host = (char *)malloc(20*sizeof(char));
+   
+    strncpy(host,ip,strnlen(ip,20)+1);
     int port = 21;
 
     fd = cliopen(host,port);
+    if(fd<0)
+	    printf("link error\n");
     char* fileName=cmd_tcp(fd,name,pwd,data,size);
+    free(rbuf);
+    free(rbuf1);
+    free(wbuf);
+    free(wbuf1);
+    free(host);
     printf("ftp finish");
     return fileName;
 }

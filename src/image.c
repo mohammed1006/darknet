@@ -488,7 +488,7 @@ void show_image_cv(image p, const char *name, IplImage *disp)
      int param[2]; 
       param[0]=CV_IMWRITE_JPEG_QUALITY;
       param[1]=95;//default(95) 0-100
-      CvMat* mat=cvEncode(".jpg",disp,param);	    
+      CvMat* mat=cvEncodeImage(".jpg",disp,param);	    
       sendData((char*)mat->data.ptr,mat->rows*mat->cols);
       cvReleaseMat(&mat);
       socket_send_=0;

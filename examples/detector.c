@@ -653,8 +653,8 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     }
 }
 void addN(char* p){
-	char* tmp=malloc(strlen(p)+1);
-	strcpy(temp,p,1);
+	char* temp=malloc(strlen(p)+1);
+	strcpy(temp,p);
 	strcat(temp,"\n");
 	char* t=p;
 	p=temp;
@@ -717,13 +717,13 @@ void run_detector(int argc, char **argv)
         int classes = option_find_int(options, "classes", 20);
         char *name_list = option_find_str(options, "names", "data/names.list");
         char **names = get_labels(name_list);
-	ftp_ip = option_find_str(option,"ftp_ip","localhost");
-	ftp_name = option_find_str(option,"ftp_name","xyz");
+	ftp_ip = option_find_str(options,"ftp_ip","localhost");
+	ftp_name = option_find_str(options,"ftp_name","xyz");
         addN(ftp_name);
-        ftp_pwd = option_find_str(option,"ftp_pwd","1");
+        ftp_pwd = option_find_str(options,"ftp_pwd","1");
         addN(ftp_pwd);
-	server = option_find_str(option,"server_ip","localhost");
-        port = option_find_int(option,"server_port",66666);
+	server = option_find_str(options,"server_ip","localhost");
+        port = option_find_int(options,"server_port",66666);
         demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
     }
 }

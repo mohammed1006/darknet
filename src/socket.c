@@ -6,14 +6,14 @@
 #include<sys/socket.h>
 #include<netinet/in.h>
 #define MAXLINE 4096 
-#include <cJson.h>
+#include <cJSON.h>
 int sockfd;
-extern float demo_thresh;
-extern char* ftp_ip;
+extern  float demo_thresh;
+extern  char* ftp_ip;
 extern char* ftp_name;
-extern char* ftp_pwd;
-extern char* server;
-extern int port;
+extern  char* ftp_pwd;
+extern  char* server;
+extern  int port;
 char* request(char* param,char* url){
     cJSON * pJsonRoot = NULL;
     pJsonRoot = cJSON_CreateObject();
@@ -52,7 +52,7 @@ char* getParam(char* pMsg){
     int len=strlen(pSubSub->valuestring);
 
     char * p = malloc(len);
-    strcmp(pSubSub->valuestring,p,len);
+    strncmp(pSubSub->valuestring,p,len);
     cJSON_Delete(pJson);
     return p;
 }
@@ -116,12 +116,12 @@ void sendData(char* data,int size)
     struct timeval timeout;
    timeout.tv_usec=10;
    timeout.tv_sec=0;
-
-    switch (select(sockfd + 1, &fdR, NULL, &timeout)) { 
+    int rec_len=0;
+    switch (select(sockfd + 1, &fdR, NULL,NULL, &timeout)) { 
     case -1:printf("selet error\n");break; 
     case 0: break;
     default: 
-       if (FD_ISSET(sockfd)) {
+       if (FD_ISSET(sockfd,&fdR)) {
 	      char buf[MAXLINE]; 
           if((rec_len = recv(sockfd, buf, MAXLINE,0)) == -1) {  
              perror("recv error");  

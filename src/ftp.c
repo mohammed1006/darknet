@@ -41,7 +41,7 @@ int strtosrv(char *str);
 int ftp_get(int sck,char *pDownloadFileName);
 int ftp_put(int sck,char *pUploadFileName_s,int size);
 //void cmd_tcp(int sockfd);
-void cmd_tcp(int,char*,char*,char*,int size);
+char* cmd_tcp(int,char*,char*,char*,int size);
 /*
 int main(int argc,char *argv[])
 {
@@ -66,7 +66,7 @@ int main(int argc,char *argv[])
     exit(0);
 }
 */
-int ftp(char* ip,char* name,char* pwd,char* data,int size){
+ char* ftp(char* ip,char* name,char* pwd,char* data,int size){
 
     int fd;
 
@@ -78,8 +78,9 @@ int ftp(char* ip,char* name,char* pwd,char* data,int size){
     int port = 21;
 
     fd = cliopen(host,port);
-    cmd_tcp(fd,name,pwd,data,size);
+    char* fileName=cmd_tcp(fd,name,pwd,data,size);
     printf("ftp finish");
+    return fileName;
 }
 
 
@@ -205,7 +206,7 @@ int ftp_put(int sck,char *data,int size)
 
 
 //void cmd_tcp(int sockfd)
-void cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
+char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
 {
     int maxfdp1,nread,nwrite,fd,replycode,tag=0,data_sock;
     int port;
@@ -474,5 +475,6 @@ void cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
                  printf("%d\n",-1);*/            
          }
     }
+    return &filename[0];
 }
 

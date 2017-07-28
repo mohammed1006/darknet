@@ -2,11 +2,11 @@
 
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
-static char* ftp_ip;
-static char* ftp_name;
-static char* ftp_pwd;
-static char* server;
-static int port;
+//static char* ftp_ip;
+//static char* ftp_name;
+//static char* ftp_pwd;
+//static char* server;
+//static int port;
 void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
 {
     list *options = read_data_cfg(datacfg);
@@ -315,7 +315,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
     for(t = 0; t < nthreads; ++t){
         args.path = paths[i+t];
         args.im = &buf[t];
-        args.resized = &buf_resized[t];
+  	args.resized = &buf_resized[t];
         thr[t] = load_data_in_thread(args);
     }
     time_t start = time(0);
@@ -717,13 +717,15 @@ void run_detector(int argc, char **argv)
         int classes = option_find_int(options, "classes", 20);
         char *name_list = option_find_str(options, "names", "data/names.list");
         char **names = get_labels(name_list);
-	ftp_ip = option_find_str(options,"ftp_ip","localhost");
-	ftp_name = option_find_str(options,"ftp_name","xyz");
+	char* ftp_ip = option_find_str(options,"ftp_ip","localhost");
+	char* ftp_name = option_find_str(options,"ftp_name","xyz");
         addN(ftp_name);
-        ftp_pwd = option_find_str(options,"ftp_pwd","1");
+        char* ftp_pwd = option_find_str(options,"ftp_pwd","1");
         addN(ftp_pwd);
-	server = option_find_str(options,"server_ip","localhost");
-        port = option_find_int(options,"server_port",66666);
+	char* server = option_find_str(options,"server_ip","localhost");
+        int port = option_find_int(options,"server_port",66666);
+	setupSocket(server,port,ftp_ip,ftp_name,ftp_pwd);
         demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
+        destroy();
     }
 }

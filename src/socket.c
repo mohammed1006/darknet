@@ -8,13 +8,13 @@
 #define MAXLINE 4096 
 #include <cJSON.h>
 int sockfd;
-extern  float demo_thresh;
-extern  char* ftp_ip;
-extern char* ftp_name;
-extern  char* ftp_pwd;
-extern  char* server;
-extern  int port;
-char* request(char* param,char* url){
+static float demo_thresh;
+static char* ftp_ip=NULL;
+static char* ftp_name=NULL;
+static  char* ftp_pwd=NULL;
+//static  char* server;
+//static  int port;
+char* request(char param,char* url){
     cJSON * pJsonRoot = NULL;
     pJsonRoot = cJSON_CreateObject();
     if(NULL == pJsonRoot)
@@ -28,7 +28,14 @@ char* request(char* param,char* url){
     cJSON_AddStringToObject(pJsonRoot, "robotid", "机器人SN");
     cJSON_AddStringToObject(pJsonRoot, "targetID", "4");
     cJSON_AddStringToObject(pJsonRoot, "sourceID", "6");
-    cJSON_AddStringToObject(pJsonRoot, "orderType", param);
+    switch(param){
+	    case 'a':
+    		cJSON_AddStringToObject(pJsonRoot, "orderType","pdaHeart" );
+		break;
+	    case 'b':
+   		 cJSON_AddStringToObject(pJsonRoot, "orderType","person_detect");
+		 break;
+    }
     if(NULL!=url){
     cJSON_AddStringToObject(pJsonRoot, "param", url);
     }
@@ -56,7 +63,10 @@ char* getParam(char* pMsg){
     cJSON_Delete(pJson);
     return p;
 }
-void setupSocket(){
+void setupSocket(char* server,int port,char* ftp_ip_,char* ftp_name_,char* ftp_pwd_){
+    ftp_ip=ftp_ip_;
+    ftp_name=ftp_name_;
+    ftp_pwd=ftp_pwd_;
 
     int     n,rec_len;  
     char    recvline[4096], sendline[4096];  
@@ -100,16 +110,20 @@ void setupSocket(){
 }
 void sendData(char* data,int size)
 {
-    if(NULL==data){
-      char * sj=request("pdHeart",NULL);
+    char retData='a';
+    char* url=NULL;
+
+    if(NULL!=data&&size>0){
+	url = ftp(ftp_ip,ftp_name,ftp_pwd,data,size);
+	retData='b';
+    }
+
+      char * sj=request(retData,url);
       if( send(sockfd, sj, strlen(sj), 0) < 0){
        printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);  
        exit(0);  
       }
       free(sj);  
-    }else{
-	    ftp(ftp_ip,ftp_name,ftp_pwd,data,size);
-    }
     fd_set fdR;
     FD_ZERO(&fdR); 
     FD_SET(sockfd, &fdR);
@@ -133,7 +147,7 @@ void sendData(char* data,int size)
        } 
     } 
 }
-void destroys(){
+void destroy(){
    if(close(sockfd) < 0)
         printf("close error\n");
 }

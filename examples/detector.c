@@ -731,8 +731,9 @@ void run_detector(int argc, char **argv)
 	char* server = option_find_str(options,"server_ip","127.0.0.1");
         int port = option_find_int(options,"server_port",6666);
 	setupSocket(server,port,ftp_ip,ftp_name,ftp_pwd);
-	
+	setupFTP();	
         demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
         destroy();
+	destroyFTP();
     }
 }

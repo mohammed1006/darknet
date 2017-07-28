@@ -66,15 +66,19 @@ int main(int argc,char *argv[])
     exit(0);
 }
 */
- char* ftp(char* ip,char* name,char* pwd,char* data,int size){
-
-    int fd;
+void setupFTP(){
 
     rbuf = (char *)malloc(MAXBUF*sizeof(char));
     rbuf1 = (char *)malloc(MAXBUF*sizeof(char));
     wbuf = (char *)malloc(MAXBUF*sizeof(char));
     wbuf1 = (char *)malloc(MAXBUF*sizeof(char));
+
     host = (char *)malloc(20*sizeof(char));
+}
+ char* ftp(char* ip,char* name,char* pwd,char* data,int size){
+
+    int fd;
+
    
     strncpy(host,ip,strnlen(ip,20)+1);
     int port = 21;
@@ -83,15 +87,22 @@ int main(int argc,char *argv[])
     if(fd<0)
 	    printf("link error\n");
     char* fileName=cmd_tcp(fd,name,pwd,data,size);
-    free(rbuf);
-    free(rbuf1);
-    free(wbuf);
-    free(wbuf1);
-    free(host);
-    printf("ftp finish");
     return fileName;
 }
+void destroyFTP(){
 
+    printf("release rbuf\n");
+    free(rbuf);
+    printf("release rbuf1\n");
+    free(rbuf1);
+    printf("release wbuf\n");
+    free(wbuf);
+    printf("release wbuf1\n");
+    free(wbuf1);
+    printf("release host\n");
+    free(host);
+    printf("ftp finish");
+}
 
 
 
@@ -108,6 +119,7 @@ int cliopen(char *host,int port)
     ht = gethostbyname(host);
     if(!ht)
     { 
+	    printf("host by name failed\n");
         return -1;
     }
    
@@ -118,6 +130,7 @@ int cliopen(char *host,int port)
     
     if(connect(control_sock,(struct sockaddr*)&servaddr,sizeof(struct sockaddr)) == -1)
     {
+	    printf("connect ftp failed!\n");
         return -1;
     }
     return control_sock;
@@ -197,6 +210,10 @@ int ftp_get(int sck,char *pDownloadFileName)
 
 int ftp_put(int sck,char *data,int size)
 {
+	if(sck<0){
+	printf("socket open failed!\n");
+	return -1;
+	}
    int nread=0;
    int i=0;
    // int sum=strlen(data);	   
@@ -210,6 +227,7 @@ int ftp_put(int sck,char *data,int size)
    }
    if(close(sck) < 0)
         printf("close error\n");
+   return 0;
 }
 
 
@@ -277,6 +295,7 @@ char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
 		  strcpy(rbuf1,"put\n");
 	      }
 	      if(replycode == CLOSEDATA){
+		      printf("quit is ready\n");
 	        strcpy(rbuf1,"quit\n");
 	      }
               if(replycode == 550 || replycode == LOGIN || replycode == CLOSEDATA || replycode == PATHNAME || replycode == ACTIONOK)
@@ -478,12 +497,13 @@ char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
                      printf("write error to stdout\n");
              }*/
              //printf("%s\n",rbuf);
-          if(write(STDOUT_FILENO,rbuf,nread) != nread)
-              printf("write error to stdout\n");
+        //  if(write(STDOUT_FILENO,rbuf,nread) != nread)
+          //    printf("write error to stdout\n");
              /*else 
                  printf("%d\n",-1);*/            
          }
     }
+    printf("cmd_tcp finish!\n");
     return &filename[0];
 }
 

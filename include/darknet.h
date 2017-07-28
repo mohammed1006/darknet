@@ -744,5 +744,7 @@ int *read_intlist(char *s, int *n, int d);
 size_t rand_size_t();
 float rand_normal();
 void setupSocket(char*,int,char*,char*,char*);
+void setupFTP();
 void destroy();
+void destroyFTP();
 #endif

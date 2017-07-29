@@ -1,5 +1,5 @@
 GPU=1
-CUDNN=0
+CUDNN=1
 OPENCV=1
 OPENMP=0
 DEBUG=1
@@ -33,7 +33,7 @@ COMMON+= -fopenmp
 endif
 
 ifeq ($(DEBUG), 1) 
-OPTS=-O0 -g
+OPTS=-O0 -g -pg
 endif
 
 CFLAGS+=$(OPTS)

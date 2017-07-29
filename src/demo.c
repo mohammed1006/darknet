@@ -81,13 +81,16 @@ void *detect_in_thread(void *ptr)
 
     demo_index = (demo_index + 1)%demo_frame;
     running = 0;
+    printf("detect finish\n");
     return 0;
 }
 
 void *fetch_in_thread(void *ptr)
 {
     int status = fill_image_from_stream(cap, buff[buff_index]);
+    printf("captrue finish\n");
     letterbox_image_into(buff[buff_index], net.w, net.h, buff_letter[buff_index]);
+    printf("thread fetch finish\n");
     if(status == 0) demo_done = 1;
     return 0;
 }
@@ -233,8 +236,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
             sprintf(name, "%s_%08d", prefix, count);
             //save_image(buff[(buff_index + 1)%3], name);
         }
+	printf("thread join\n");
         pthread_join(fetch_thread, 0);
         pthread_join(detect_thread, 0);
+	printf("next frame\n");
         ++count;
     }
 }

@@ -595,11 +595,17 @@ int fill_image_from_stream(CvCapture *cap, image im)
 	printf("capture frame\n");
     IplImage* src = cvQueryFrame(cap);
     int i=0;
-/*	for(i=0;i<20;i++)
-		cvQueryFrame(cap);*/
-    if (!src) {printf("no image/n");return 0;}
+	for(i=0;i<20;i++)
+		cvQueryFrame(cap);
+   while(!src) {
+	    printf("no image/n");
+	   // return 0;
+	   cvWaitKey(100);
+	src=cvQueryFrame(cap);  
+    }
 printf("ipl image/n");
     ipl_into_image(src, im);
+
     rgbgr_image(im);
     return 1;
 }

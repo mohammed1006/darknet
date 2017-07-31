@@ -13,8 +13,8 @@
 #include <sys/types.h>  
 #include <linux/rtc.h>  
 #include <time.h>
-#define MAXBUF 1024
-//#define STDIN_FILENO 1
+#define MAXBUF 100
+//#define STDIN_FI:qLENO 1
 //#define STDOUT_FILENO 0
 
 
@@ -72,8 +72,9 @@ void setupFTP(){
     fd = cliopen(host,port);
     if(fd<0)
 	    printf("link error\n");
-    char* fileName=cmd_tcp(fd,name,pwd,data,size);
-    return fileName;
+    /*char* fileName=*/cmd_tcp(fd,name,pwd,data,size);
+printf("ftp finish!");
+    return filename;
 }
 void destroyFTP(){
 
@@ -191,6 +192,7 @@ int ftp_get(int sck,char *pDownloadFileName)
    }
        if(close(sck) < 0)
            printf("close error\n");
+       return 0;
 }
 
 
@@ -204,9 +206,10 @@ int ftp_put(int sck,char *data,int size)
    int i=0;
    // int sum=strlen(data);	   
    int sum=size;
+#define MAXBUFDATA 1024
    while(i<sum)
    {
-	nread=(i+MAXBUF<=sum)?MAXBUF:(sum-i);
+	nread=(i+MAXBUFDATA<=sum)?MAXBUFDATA:(sum-i);
         if(write(sck,&data[i],nread) != nread)
                 printf("send error!");
 	i+=nread;
@@ -221,13 +224,13 @@ int ftp_put(int sck,char *data,int size)
 //void cmd_tcp(int sockfd)
 char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
 {
-    int maxfdp1,nread,nwrite,fd,replycode,tag=0,data_sock;
-    int port;
-    char *pathname;
+    int maxfdp1,nread,nwrite,replycode,tag=0,data_sock;
+    //int port;
+ //   char *pathname;
     fd_set rset;
     FD_ZERO(&rset);
     maxfdp1 = sockfd + 1;
-    int index=0;
+    //int index=0;
     for(;;)
     {
 	if(1)
@@ -237,7 +240,7 @@ char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
               bzero(wbuf,MAXBUF);          //zero
               bzero(rbuf1,MAXBUF);
               nwrite = nread + 5;
-             // printf("%dddf,%d\n",nread,replycode);      
+              printf("%dddf,%d\n",nread,replycode);      
               if(replycode == USERNAME)
               {  
 		  int lenName=strlen(name);    
@@ -253,7 +256,7 @@ char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
                  {
                      printf("write error\n");
                  }
-                // printf("wbuf:%s\n",wbuf);
+                 printf("wbuf:%s\n",wbuf);
                  //memset(rbuf1,0,sizeof(rbuf1));
                  //memset(wbuf,0,sizeof(wbuf));
                  //printf("1:%s\n",wbuf);
@@ -273,7 +276,7 @@ char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
                    if(write(sockfd,wbuf,nwrite) != nwrite)
                       printf("write error\n");
                    //bzero(rbuf,sizeof(rbuf));
-                   //printf("%s\n",wbuf);
+                   printf("%s\n",wbuf);
                    //printf("2:%s\n",wbuf);
               }
 	      if(replycode == LOGIN){
@@ -468,8 +471,9 @@ char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
                     //int p = 5 + str + 1;
 
 
-                    printf("%d\n",write(sockfd,wbuf,strlen(wbuf)));
-                    //printf("%d\n",p);
+                    //printf("%d\n",write(sockfd,wbuf,strlen(wbuf)));
+                    write(sockfd,wbuf,strlen(wbuf));
+		    //printf("%d\n",p);
                     ftp_get(data_sock,filename);
                 }
                 else if(tag == 3)

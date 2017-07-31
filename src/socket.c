@@ -7,10 +7,15 @@
 #include<netinet/in.h>
 #define MAXLINE 4096 
 #include <cJSON.h>
+#include "verifyutil.h"
 int sockfd;
 static char* ftp_ip=NULL;
 static char* ftp_name=NULL;
 static  char* ftp_pwd=NULL;
+//static char * CONTENTLENGTHSTR="ContentLength:";
+static char * SPLITSTR="\r\n";
+static char * ENDSTR="\\";
+
 //static  char* server;
 //static  int port;
 char * ftp(char*,char*,char*,char*,int);
@@ -23,18 +28,21 @@ char* request(char param,char* url){
         return NULL;
     }
     cJSON_AddStringToObject(pJsonRoot, "version", "1.0.0");
-    cJSON_AddStringToObject(pJsonRoot, "messageid", "消息ID");
+    cJSON_AddStringToObject(pJsonRoot, "messageid", "123456");
     cJSON_AddStringToObject(pJsonRoot, "mode", "request");
-    cJSON_AddStringToObject(pJsonRoot, "robotid", "机器人SN");
+    cJSON_AddStringToObject(pJsonRoot, "robotid", "17WVAAAAAAAA");
     cJSON_AddStringToObject(pJsonRoot, "targetID", "4");
     cJSON_AddStringToObject(pJsonRoot, "sourceID", "6");
     switch(param){
 	    case 'a':
     		cJSON_AddStringToObject(pJsonRoot, "orderType","pdaHeart" );
-		break;
+			break;
 	    case 'b':
-   		 cJSON_AddStringToObject(pJsonRoot, "orderType","person_detect");
-		 break;
+			cJSON_AddStringToObject(pJsonRoot, "orderType","personDetect");
+			break;
+		case 'l':
+			cJSON_AddStringToObject(pJsonRoot, "orderType","loginMainServer");
+			break;
     }
     if(NULL!=url){
     cJSON_AddStringToObject(pJsonRoot, "param", url);
@@ -99,9 +107,32 @@ void setupSocket(char* server,int port,char* ftp_ip_,char* ftp_name_,char* ftp_p
   
     printf("send msg to server: \n");  
     //fgets(sendline, 4096, stdin);  
-    char * sj=request("loginMainServer",NULL);
+    char * sj=request('l',NULL);
+	int len = strlen(sj);
+//	char lenstr[10];
+//	char crcstr[10];
+//	sprintf(lenstr, "%d", len);
+//	sprintf(crcstr, "%d", Crc32(sj, len));
+//	int messlen = strlen(CONTENTLENGTHSTR)+strlen(lenstr)+strlen(SPLITSTR)+len+strlen(SPLITSTR)+strlen(CRCSTR)+strlen(crcstr)+strlen(ENDSTR);
+//#define messlen 1000
+	char mess[/*messlen*/1000];
+
+//static char * CONTENTLENGTHSTR="ContentLength:";
+//static char * SPLITSTR="\r\n";
+//static char * CRCSTR="CRC32Verify:";
+        sprintf(mess,"ContentLength:%d\r\n%s\r\nCRC32Verify:%ld\\",len,sj,Crc32(sj,len));
+/*	strcat(mess, CONTENTLENGTHSTR);
+	strcat(mess, lenstr);
+	strcat(mess, SPLITSTR);
+	strcat(mess, sj);
+	strcat(mess, SPLITSTR);
+	strcat(mess, CRCSTR);
+	strcat(mess, crcstr);
+	strcat(mess, ENDSTR);*/
     printf("sj finish\n");
-    if( send(sockfd, sj, strlen(sj), 0) < 0){
+        printf("send message:%s,%d\n",mess,strlen(mess));
+    int sendLen=send(sockfd, mess, strlen(mess), 0) ;
+    if(  sendLen!=strlen(mess)){
     printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);  
  //   exit(0);  
     } 
@@ -111,7 +142,8 @@ void setupSocket(char* server,int port,char* ftp_ip_,char* ftp_name_,char* ftp_p
 
 
     if((rec_len = recv(sockfd, buf, MAXLINE,0)) == -1) {  
-       perror("recv error");  
+       perror("recv error"); 
+     printf("recv error setup socket fail"); 
 //       exit(1);  
     }
 
@@ -133,11 +165,34 @@ void sendData(char* data,int size,float thresh)
 	url = ftp(ftp_ip,ftp_name,ftp_pwd,data,size);
 	retData='b';
     }
-
+      printf("socket send!");
 	if(-1==sockfd)
 		return;
-      char * sj=request(retData,url);
-      if( send(sockfd, sj, strlen(sj), 0) < 0){
+printf("socket end");
+     char urlChar[100];
+    sprintf(urlChar,"/picture/persondetect/%s",url);
+      char * sj=request(retData,urlChar);
+	  int len = strlen(sj);
+/*	  char lenstr[10];
+	  char crcstr[10];
+	  sprintf(lenstr, "%d", len);
+	  sprintf(crcstr, "%d", Crc32(sj, len));
+	  int messlen = strlen(CONTENTLENGTHSTR)+strlen(lenstr)+strlen(SPLITSTR)+len+strlen(SPLITSTR)+strlen(CRCSTR)+strlen(crcstr)+strlen(ENDSTR);
+	char mess[messlen];
+	strcat(mess, CONTENTLENGTHSTR);
+	strcat(mess, lenstr);
+	strcat(mess, SPLITSTR);
+	strcat(mess, sj);
+	strcat(mess, SPLITSTR);
+	strcat(mess, CRCSTR);
+	strcat(mess, crcstr);
+	strcat(mess, ENDSTR);*/
+        char mess[1000];
+	sprintf(mess,"ContentLength:%d\r\n%s\r\nCRC32Verify:%d\\",len,sj,Crc32(sj,len));
+
+
+
+      if( send(sockfd, mess, strlen(mess), 0) < 0){
        printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);  
       // exit(0);  
       }

@@ -42,7 +42,7 @@ uint32_t Crc32(unsigned char* buf, int nLength)
     //printf("buf:%s,%d\n",buf,nLength);
     uint32_t crc32 = 0xffffffffL;
      long i=0;
-        for ( 0; i < nLength; ++i )
+        for ( ; i < nLength; ++i )
         {
             crc32 = table[ ( crc32 ^ buf[i]) & 0xff ] ^ ( crc32 >> 8 );
         }

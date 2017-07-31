@@ -416,7 +416,7 @@ int main(int argc, char **argv1)
       "cfg/yolo.cfg",
       "yolo.weights",
       "-c",
-      "rtsp://192.168.168.127:8554/2.mkv"
+      "rtsp://192.168.0.104:8554/a.mkv"
     };
     if(argc < 2){
         fprintf(stderr, "usage: %s <function>\n", argv[0]);

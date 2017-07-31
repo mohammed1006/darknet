@@ -67,7 +67,7 @@ void setupFTP(const char* ip,const char *name,const char *pwd,const char *path){
     host = (char *)malloc(CHAR20*sizeof(char));
     ftp_name=(char*)malloc(CHAR20*sizeof(char));
     ftp_pwd=(char*)malloc(CHAR20*sizeof(char));
-    path=(char*)malloc(CHAR20*3*sizeof(char));
+    ftp_path=(char*)malloc(CHAR20*3*sizeof(char));
     strcpy(host,ip);
     strcpy(ftp_name,name);
     strcpy(ftp_pwd,pwd);

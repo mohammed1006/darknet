@@ -743,8 +743,8 @@ void normalize_array(float *a, int n);
 int *read_intlist(char *s, int *n, int d);
 size_t rand_size_t();
 float rand_normal();
-void setupSocket(char*,int,char*,char*,char*);
-void setupFTP();
+void setupSocket(char*,int);
+void setupFTP(char*,char*,char*,char*);
 void destroy();
 void destroyFTP();
 #endif

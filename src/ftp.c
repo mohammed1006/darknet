@@ -13,7 +13,10 @@
 #include <sys/types.h>  
 #include <linux/rtc.h>  
 #include <time.h>
-#define MAXBUF 100
+#define MAXBUF 50
+#define MAXBUFDATA 1024
+#define CHAR20 20
+#define PORT 21
 //#define STDIN_FI:qLENO 1
 //#define STDOUT_FILENO 0
 
@@ -27,11 +30,13 @@
 
 
 char *rbuf,*rbuf1,*wbuf,*wbuf1;
+char *ftp_name,*ftp_pwd,*ftp_path;
 
-
-char filename[100];
+//char filename[100];
 char *host;
-
+//char ftp_name[100];
+//char ftp_pwd[100];
+//char ftp_ip[100];
 
 struct sockaddr_in servaddr;
 
@@ -41,9 +46,9 @@ int strtosrv(char *str);
 int ftp_get(int sck,char *pDownloadFileName);
 int ftp_put(int sck,char *pUploadFileName_s,int size);
 //void cmd_tcp(int sockfd);
-char* cmd_tcp(int,char*,char*,char*,int size);
-void  setupFTP();
-char* ftp(char*,char*,char*,char*,int);
+int cmd_tcp(int,char*,int size,char b[]);
+void  setupFTP(const char*,const char*,const char*,const char*);
+int ftp(char*,int,char a[]);
 void destroyFTP();
 /*
 int main(int argc,char *argv[])
@@ -52,29 +57,33 @@ int main(int argc,char *argv[])
 	ftp("127.0.0.1","xyz\n","1\n","123",3);
 	destroyFTP();
 }*/
-void setupFTP(){
+void setupFTP(const char* ip,const char *name,const char *pwd,const char *path){
 
     rbuf = (char *)malloc(MAXBUF*sizeof(char));
     rbuf1 = (char *)malloc(MAXBUF*sizeof(char));
     wbuf = (char *)malloc(MAXBUF*sizeof(char));
     wbuf1 = (char *)malloc(MAXBUF*sizeof(char));
 
-    host = (char *)malloc(20*sizeof(char));
+    host = (char *)malloc(CHAR20*sizeof(char));
+    ftp_name=(char*)malloc(CHAR20*sizeof(char));
+    ftp_pwd=(char*)malloc(CHAR20*sizeof(char));
+    path=(char*)malloc(CHAR20*3*sizeof(char));
+    strcpy(host,ip);
+    strcpy(ftp_name,name);
+    strcpy(ftp_pwd,pwd);
+    strcpy(ftp_path,path);
 }
- char* ftp(char* ip,char* name,char* pwd,char* data,int size){
+ int  ftp(char* data,int size,char fileOut[]){
 
     int fd;
-
-   
-    strncpy(host,ip,strnlen(ip,20)+1);
-    int port = 21;
-
-    fd = cliopen(host,port);
+   // int port = 21;
+    fd = cliopen(host,PORT);
     if(fd<0)
-	    printf("link error\n");
-    /*char* fileName=*/cmd_tcp(fd,name,pwd,data,size);
-printf("ftp finish!");
-    return filename;
+      printf("link error\n");
+
+    int ret=cmd_tcp(fd,data,size,fileOut);
+    printf("ftp finish!");
+    return ret;
 }
 void destroyFTP(){
 
@@ -89,6 +98,10 @@ void destroyFTP(){
     printf("release host\n");
     free(host);
     printf("ftp finish");
+    free(ftp_name);
+    free(ftp_pwd);
+    free(ftp_path);
+
 }
 
 
@@ -222,9 +235,10 @@ int ftp_put(int sck,char *data,int size)
 
 
 //void cmd_tcp(int sockfd)
-char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
+int cmd_tcp(int sockfd,char* data,int size,char fileOut[] )
 {
     int maxfdp1,nread,nwrite,replycode,tag=0,data_sock;
+    replycode=0;
     //int port;
  //   char *pathname;
     fd_set rset;
@@ -243,14 +257,15 @@ char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
               printf("%dddf,%d\n",nread,replycode);      
               if(replycode == USERNAME)
               {  
-		  int lenName=strlen(name);    
-	          nwrite+=lenName;
-		  strcpy(rbuf1,name);
+		 // int lenName=strlen(name);    
+	         // nwrite+=lenName;
+		 // strcpy(rbuf1,name);
                    
 	 	      // printf("asdf\n");
 	//	  strcpy(rbuf1,"xyz\n");
 		  //rbuf1[3]=;
-                  sprintf(wbuf,"USER %s",rbuf1);
+                  sprintf(wbuf,"USER %s",ftp_name);
+		  nwrite= 5 + strnlen(ftp_name,CHAR20);
                  //  nwrite+=3;
                  if(write(sockfd,wbuf,nwrite) != nwrite)
                  {
@@ -269,10 +284,11 @@ char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
 		  //strcpy(rbuf1,"1\n");
 		 // nwrite+=2;
                   // printf("%s\n",rbuf1);
-		  int lenPwd=strlen(pwd);
-		  nwrite+=lenPwd;
-		  strcpy(rbuf1,pwd);
-                   sprintf(wbuf,"PASS %s",rbuf1);
+		 // int lenPwd=strlen(pwd);
+		//  nwrite+=lenPwd;
+		 // strcpy(rbuf1,pwd);a
+		   nwrite = 5 + strnlen(ftp_pwd,CHAR20);
+                   sprintf(wbuf,"PASS %s",ftp_pwd);
                    if(write(sockfd,wbuf,nwrite) != nwrite)
                       printf("write error\n");
                    //bzero(rbuf,sizeof(rbuf));
@@ -282,7 +298,7 @@ char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
 	      if(replycode == LOGIN){
 	      
 		 // strcpy(rbuf1,"put\n");
-		 strcpy(rbuf1,"cwd aaa\n");
+		 strcpy(rbuf1,"cwd\n");
 	      }
 	      if(replycode == ACTIONOK){
 	         strcpy(rbuf1,"put\n");
@@ -312,7 +328,7 @@ char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
                  if(strncmp(rbuf1,"cwd",3) == 0)
                  {
                      //sprintf(wbuf,"%s","PASV\n");
-                     sprintf(wbuf,"CWD picture/persondetect\n");
+                     sprintf(wbuf,"CWD %s\n",ftp_path);
                      write(sockfd,wbuf,strnlen(wbuf,50));
                      
                      //sprintf(wbuf1,"%s","CWD\n");
@@ -339,8 +355,8 @@ char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
                      sprintf(wbuf,"%s","PASV\n");                   
                      //printf("%s\n",s(rbuf1));
                      //char filename[100];
-                     s(rbuf1,filename);
-                     printf("%s\n",filename);
+                     s(rbuf1,fileOut);
+                     printf("%s\n",fileOut);
                      write(sockfd,wbuf,5);
                    //  continue;
                  }
@@ -353,8 +369,9 @@ char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
                     struct tm *p;  
                     time(&timep);  
                     p=localtime(&timep); /*取得当地时间*/  
-                    sprintf(filename, "%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d.jpg", (1900+p->tm_year),(1+p->tm_mon), p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec);  
-                     printf("%s\n",filename);
+                    sprintf(fileOut, "%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d.jpg", (1900+p->tm_year),(1+p->tm_mon), p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec);  
+                     printf("%s\n",fileOut);
+
                      write(sockfd,wbuf,5);
                 //     continue;
                  }
@@ -466,7 +483,8 @@ char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
                     //printf("%s\n",wbuf);
                     //int str = strlen(filename);
                     //printf("%d\n",str);
-                    sprintf(wbuf,"RETR %s\n",filename);
+			
+                    sprintf(wbuf,"RETR %s\n",fileOut);
                     printf("%s\n",wbuf);
                     //int p = 5 + str + 1;
 
@@ -474,11 +492,11 @@ char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
                     //printf("%d\n",write(sockfd,wbuf,strlen(wbuf)));
                     write(sockfd,wbuf,strlen(wbuf));
 		    //printf("%d\n",p);
-                    ftp_get(data_sock,filename);
+                    ftp_get(data_sock,fileOut);
                 }
                 else if(tag == 3)
                 {
-                    sprintf(wbuf,"STOR %s\n",filename);
+                    sprintf(wbuf,"STOR %s\n",fileOut);
                     printf("%s\n",wbuf);
                     write(sockfd,wbuf,strlen(wbuf));
                     ftp_put(data_sock,data,size);
@@ -498,6 +516,6 @@ char* cmd_tcp(int sockfd,char* name,char* pwd,char* data,int size)
          }
     }
     printf("cmd_tcp finish!\n");
-    return &filename[0];
+    return 1; 
 }
 

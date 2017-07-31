@@ -725,13 +725,14 @@ void run_detector(int argc, char **argv)
        sprintf(ftp_name,"%s\n",ftp_name1);
 	printf("%sf\n",ftp_name);
         char* ftp_pwd1 = option_find_str(options,"ftp_pwd","1");
+	char* ftp_path = option_find_str(options,"ftp_path","picture/persondetect");
        // char* ftp_pwd=addN(ftp_pwd1);
        sprintf(ftp_pwd,"%s\n",ftp_pwd1);
 	printf("%sf\n",ftp_pwd);
 	char* server = option_find_str(options,"server_ip","127.0.0.1");
         int port = option_find_int(options,"server_port",6666);
-	setupSocket(server,port,ftp_ip,ftp_name,ftp_pwd);
-	setupFTP();	
+	setupSocket(server,port);
+	setupFTP(ftp_ip,ftp_name,ftp_pwd,ftp_path);	
         demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
         destroy();
 	destroyFTP();

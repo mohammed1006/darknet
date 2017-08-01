@@ -30,7 +30,7 @@
 
 
 char *rbuf,*rbuf1,*wbuf,*wbuf1;
-char *ftp_name,*ftp_pwd,*ftp_path;
+char *ftp_name,*ftp_pwd,*ftp_path,*ftp_path_n;
 
 //char filename[100];
 char *host;
@@ -68,10 +68,14 @@ void setupFTP(const char* ip,const char *name,const char *pwd,const char *path){
     ftp_name=(char*)malloc(CHAR20*sizeof(char));
     ftp_pwd=(char*)malloc(CHAR20*sizeof(char));
     ftp_path=(char*)malloc(CHAR20*3*sizeof(char));
+  
+    ftp_path_n=(char*)malloc(CHAR20*3*sizeof(char));
+  
     strcpy(host,ip);
     strcpy(ftp_name,name);
     strcpy(ftp_pwd,pwd);
     strcpy(ftp_path,path);
+    strncpy(ftp_path_n,path,strnlen(path,CHAR20*3)-1);
 }
  int  ftp(char* data,int size,char fileOut[]){
 
@@ -80,8 +84,9 @@ void setupFTP(const char* ip,const char *name,const char *pwd,const char *path){
     fd = cliopen(host,PORT);
     if(fd<0)
       printf("link error\n");
-
-    int ret=cmd_tcp(fd,data,size,fileOut);
+    char fileOutName[100];
+    int ret=cmd_tcp(fd,data,size,fileOutName);
+    sprintf(fileOut,"/%s/%s",ftp_path_n,fileOutName);
     printf("ftp finish!");
     return ret;
 }
@@ -365,12 +370,6 @@ int cmd_tcp(int sockfd,char* data,int size,char fileOut[] )
                      tag = 3;
                      sprintf(wbuf,"%s","PASV\n");
                     // st(rbuf1,filename);
-		    time_t timep;  
-                    struct tm *p;  
-                    time(&timep);  
-                    p=localtime(&timep); /*取得当地时间*/  
-                    sprintf(fileOut, "%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d.jpg", (1900+p->tm_year),(1+p->tm_mon), p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec);  
-                     printf("%s\n",fileOut);
                      write(sockfd,wbuf,5);
                 //     continue;
                  }
@@ -495,10 +494,17 @@ int cmd_tcp(int sockfd,char* data,int size,char fileOut[] )
                 }
                 else if(tag == 3)
                 {
+		    time_t timep;  
+                    struct tm *p;  
+                    time(&timep);  
+                    p=localtime(&timep); /*取得当地时间*/  
+                    sprintf(fileOut, "%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d.jpg", (1900+p->tm_year),(1+p->tm_mon), p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec);  
+                     printf("%s\n",fileOut);
                     sprintf(wbuf,"STOR %s\n",fileOut);
                     printf("%s\n",wbuf);
                     write(sockfd,wbuf,strlen(wbuf));
                     ftp_put(data_sock,data,size);
+		   // sprintf(fileOut,"%s/%s",ftp_path,fileOut);
                 }
                 nwrite = 0;     
              }

@@ -171,7 +171,7 @@ void sendData(char* data,int size,float thresh)
 		return;
     printf("socket end");
     char urlChar[100];
-    sprintf(urlChar,"/picture/persondetect/%s",url);
+    sprintf(urlChar,"%s",url);
     char *sj=request(retData,urlChar);
     int len = strlen(sj);
 /*	  char lenstr[10];

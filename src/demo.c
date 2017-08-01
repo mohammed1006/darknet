@@ -300,7 +300,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
                 memcpy(last_avg, avg, l.outputs*sizeof(float));
             }
 	    printf("display_in_");
-            display_in_thread(0);
+           // display_in_thread(0);
         }else{
             char name[256];
             sprintf(name, "%s_%08d", prefix, count);
@@ -309,6 +309,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 	printf("thread join\n");
         pthread_join(fetch_thread, 0);
         pthread_join(detect_thread, 0);
+	display_in_thread(0);
 	printf("next frame\n");
         ++count;
 	    if( kbhit() ) {

@@ -1,6 +1,6 @@
 #include "darknet.h"
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
-
+int frame_skip_g=1;
 //static char* ftp_ip;
 //static char* ftp_name;
 //static char* ftp_pwd;
@@ -665,7 +665,7 @@ void run_detector(int argc, char **argv)
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
     float thresh = find_float_arg(argc, argv, "-thresh", .24);
     float hier_thresh = find_float_arg(argc, argv, "-hier", .5);
-    char* cam_index = find_char_arg(argc, argv, "-c", 0);
+    char* cam_index22 = find_char_arg(argc, argv, "-c", 0);
     int frame_skip = find_int_arg(argc, argv, "-s", 0);
     int avg = find_int_arg(argc, argv, "-avg", 3);
     if(argc < 4){
@@ -716,28 +716,38 @@ void run_detector(int argc, char **argv)
         int classes = option_find_int(options, "classes", 20);
         char *name_list = option_find_str(options, "names", "data/names.list");
         char **names = get_labels(name_list);
-	char* ftp_ip = option_find_str(options,"ftp_ip","127.0.0.1");
+
+        list *options2 = read_data_cfg("robot.cfg");
+
+
+	char* ftp_ip = option_find_str(options2,"ftp_ip","127.0.0.1");
 //	printf("%s\n",ftp_ip);
 //       printf("%d\n",	strnlen(ftp_ip,20));
-	char* ftp_name1 = option_find_str(options,"ftp_name","xyz");
+	char* ftp_name1 = option_find_str(options2,"ftp_name","rrryz");
        // char* ftp_name=addN(ftp_name1);
        char ftp_name[20],ftp_pwd[20];
        sprintf(ftp_name,"%s\n",ftp_name1);
 //	printf("%sf\n",ftp_name);
-        char* ftp_pwd1 = option_find_str(options,"ftp_pwd","1");
-	char* ftp_path1 = option_find_str(options,"ftp_path","picture/persondetect");
+        char* ftp_pwd1 = option_find_str(options2,"ftp_pwd","123");
+	char* ftp_path1 = option_find_str(options2,"ftp_path","picture/persondetect");
         char ftp_path[100];
 	sprintf(ftp_path,"%s\n",ftp_path1);
-	float thresh =0.01 * option_find_int(options,"thresh",0);
+	float thresh =0.01 * option_find_int(options2,"thresh",0);
        // char* ftp_pwd=addN(ftp_pwd1);
        sprintf(ftp_pwd,"%s\n",ftp_pwd1);
+     frame_skip_g=option_find_int(options2,"frame_skip",20);  
 //	printf("%sf\n",ftp_pwd);
-	char* server = option_find_str(options,"server_ip","127.0.0.1");
-        int port = option_find_int(options,"server_port",6666);
-	setupSocket(server,port,thresh);
+	char* server = option_find_str(options2,"server_ip","127.0.0.21");
+	char* robotID = option_find_str(options2,"robot_id","123abc");
+	char* cam_index = option_find_str(options2,"camera","rtsp://127.0.0.1:8554/a.mkv");
+        int port = option_find_int(options2,"server_port",123321);
+	printf("robot_param:ftp(%s,%s,%s,%s),server(%s,%d),camera(%s)",ftp_ip,ftp_name,ftp_pwd,ftp_path,server,port,cam_index);
+	setupSocket(server,port,robotID,thresh);
 	setupFTP(ftp_ip,ftp_name,ftp_pwd,ftp_path);	
         demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
         destroy();
 	destroyFTP();
+	free_list(options);
+	free_list(options2);
     }
 }

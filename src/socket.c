@@ -13,9 +13,7 @@ int sockfd;
 //static char* ftp_name=NULL;
 //static  char* ftp_pwd=NULL;
 //static char * CONTENTLENGTHSTR="ContentLength:";
-static char *SPLITSTR="\r\n";
-static char *ENDSTR="\\";
-
+static char* robotIDg="";
 //static  char* server;
 //static  int port;
 static float socket_thresh=0;
@@ -31,7 +29,7 @@ char* request(char param,char* url){
     cJSON_AddStringToObject(pJsonRoot, "version", "1.0.0");
     cJSON_AddStringToObject(pJsonRoot, "messageid", "123456");
     cJSON_AddStringToObject(pJsonRoot, "mode", "request");
-    cJSON_AddStringToObject(pJsonRoot, "robotid", "17WVAAAAAAAA");
+    cJSON_AddStringToObject(pJsonRoot, "robotid", robotIDg);
     cJSON_AddStringToObject(pJsonRoot, "targetID", "4");
     cJSON_AddStringToObject(pJsonRoot, "sourceID", "6");
     switch(param){
@@ -73,11 +71,11 @@ char* getParam(char* pMsg){
     cJSON_Delete(pJson);
     return p;
 }
-void setupSocket(char* server,int port,float thresh){
+void setupSocket(char* server,int port,char* robotID,float thresh){
 //    ftp_ip=ftp_ip_;
 //    ftp_name=ftp_name_;
   //  ftp_pwd=ftp_pwd_;
-
+     robotIDg=robotID;
     int rec_len;  
     //char    recvline[4096], sendline[4096];  
     char    buf[MAXLINE];  

@@ -589,13 +589,13 @@ image get_image_from_stream(CvCapture *cap)
     rgbgr_image(im);
     return im;
 }
-
+extern int frame_skip_g;
 int fill_image_from_stream(CvCapture *cap, image im)
 {
 	printf("capture frame\n");
     IplImage* src = cvQueryFrame(cap);
     int i=0;
-	for(i=0;i<20;i++)
+	for(i=0;i<frame_skip_g;i++)
 		cvQueryFrame(cap);
    while(!src) {
 	    printf("no image/n");

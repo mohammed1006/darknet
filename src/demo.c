@@ -285,7 +285,13 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 
     demo_time = get_wall_time();
 
-    while(!demo_done){
+    while(1){
+	if(1==demo_done)
+ 	{ 
+            cvReleaseCapture(&cap);
+	    cap = cvCreateFileCapture(cam_index);
+           demo_done = 0;
+        }
         buff_index = (buff_index + 1) %3;
         if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
         if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");

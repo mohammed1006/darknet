@@ -30,7 +30,7 @@
 
 
 char *rbuf,*rbuf1,*wbuf,*wbuf1;
-char *ftp_name,*ftp_pwd,*ftp_path,*ftp_path_n;
+char *ftp_name,*ftp_pwd,*ftp_path/*,ftp_path_n*/;
 
 //char filename[100];
 char *host;
@@ -69,13 +69,20 @@ void setupFTP(const char* ip,const char *name,const char *pwd,const char *path){
     ftp_pwd=(char*)malloc(CHAR20*sizeof(char));
     ftp_path=(char*)malloc(CHAR20*3*sizeof(char));
   
-    ftp_path_n=(char*)malloc(CHAR20*3*sizeof(char));
+ //   ftp_path_n=(char*)malloc(CHAR20*3*sizeof(char));
   
     strcpy(host,ip);
     strcpy(ftp_name,name);
     strcpy(ftp_pwd,pwd);
     strcpy(ftp_path,path);
-    strncpy(ftp_path_n,path,strnlen(path,CHAR20*3)-1);
+    //strncpy(ftp_path_n,path,strnlen(path,CHAR20*3)-1);
+}
+void modifyFtp(const char* ip,const char *name,const char *pwd,const char *path){
+    strcpy(host,ip);
+    strcpy(ftp_name,name);
+    strcpy(ftp_pwd,pwd);
+    strcpy(ftp_path,path);
+   // strncpy(ftp_path_n,path,strnlen(path,CHAR20*3)-1);
 }
  int  ftp(char* data,int size,char fileOut[]){
 
@@ -86,7 +93,7 @@ void setupFTP(const char* ip,const char *name,const char *pwd,const char *path){
       printf("link error\n");
     char fileOutName[100];
     int ret=cmd_tcp(fd,data,size,fileOutName);
-    sprintf(fileOut,"/%s/%s",ftp_path_n,fileOutName);
+    sprintf(fileOut,"/%s/%s",ftp_path,fileOutName);
     printf("ftp finish!");
     return ret;
 }
@@ -269,8 +276,8 @@ int cmd_tcp(int sockfd,char* data,int size,char fileOut[] )
 	 	      // printf("asdf\n");
 	//	  strcpy(rbuf1,"xyz\n");
 		  //rbuf1[3]=;
-                  sprintf(wbuf,"USER %s",ftp_name);
-		  nwrite= 5 + strnlen(ftp_name,CHAR20);
+                  sprintf(wbuf,"USER %s\n",ftp_name);
+		  nwrite= 5 + strnlen(ftp_name,CHAR20)+1;
                  //  nwrite+=3;
                  if(write(sockfd,wbuf,nwrite) != nwrite)
                  {
@@ -292,8 +299,8 @@ int cmd_tcp(int sockfd,char* data,int size,char fileOut[] )
 		 // int lenPwd=strlen(pwd);
 		//  nwrite+=lenPwd;
 		 // strcpy(rbuf1,pwd);a
-		   nwrite = 5 + strnlen(ftp_pwd,CHAR20);
-                   sprintf(wbuf,"PASS %s",ftp_pwd);
+		   nwrite = 5 + strnlen(ftp_pwd,CHAR20)+1;
+                   sprintf(wbuf,"PASS %s\n",ftp_pwd);
                    if(write(sockfd,wbuf,nwrite) != nwrite)
                       printf("write error\n");
                    //bzero(rbuf,sizeof(rbuf));

@@ -599,9 +599,10 @@ int fill_image_from_stream(CvCapture *cap, image im)
 		cvQueryFrame(cap);
    while(!src) {
 	    printf("no image/n");
-	   // return 0;
+	    return 0;
 	   cvWaitKey(100);
-	src=cvQueryFrame(cap);  
+        //cvReleaseCapture(&pCapture);  
+	//return -2;
     }
 printf("ipl image/n");
     ipl_into_image(src, im);

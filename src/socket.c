@@ -9,15 +9,14 @@
 #include <cJSON.h>
 #include "verifyutil.h"
 int sockfd;
-//static char* ftp_ip=NULL;
-//static char* ftp_name=NULL;
-//static  char* ftp_pwd=NULL;
-//static char * CONTENTLENGTHSTR="ContentLength:";
 static char* robotIDg="";
-//static  char* server;
-//static  int port;
 static float socket_thresh=0;
 int ftp(char*,int,char file[]);
+void modiftFtp(const char* ip,const char *name,const char *pwd,const char *path);
+void destroy();
+void setupSocket(char* server,int port,char* robotID,float thresh);
+ int modifyIP(cJSON* pSub );
+ extern void modifyFtp(const char* ip,const char *name,const char *pwd,const char *path);
 char* request(char param,char* url){
     cJSON *pJsonRoot = NULL;
     pJsonRoot = cJSON_CreateObject();
@@ -50,41 +49,48 @@ char* request(char param,char* url){
     cJSON_Delete(pJsonRoot);
     return p;
 }
+
+int modifyIP(cJSON* pSub ){
+        cJSON *pSubSubIp = cJSON_GetObjectItem(pSub, "serverip");
+	cJSON *pSubSubPort = cJSON_GetObjectItem(pSub,"serverport");
+	cJSON *pSubSubFtpip = cJSON_GetObjectItem(pSub,"ftpip");
+	cJSON *pSubSubPortFtpuser = cJSON_GetObjectItem(pSub,"ftpusr");
+	cJSON *pSubSubPortFtppwd = cJSON_GetObjectItem(pSub,"ftppwd");
+	cJSON *pSubSubPortftpdath = cJSON_GetObjectItem(pSub,"ftpdpath");
+        destroy();
+        setupSocket(pSubSubIp->valuestring,pSubSubPort->valueint,robotIDg,socket_thresh);
+        modifyFtp(pSubSubFtpip->valuestring,pSubSubPortFtpuser->valuestring,pSubSubPortFtppwd->valuestring,pSubSubPortftpdath->valuestring);	
+}
 char* getParam(char* pMsg){
     if(NULL == pMsg)
     {
         return NULL;
     }
+
     cJSON *pJson = cJSON_Parse(pMsg);
     cJSON *pSub = cJSON_GetObjectItem(pJson, "param");
+    cJSON *orderType = cJSON_GetObjectItem(pJson,"orderType");
+   if(strncmp(orderType->valuestring,"pdParam",7)){
     cJSON *pSubSub = cJSON_GetObjectItem(pSub, "thresh");
-    if(NULL == pSubSub)
-    {
-        // get object from subject object faild
-	return NULL;
+    int th = pSubSub->valueint;
+    socket_thresh =0.01* th;
+    }else if(strncmp(orderType->valuestring,"serverAD",8)){
+     modifyIP(pSub);
     }
-    printf("sub_obj_1 : %s\n", pSubSub->valuestring);
-    int len=strlen(pSubSub->valuestring);
-
-    char *p =(char*) malloc(len);
-    strncmp(pSubSub->valuestring,p,len);
+    
+    cJSON_AddStringToObject(pJson,"statusCode",1000);
+    char* p = cJSON_Print(pJson);
     cJSON_Delete(pJson);
     return p;
 }
 void setupSocket(char* server,int port,char* robotID,float thresh){
-//    ftp_ip=ftp_ip_;
-//    ftp_name=ftp_name_;
-  //  ftp_pwd=ftp_pwd_;
      robotIDg=robotID;
     int rec_len;  
-    //char    recvline[4096], sendline[4096];  
     char    buf[MAXLINE];  
     struct sockaddr_in    servaddr;  
     socket_thresh = thresh; 
     if( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){  
     printf("create socket error: %s(errno: %d)\n", strerror(errno),errno);  
-
-   // exit(0);  
     }  
   
   
@@ -109,32 +115,13 @@ void setupSocket(char* server,int port,char* robotID,float thresh){
     //fgets(sendline, 4096, stdin);  
     char * sj=request('l',NULL);
 	int len = strlen(sj);
-//	char lenstr[10];
-//	char crcstr[10];
-//	sprintf(lenstr, "%d", len);
-//	sprintf(crcstr, "%d", Crc32(sj, len));
-//	int messlen = strlen(CONTENTLENGTHSTR)+strlen(lenstr)+strlen(SPLITSTR)+len+strlen(SPLITSTR)+strlen(CRCSTR)+strlen(crcstr)+strlen(ENDSTR);
-//#define messlen 1000
 	char mess[/*messlen*/1000];
-
-//static char * CONTENTLENGTHSTR="ContentLength:";
-//static char * SPLITSTR="\r\n";
-//static char * CRCSTR="CRC32Verify:";
         sprintf(mess,"ContentLength:%d\r\n%s\r\nCRC32Verify:%ld\\",len,sj,(int)Crc32(sj,len));
-/*	strcat(mess, CONTENTLENGTHSTR);
-	strcat(mess, lenstr);
-	strcat(mess, SPLITSTR);
-	strcat(mess, sj);
-	strcat(mess, SPLITSTR);
-	strcat(mess, CRCSTR);
-	strcat(mess, crcstr);
-	strcat(mess, ENDSTR);*/
     printf("sj finish\n");
         printf("send message:%s,%d\n",mess,strlen(mess));
     int sendLen=send(sockfd, mess, strlen(mess), 0) ;
     if(  sendLen!=(int)strlen(mess)){
     printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);  
- //   exit(0);  
     } 
 
 
@@ -144,7 +131,6 @@ void setupSocket(char* server,int port,char* robotID,float thresh){
     if((rec_len = recv(sockfd, buf, MAXLINE,0)) == -1) {  
        perror("recv error"); 
      printf("recv error setup socket fail"); 
-//       exit(1);  
     }
 
     printf("sj2 finish\n");
@@ -172,28 +158,10 @@ void sendData(char* data,int size,float thresh)
     sprintf(urlChar,"%s",url);
     char *sj=request(retData,urlChar);
     int len = strlen(sj);
-/*	  char lenstr[10];
-	  char crcstr[10];
-	  sprintf(lenstr, "%d", len);
-	  sprintf(crcstr, "%d", Crc32(sj, len));
-	  int messlen = strlen(CONTENTLENGTHSTR)+strlen(lenstr)+strlen(SPLITSTR)+len+strlen(SPLITSTR)+strlen(CRCSTR)+strlen(crcstr)+strlen(ENDSTR);
-	char mess[messlen];
-	strcat(mess, CONTENTLENGTHSTR);
-	strcat(mess, lenstr);
-	strcat(mess, SPLITSTR);
-	strcat(mess, sj);
-	strcat(mess, SPLITSTR);
-	strcat(mess, CRCSTR);
-	strcat(mess, crcstr);
-	strcat(mess, ENDSTR);*/
         char mess[1000];
 	sprintf(mess,"ContentLength:%d\r\n%s\r\nCRC32Verify:%d\\",len,sj,Crc32(sj,len));
-
-
-
       if( send(sockfd, mess, strlen(mess), 0) < 0){
        printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);  
-      // exit(0);  
       }
       free(sj);  
       fd_set fdR;
@@ -202,7 +170,6 @@ void sendData(char* data,int size,float thresh)
       struct timeval timeout;
       timeout.tv_usec=10;
       timeout.tv_sec=0;
-       // int rec_len=0;
       switch (select(sockfd + 1, &fdR, NULL,NULL, &timeout)) { 
              case -1:printf("selet error\n");break; 
              case 0: break;
@@ -213,9 +180,6 @@ void sendData(char* data,int size,float thresh)
                               perror("recv error");  
                               //  exit(1);
 	                    }
-	                  char * para = getParam(&buf[0]);
-                          int per=atoi(para);
-	                  demo_thresh=per/100.00;
 	                  free(para);*/
          } 
     

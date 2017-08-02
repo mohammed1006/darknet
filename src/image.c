@@ -485,7 +485,7 @@ void show_image_cv(image p, const char *name, IplImage *disp)
         cvResize(buffer, disp, CV_INTER_LINEAR);
         cvReleaseImage(&buffer);
     }
-   // cvShowImage(buff, disp);
+    //cvShowImage(buff, disp);
     if(socket_send_>0){
      int param[2]; 
       param[0]=CV_IMWRITE_JPEG_QUALITY;

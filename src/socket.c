@@ -73,8 +73,7 @@ char *getParam(char *pMsg)
     if(NULL == pMsg)
     {
         return NULL;
-    }
-
+	}
     cJSON *pJson = cJSON_Parse(pMsg);
     cJSON *pSub = cJSON_GetObjectItem(pJson, "param");
     cJSON *orderType = cJSON_GetObjectItem(pJson,"orderType");
@@ -139,12 +138,12 @@ void setupSocket(char *server,int port,char *robotID,float thresh)
     }
     free(sendjson);
     // printf("sj1 finish\n");
-    if((rec_len = recv(sockfd, buf, MAXLINE,0)) == -1)
+    /*if((rec_len = recv(sockfd, buf, MAXLINE,0)) == -1)
     {
         perror("recv error");
         printf("recv error setup socket fail");
     }
-    //  buf[rec_len]  = '\0';
+    //  buf[rec_len]  = '\0';*/
     printf("socket finish\n");
 }
 void sendData(char *data,int size,float thresh)
@@ -162,8 +161,13 @@ void sendData(char *data,int size,float thresh)
         retData='b';
     }
     printf("socket send!\n");
-    if(-1==sockfd)
-        return;
+    if(-1==sockfd){
+        destroy();
+        setupSocket(ipg,portg,robotIDg,threshg);
+		if(-1==sockfd)
+				return;
+	}
+       // return;
     printf("socket end\n");
     //char urlChar[100];
     //sprintf(urlChar,"%s",url);
@@ -172,7 +176,7 @@ void sendData(char *data,int size,float thresh)
     char mess[1000];
     long crc = Crc32((unsigned char *)sj,len);
     sprintf(mess,"ContentLength:%d\r\n%s\r\nCRC32Verify:%ld\\",len,sj,crc);
-    if( send(sockfd, mess, strlen(mess), 0) < 0)
+    if( send(sockfd, mess, strlen(mess), MSG_NOSIGNAL) < 0)
     {
         printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
         printf("begin again link to server(%s,%d,%s,%f)\n",ipg,portg,robotIDg,threshg);

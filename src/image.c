@@ -213,7 +213,7 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 {
     int i;
 	socket_send_=-1;
-    for(i = 0; i < num&&socket_send_<0; ++i)
+    for(i = 0; i < num; ++i)
     {
         int class = max_index(probs[i], classes);
         float prob = probs[i][class];
@@ -231,8 +231,9 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
             printf("%s: %.0f%%,", names[class], prob*100);
             if(names[class][0]=='p'&&names[class][1]=='e')
             {
-                socket_send_=prob;
                // break;
+			   if(prob>socket_send_)
+					   socket_send_=prob;
             }else
             continue;
             int offset = class*123457 % classes;
@@ -558,7 +559,10 @@ void show_image_cv(image p, const char *name, IplImage *disp)
         cvReleaseMat(&mat);
         socket_send_=-1;
 
-    }
+    }else{
+	 sendData(NULL,0,0);
+	}
+			
     cvWaitKey(100);
 }
 #endif

@@ -148,6 +148,13 @@ void setupSocket(char *server,int port,char *robotID,float thresh)
 }
 void sendData(char *data,int size,float thresh)
 {
+    printf("socket send!\n");
+    if(-1==sockfd){
+        destroy();
+        setupSocket(ipg,portg,robotIDg,threshg);
+		if(-1==sockfd)
+				return;
+	}
     static int index=0;
     char retData='a';
     char *url=NULL;
@@ -160,15 +167,8 @@ void sendData(char *data,int size,float thresh)
         url=&fileOut[0];
         retData='b';
     }
-    printf("socket send!\n");
-    if(-1==sockfd){
-        destroy();
-        setupSocket(ipg,portg,robotIDg,threshg);
-		if(-1==sockfd)
-				return;
-	}
        // return;
-    printf("socket end\n");
+    printf("send end\n");
     //char urlChar[100];
     //sprintf(urlChar,"%s",url);
     char *sj=request(retData,url);
@@ -185,7 +185,8 @@ void sendData(char *data,int size,float thresh)
         setupSocket(ipg,portg,robotIDg,threshg);
     }
     free(sj);
-
+    if(-1==sockfd)
+			return;
     fd_set fdR;
     FD_ZERO(&fdR);
     FD_SET(sockfd, &fdR);

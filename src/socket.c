@@ -10,7 +10,9 @@
 #include "verifyutil.h"
 int sockfd;
 static char *robotIDg="";
-static float socket_thresh=0;
+static float threshg=0;
+static char ipg[100];
+static int portg;
 int ftp(char *,int,char file[]);
 void modiftFtp(const char *ip,const char *name,const char *pwd,const char *path);
 void destroy();
@@ -62,8 +64,9 @@ int modifyIP(cJSON *pSub )
     cJSON *pSubSubPortFtppwd = cJSON_GetObjectItem(pSub,"ftppwd");
     cJSON *pSubSubPortftpdath = cJSON_GetObjectItem(pSub,"ftpdpath");
     destroy();
-    setupSocket(pSubSubIp->valuestring,pSubSubPort->valueint,robotIDg,socket_thresh);
+    setupSocket(pSubSubIp->valuestring,pSubSubPort->valueint,robotIDg,threshg);
     modifyFtp(pSubSubFtpip->valuestring,pSubSubPortFtpuser->valuestring,pSubSubPortFtppwd->valuestring,pSubSubPortftpdath->valuestring);
+    return 1;
 }
 char *getParam(char *pMsg)
 {
@@ -79,14 +82,14 @@ char *getParam(char *pMsg)
     {
         cJSON *pSubSub = cJSON_GetObjectItem(pSub, "thresh");
         int th = pSubSub->valueint;
-        socket_thresh =0.01* th;
+        threshg =0.01* th;
     }
     else if(strncmp(orderType->valuestring,"serverAD",8))
     {
         modifyIP(pSub);
     }
-
-    cJSON_AddStringToObject(pJson,"statusCode",1000);
+    //cJSON_AddNumberToObject(pJson,"statusCode",1000);
+    cJSON_AddStringToObject(pJson,"statusCode","1000");
     char *p = cJSON_Print(pJson);
     cJSON_Delete(pJson);
     return p;
@@ -97,23 +100,22 @@ void setupSocket(char *server,int port,char *robotID,float thresh)
     int rec_len;
     char    buf[MAXLINE];
     struct sockaddr_in    servaddr;
-    socket_thresh = thresh;
+    threshg = thresh;
+    strcpy(ipg,server);
+    portg=port;
     if( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         printf("create socket error: %s(errno: %d)\n", strerror(errno),errno);
     }
-
-
     memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(port);
     if( inet_pton(AF_INET,server, &servaddr.sin_addr) <= 0)
     {
         printf("inet_pton error for %s\n",server);
+        return;
         // exit(0);
     }
-
-
     if( connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
     {
         printf("connect error: %s(errno: %d)\n",strerror(errno),errno);
@@ -121,36 +123,28 @@ void setupSocket(char *server,int port,char *robotID,float thresh)
         sockfd=-1;
         return;
     }
-
-
     printf("send msg to server: \n");
     //fgets(sendline, 4096, stdin);
-    char *sj=request('l',NULL);
-    int len = strlen(sj);
+    char *sendjson=request('l',NULL);
+    int len = strlen(sendjson);
     char mess[/*messlen*/1000];
-    sprintf(mess,"ContentLength:%d\r\n%s\r\nCRC32Verify:%ld\\",len,sj,(int)Crc32(sj,len));
-    printf("sj finish\n");
-    printf("send message:%s,%d\n",mess,strlen(mess));
+    long crc = Crc32((unsigned char *)sendjson,len);
+    sprintf(mess,"ContentLength:%d\r\n%s\r\nCRC32Verify:%ld\\",len,sendjson,crc);
+    // printf("sj finish\n");
+    printf("send message:%s,%d\n",mess,(int)strlen(mess));
     int sendLen=send(sockfd, mess, strlen(mess), 0) ;
     if(  sendLen!=(int)strlen(mess))
     {
         printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
     }
-
-
-    printf("sj1 finish\n");
-
-
+    free(sendjson);
+    // printf("sj1 finish\n");
     if((rec_len = recv(sockfd, buf, MAXLINE,0)) == -1)
     {
         perror("recv error");
         printf("recv error setup socket fail");
     }
-
-    printf("sj2 finish\n");
-
-    buf[rec_len]  = '\0';
-    free(sj);
+    //  buf[rec_len]  = '\0';
     printf("socket finish\n");
 }
 void sendData(char *data,int size,float thresh)
@@ -159,30 +153,35 @@ void sendData(char *data,int size,float thresh)
     char retData='a';
     char *url=NULL;
     char fileOut[100];
-     printf("thresh:%f,",thresh);
-    if(NULL!=data&&size>0&&thresh>=socket_thresh)
-    { 	
-        printf("%f\n",socket_thresh);  
+    printf("thresh:%f,",thresh);
+    if(NULL!=data&&size>0&&thresh>=threshg)
+    {
+        printf("%f\n",threshg);
         ftp(data,size,fileOut);
         url=&fileOut[0];
         retData='b';
     }
-    printf("socket send!");
+    printf("socket send!\n");
     if(-1==sockfd)
         return;
-    printf("socket end");
+    printf("socket end\n");
     //char urlChar[100];
     //sprintf(urlChar,"%s",url);
     char *sj=request(retData,url);
     int len = strlen(sj);
     char mess[1000];
-    long crc = Crc32(sj,len);
+    long crc = Crc32((unsigned char *)sj,len);
     sprintf(mess,"ContentLength:%d\r\n%s\r\nCRC32Verify:%ld\\",len,sj,crc);
     if( send(sockfd, mess, strlen(mess), 0) < 0)
     {
         printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
+        printf("begin again link to server(%s,%d,%s,%f)\n",ipg,portg,robotIDg,threshg);
+        //again setup
+        destroy();
+        setupSocket(ipg,portg,robotIDg,threshg);
     }
     free(sj);
+
     fd_set fdR;
     FD_ZERO(&fdR);
     FD_SET(sockfd, &fdR);

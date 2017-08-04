@@ -1,6 +1,7 @@
 #include "darknet.h"
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 int frame_skip_g=1;
+char* cam_indexg;
 //static char* ftp_ip;
 //static char* ftp_name;
 //static char* ftp_pwd;
@@ -277,7 +278,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
     char *type = option_find_str(options, "eval", "voc");
     FILE *fp = 0;
     FILE **fps = 0;
-    int coco = 0;
+	int coco = 0;
     int imagenet = 0;
     if(0==strcmp(type, "coco"))
     {
@@ -573,7 +574,7 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
     for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(classes+1, sizeof(float *));
 
     int m = plist->size;
-    int i=0;
+	int i=0;
 
     float thresh = .001;
     float iou_thresh = .5;
@@ -817,12 +818,12 @@ void run_detector(int argc, char **argv)
 //  printf("%sf\n",ftp_pwd);
         char *server = option_find_str(options2,"server_ip","127.0.0.21");
         char *robotID = option_find_str(options2,"robot_id","123abc");
-        char *cam_index = option_find_str(options2,"camera","rtsp://127.0.0.1:8554/a.mkv");
+        cam_indexg = option_find_str(options2,"camera","rtsp://127.0.0.1:8554/a.mkv");
         int port = option_find_int(options2,"server_port",123321);
-        printf("robot_param:ftp(%s,%s,%s,%s,%f),server(%s,%d),camera(%s)",ftp_ip,ftp_name1,ftp_pwd1,ftp_path1,ftp_thresh,server,port,cam_index);
+        printf("robot_param:ftp(%s,%s,%s,%s,%f),server(%s,%d),camera(%s)",ftp_ip,ftp_name1,ftp_pwd1,ftp_path1,ftp_thresh,server,port,cam_indexg);
         setupSocket(server,port,robotID,ftp_thresh);
         setupFTP(ftp_ip,ftp_name1,ftp_pwd1,ftp_path1);
-        demo(cfg, weights, thresh, cam_index, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
+        demo(cfg, weights, thresh, cam_indexg, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
         destroy();
         destroyFTP();
         free_list(options);

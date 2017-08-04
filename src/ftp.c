@@ -89,6 +89,10 @@ void modifyFtp(const char *ip,const char *name,const char *pwd,const char *path)
     strcpy(ftp_path,path);
     // strncpy(ftp_path_n,path,strnlen(path,CHAR20*3)-1);
 }
+void printfFtp(char out[],int size)
+{
+  sprintf(out,"ftp_ip=%s\nftp_name=%s\nftp_pwd=%s\nftp_path=%s\n",host,ftp_name,ftp_pwd,ftp_path);
+}
 int  ftp(char *data,int size,char fileOut[])
 {
 

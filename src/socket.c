@@ -9,7 +9,7 @@
 #include <cJSON.h>
 #include "verifyutil.h"
 int sockfd;
-static char *robotIDg = "";
+static char *robotIDg =(char*) "";
 static float threshg = 0;
 static char ipg[100];
 static int portg;

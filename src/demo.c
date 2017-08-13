@@ -191,6 +191,7 @@ int kbhit(void)
 	/* Don't rely on the value of tv now! */
 
 	if (retval == -1) {
+		printf("select errorf\n");
 		perror("select()");
 		return 0;
 	} else if (retval)

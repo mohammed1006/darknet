@@ -9,7 +9,7 @@
 #include <cJSON.h>
 #include "verifyutil.h"
 int sockfd;
-static char *robotIDg =(char*) "";
+static char *robotIDg = (char *) "";
 static float threshg = 0;
 static char ipg[100];
 static int portg;
@@ -90,7 +90,7 @@ char *getParam(char *pMsg)
 {
 	if (NULL == pMsg)
 	{
-		printf("json parse fail\n");
+		printf("json is NULL\n");
 		return NULL;
 	}
 	cJSON *pJson = cJSON_Parse(pMsg);
@@ -107,7 +107,7 @@ char *getParam(char *pMsg)
 	if (0 == strncmp(orderType->valuestring, "pdParam", 7))
 	{
 		cJSON *pSubSub = cJSON_GetObjectItem(pSub, "thresh");
-		char* thrChar = pSubSub->valuestring;
+		char *thrChar = pSubSub->valuestring;
 		if (NULL == thrChar)
 		{
 			printf("recv data thresh error");
@@ -122,10 +122,14 @@ char *getParam(char *pMsg)
 			int th = atoi(pSubSub->valuestring);
 			threshg = 0.01 * th;
 		}
+		printf("modifty param:%f\n", threshg);
+		write_to_cfg();
 	}
 	else if (0 == strncmp(orderType->valuestring, "serverAD", 8))
 	{
 		modifyIP(pSub);
+		printf("modifyIP and_ftp\n");
+		write_to_cfg();
 	}
 	//cJSON_AddNumberToObject(pJson,"statusCode",1000);
 	cJSON_AddStringToObject(pJson, "statusCode", "1000");
@@ -134,6 +138,59 @@ char *getParam(char *pMsg)
 	cJSON_Delete(pJson);
 
 	return p;
+}
+void reciveData()
+{
+	if (sockfd < 0)
+	{
+		printf("recive fd failed");
+		return;
+	}
+	// printf("sj1 finish\n");
+	int rec_len = -1;
+	int sum_len = 0;
+	char buf[MAXLINE] = {0};
+	//char *message[10];
+	do
+	{
+		if ((rec_len = recv(sockfd, &buf[sum_len], MAXLINE, 0)) < 1)
+		{
+			perror("recv error");
+			printf("recv error setup socket fail");
+			break;
+		}
+		printf("recv data:%s,end:c,len:%d\n", &buf[sum_len], rec_len);
+		sum_len += rec_len;
+	}
+	while (rec_len == MAXLINE);
+	int match = 0;
+//  int begin=0;
+	for (rec_len = 0; rec_len < sum_len; rec_len++)
+	{
+		switch (buf[rec_len])
+		{
+		case '{':
+			match++;
+			if (1 == match)
+			{
+//                                   begin=rec_len;
+				//          getParam(&buf[rec_len]);
+				printf("recvData:%s", &buf[rec_len]);
+				char *ret = getParam(&buf[rec_len]);
+				free(ret);
+				//  write_to_cfg();
+
+			}
+			break;
+		case '}':
+			match--;
+			break;
+			/*       if(0==match){
+			           getParam(buf[begin]);
+			         }
+			         break;     */
+		}
+	}
 }
 void setupSocket(char *server, int port, char *robotID, float thresh)
 {
@@ -164,6 +221,11 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 		sockfd = -1;
 		return;
 	}
+	struct timeval timeout = {0, 20};
+	//设置发送超时
+//setsockopt(sockfd，SOL_SOCKET,SO_SNDTIMEO，(char *)&timeout,sizeof(struct timeval));
+//设置接收超时
+//setsockopt(sockfd，SOL_SOCKET,SO_RCVTIMEO，(char *)&timeout,sizeof(struct timeval));
 	printf("send msg to server: \n");
 	//fgets(sendline, 4096, stdin);
 	char *sendjson = request('l', NULL);
@@ -179,13 +241,8 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 		printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
 	}
 	free(sendjson);
-	// printf("sj1 finish\n");
-	/*if((rec_len = recv(sockfd, buf, MAXLINE,0)) == -1)
-	{
-	    perror("recv error");
-	    printf("recv error setup socket fail");
-	}
-	//  buf[rec_len]  = '\0';*/
+//  buf[rec_len]  = '\0';
+	reciveData();
 	printf("socket finish\n");
 }
 void sendData(char *data, int size, float thresh)
@@ -201,7 +258,7 @@ void sendData(char *data, int size, float thresh)
 	static int index = 0;
 	char retData = 'a';
 	char *url = NULL;
-	char fileOut[100]={0};
+	char fileOut[100] = {0};
 	printf("thresh:%f,", thresh);
 	if (NULL != data && size > 0 && thresh >= threshg)
 	{
@@ -247,33 +304,34 @@ void sendData(char *data, int size, float thresh)
 	default:
 		if (FD_ISSET(sockfd, &fdR))
 		{
-			char buf[MAXLINE];
-			int rec_len = -1;
-			if ((rec_len = recv(sockfd, buf, MAXLINE, 0)) == -1)
-			{
-				perror("recv error");
-				//  exit(1);
-			}
-			else
-			{
-				printf("revive %d\n", rec_len);
-				char *beginJson = strchr(buf, '{');
-				int index=0;
-				for(;index<rec_len;index++)
-				{
-					if('}'==buf[index])
-					{
-						buf[index+1]='}';
-						break;
-					}
-				}
-		//		strcat(beginJson, "}");
-				//  char *endJson = strrchr(buf,'}');
-				//  *(endJson+1)='\0';
-				char *ret = getParam(beginJson);
-				free(ret);
-				write_to_cfg();
-			}
+			/*  char buf[MAXLINE];
+			    int rec_len = -1;
+			    if ((rec_len = recv(sockfd, buf, MAXLINE, 0)) == -1)
+			    {
+			        perror("recv error");
+			        //  exit(1);
+			    }
+			    else
+			    {
+			        printf("revive %d\n", rec_len);
+			        char *beginJson = strchr(buf, '{');
+			        int index = 0;
+			        for (; index < rec_len; index++)
+			        {
+			            if ('}' == buf[index])
+			            {
+			                buf[index + 1] = '}';
+			                break;
+			            }
+			        }
+			        //      strcat(beginJson, "}");
+			        //  char *endJson = strrchr(buf,'}');
+			        //  *(endJson+1)='\0';
+			        char *ret = getParam(beginJson);
+			        free(ret);
+			        write_to_cfg();
+			    }*/
+			reciveData();
 			// free(para);
 		}
 

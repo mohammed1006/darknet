@@ -97,7 +97,7 @@ int ftp_active()
 {
 	int nwrite = 5;
 	int again = -1;
-	char* cmd = (char*) "STATUS \r\n";
+	char* cmd = (char*) "system\r\n";
 	int len = strlen(cmd);
 	if ((nwrite = write(fd, cmd, len)) == len)
 	{
@@ -178,21 +178,25 @@ int  ftp(char *data, int size, char fileOut_O[])
 	/*sprintf(mkd, "%s/%s", ftp_path, dict);*/
 	if (NULL == strstr(listdat, dict))
 	{
-		ftp_cdup(fd);
+		//  ftp_cdup(fd);
 		ftp_mkd(fd,/* mkd*/dict);
 		ftp_cwd(fd,/* mkd*/dict);
 		printf("mkdir dict\n");
 	}
-	else if (NULL == strstr(listdat, ".jpg"))
+	else/*if (NULL == strstr(listdat, ".jpg"))*/
 	{
 		ftp_cwd(fd, dict);
 		printf("have dict but not end\n");
 	}
-	else
-		printf("have dict\n");
 	free(listdat);
 	/*ftp_cwd(fd, mkd);*/
 	ret = ftp_storefile_data(fd, data, fileOut, size);
+	if (0 != ftp_cdup(fd))
+	{
+		destroyFTP();
+		setupFTP(host, ftp_name, ftp_pwd, ftp_path);
+		return ret;
+	}
 	if (ret >= 300)
 		ret = -1;
 	/*ret = ftp_quit(fd);*/

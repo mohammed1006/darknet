@@ -37,7 +37,7 @@ char rbuf[MAXBUF], rbuf1[MAXBUF], wbuf[MAXBUF], wbuf1[MAXBUF];
 char ftp_name[CHAR20], ftp_pwd[CHAR20], ftp_path[CHAR60];
 char host[CHAR20];
 struct sockaddr_in servaddr;
-
+int fd = -1;
 
 int cliopen(char *host, int port);
 int strtosrv(char *str);
@@ -57,199 +57,296 @@ int main(int argc, char *argv[])
 }*/
 void setupFTP(const char *ip, const char *name, const char *pwd, const char *path)
 {
-    strcpy(host, ip);
-    strcpy(ftp_name, name);
-    strcpy(ftp_pwd, pwd);
-    strcpy(ftp_path, path);
+	strcpy(host, ip);
+	strcpy(ftp_name, name);
+	strcpy(ftp_pwd, pwd);
+	strcpy(ftp_path, path);
+	fd = ftp_connect(host, PORT, ftp_name, ftp_pwd);
+	if (fd < 0)
+	{
+		printf("ftp connect fail!\n");
+		return;
+	}
+	/* time_t timep;*/
+	/*struct tm *p;*/
+	/*struct timeval tval;*/
+	/*gettimeofday(&tval, NULL);*/
+	/*time(&timep);*/
+	/*p = localtime(&timep); [>取得当地时间<]*/
+	/*char dict[50];*/
+	/*sprintf(dict, "%4.4d%2.2d%2.2d", (1900 + p->tm_year), (1 + p->tm_mon), p->tm_mday);*/
+	/*char mkd[100];*/
+	/*sprintf(mkd, "%s/%s", ftp_path, dict);*/
+	/*ftp_cwd(fd, mkd);*/
+	ftp_cwd(fd, ftp_path);
 }
 void modifyFtp(const char *ip, const char *name, const char *pwd, const char *path)
 {
-    strcpy(host, ip);
-    strcpy(ftp_name, name);
-    strcpy(ftp_pwd, pwd);
-    strcpy(ftp_path, path);
+	/*strcpy(host, ip);
+	strcpy(ftp_name, name);
+	strcpy(ftp_pwd, pwd);
+	strcpy(ftp_path, path);*/
+	setupFTP(ip, name, pwd, path);
+
 }
 void printfFtp(char out[], int size)
 {
-    sprintf(out, "ftp_ip=%s\nftp_name=%s\nftp_pwd=%s\nftp_path=%s\n", host, ftp_name, ftp_pwd, ftp_path);
+	sprintf(out, "ftp_ip=%s\nftp_name=%s\nftp_pwd=%s\nftp_path=%s\n", host, ftp_name, ftp_pwd, ftp_path);
 }
+int ftp_active()
+{
+	int nwrite = 5;
+	int again = -1;
+	char* cmd = (char*) "STATUS \r\n";
+	int len = strlen(cmd);
+	if ((nwrite = write(fd, cmd, len)) == len)
+	{
+		fd_set fdR;
+		FD_ZERO(&fdR);
+		FD_SET(fd, &fdR);
+		struct timeval timeout;
+		timeout.tv_usec = 10;
+		timeout.tv_sec = 0;
+		switch (select(fd + 1, &fdR, NULL, NULL, &timeout))
+		{
+		case -1:
+			perror("select -1\n");
+			printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
+			break;
+		case 0:
+			printf("in 10us,there is no data(select)");
+			break;
+		default:
+			if (FD_ISSET(fd, &fdR))
+			{
+				again = 1;
+				char buf[100] = {0};
+				int rec_len = -1;
+				if ((rec_len = recv(fd, buf, 100, 0)) == -1)
+				{
+					printf("recv error ftp select\n");
+
+				}
+				else
+				{
+					printf("active recv:%s\n", buf);
+				}
+
+			}
+
+		}
+	}
+	if (again < 0)
+	{
+		printf("send recv is error,so link again!\n");
+		destroyFTP();
+		setupFTP(host, ftp_name, ftp_pwd, ftp_path);
+		return 0;
+	}
+	return 1;
+}
+
 int  ftp(char *data, int size, char fileOut_O[])
 {
-    int ret = -1;
-    int fd = ftp_connect(host, PORT, ftp_name, ftp_pwd);
-    if (fd < 0)
-        return ret;
-    char *listdat;
-    unsigned long long listlen;
-    ret = ftp_list_n(fd, ftp_path, (void **) &listdat, &listlen);
-    time_t timep;
-    struct tm *p;
-    struct timeval tval;
-    gettimeofday(&tval, NULL);
-    time(&timep);
-    p = localtime(&timep); /*取得当地时间*/
-    char fileOut[50];
-    sprintf(fileOut, "%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d%ld.jpg", (1900 + p->tm_year), (1 + p->tm_mon), p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec, tval.tv_usec);
-    char dict[50];
-    sprintf(dict, "%4.4d%2.2d%2.2d", (1900 + p->tm_year), (1 + p->tm_mon), p->tm_mday);
-    //printf("%s", listdat);
-    char mkd[100];
-    sprintf(mkd, "%s/%s", ftp_path, dict);
-    if (NULL == strstr(listdat, dict))
-    {
-        ftp_mkd(fd, mkd);
-        printf("mkdir dict\n");
-    }
-    else
-        printf("have dict\n");
-    ftp_cwd(fd, mkd);
-    ftp_storefile_data(fd, data, fileOut, size);
-    ret = ftp_quit(fd);
-    sprintf(fileOut_O,"/%s/%s/%s",ftp_path,dict,fileOut);
+	int ret = -1;
+	/*int fd = ftp_connect(host, PORT, ftp_name, ftp_pwd);*/
+	if (fd < 0)
+	{
+		destroyFTP();
+		setupFTP(host, ftp_name, ftp_pwd, ftp_path);
+		return ret;
+	}
+	if (ftp_active() == 0)
+		return ret;
+	char *listdat;
+	unsigned long long listlen;
+	/*printf("ls %s\n", ftp_path);*/
+	ret = ftp_list_n(fd, (char*) "."/*ftp_path*/, (void **) &listdat, &listlen);
+//	printf("%s\n", listdat);
+	time_t timep;
+	struct tm *p;
+	struct timeval tval;
+	gettimeofday(&tval, NULL);
+	time(&timep);
+	p = localtime(&timep); /*取得当地时间*/
+	char fileOut[50];
+	sprintf(fileOut, "%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d%ld.jpg", (1900 + p->tm_year), (1 + p->tm_mon), p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec, tval.tv_usec);
+	char dict[50];
+	sprintf(dict, "%4.4d%2.2d%2.2d", (1900 + p->tm_year), (1 + p->tm_mon), p->tm_mday);
+	//printf("%s", listdat);
+	/*char mkd[100];*/
+	/*sprintf(mkd, "%s/%s", ftp_path, dict);*/
+	if (NULL == strstr(listdat, dict))
+	{
+		ftp_cdup(fd);
+		ftp_mkd(fd,/* mkd*/dict);
+		ftp_cwd(fd,/* mkd*/dict);
+		printf("mkdir dict\n");
+	}
+	else if (NULL == strstr(listdat, ".jpg"))
+	{
+		ftp_cwd(fd, dict);
+		printf("have dict but not end\n");
+	}
+	else
+		printf("have dict\n");
+	free(listdat);
+	/*ftp_cwd(fd, mkd);*/
+	ret = ftp_storefile_data(fd, data, fileOut, size);
+	if (ret >= 300)
+		ret = -1;
+	/*ret = ftp_quit(fd);*/
+	sprintf(fileOut_O, "/%s/%s/%s", ftp_path, dict, fileOut);
 //sprintf(fileOut, "/%s/%s/%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d%ld.jpg", ftp_path, dict, (1900 + p->tm_year), (1 + p->tm_mon), p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec, tval.tv_usec);
-    return ret;
-    /*
-        int fd;
-        // int port = 21;
-        fd = cliopen(host,PORT);
-        if(fd<0)
-            printf("link error\n");
-        char fileOutName[100];
-        int ret=cmd_tcp(fd,data,size,fileOutName);
-        sprintf(fileOut,"/%s/%s",ftp_path,fileOutName);
-        printf("ftp finish!\n");
-        return ret;*/
+	return ret;
+	/*
+	    int fd;
+	    // int port = 21;
+	    fd = cliopen(host,PORT);
+	    if(fd<0)
+	        printf("link error\n");
+	    char fileOutName[100];
+	    int ret=cmd_tcp(fd,data,size,fileOutName);
+	    sprintf(fileOut,"/%s/%s",ftp_path,fileOutName);
+	    printf("ftp finish!\n");
+	    return ret;*/
 }
 void destroyFTP()
 {
+	if (fd > 0)
+	{
+		int ret = ftp_quit(fd);
+		printf("destroy:%d\n", ret);
+		fd = -1;
+	}
 }
 
 
 
 int cliopen(char *host, int port)
 {
-    int control_sock;
-    struct hostent *ht = NULL;
-    control_sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (control_sock < 0)
-    {
-        printf("socket error\n");
-        return -1;
-    }
-    ht = gethostbyname(host);
-    if (!ht)
-    {
-        printf("host by name failed\n");
-        return -1;
-    }
+	int control_sock;
+	struct hostent *ht = NULL;
+	control_sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (control_sock < 0)
+	{
+		printf("socket error\n");
+		return -1;
+	}
+	ht = gethostbyname(host);
+	if (!ht)
+	{
+		printf("host by name failed\n");
+		return -1;
+	}
 
-    memset(&servaddr, 0, sizeof(struct sockaddr_in));
-    memcpy(&servaddr.sin_addr.s_addr, ht->h_addr, ht->h_length);
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(port);
+	memset(&servaddr, 0, sizeof(struct sockaddr_in));
+	memcpy(&servaddr.sin_addr.s_addr, ht->h_addr, ht->h_length);
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_port = htons(port);
 
-    if (connect(control_sock, (struct sockaddr *)&servaddr, sizeof(struct sockaddr)) == -1)
-    {
-        printf("connect ftp failed!\n");
-        return -1;
-    }
-    return control_sock;
+	if (connect(control_sock, (struct sockaddr *)&servaddr, sizeof(struct sockaddr)) == -1)
+	{
+		printf("connect ftp failed!\n");
+		return -1;
+	}
+	return control_sock;
 }
 
 
 int s(char *str, char *s2)
 {
-    return sscanf(str, " get %s", s2) == 1;
+	return sscanf(str, " get %s", s2) == 1;
 
 }
 
 
 int st(char *str, char *s1)
 {
-    return sscanf(str, " put %s", s1) == 1;
+	return sscanf(str, " put %s", s1) == 1;
 }
 
 
 int strtosrv(char *str)
 {
-    int addr[6];
-    sscanf(str, "%*[^(](%d,%d,%d,%d,%d,%d)", &addr[0], &addr[1], &addr[2], &addr[3], &addr[4], &addr[5]);
-    bzero(host, strlen(host));
-    sprintf(host, "%d.%d.%d.%d", addr[0], addr[1], addr[2], addr[3]);
-    int port = addr[4] * 256 + addr[5];
-    return port;
+	int addr[6];
+	sscanf(str, "%*[^(](%d,%d,%d,%d,%d,%d)", &addr[0], &addr[1], &addr[2], &addr[3], &addr[4], &addr[5]);
+	bzero(host, strlen(host));
+	sprintf(host, "%d.%d.%d.%d", addr[0], addr[1], addr[2], addr[3]);
+	int port = addr[4] * 256 + addr[5];
+	return port;
 }
 
 
 void ftp_list(int sockfd)
 {
-    int nread;
-    for (;;)
-    {
-        if ((nread = recv(sockfd, rbuf1, MAXBUF, 0)) < 0)
-        {
-            printf("recv error\n");
-        }
-        else if (nread == 0)
-        {
-            break;
-        }
-        if (write(STDOUT_FILENO, rbuf1, nread) != nread)
-            printf("send error to stdout\n");
-    }
-    if (close(sockfd) < 0)
-        printf("close error\n");
+	int nread;
+	for (;;)
+	{
+		if ((nread = recv(sockfd, rbuf1, MAXBUF, 0)) < 0)
+		{
+			printf("recv error\n");
+		}
+		else if (nread == 0)
+		{
+			break;
+		}
+		if (write(STDOUT_FILENO, rbuf1, nread) != nread)
+			printf("send error to stdout\n");
+	}
+	if (close(sockfd) < 0)
+		printf("close error\n");
 }
 
 
 int ftp_get(int sck, char *pDownloadFileName)
 {
-    int handle = open(pDownloadFileName, O_WRONLY | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
-    int nread;
-    printf("%d\n", handle);
-    for (;;)
-    {
-        if ((nread = recv(sck, rbuf1, MAXBUF, 0)) < 0)
-        {
-            printf("receive error\n");
-        }
-        else if (nread == 0)
-        {
-            printf("over\n");
-            break;
-        }
-        if (write(handle, rbuf1, nread) != nread)
-            printf("receive error from server!");
-        if (write(STDOUT_FILENO, rbuf1, nread) != nread)
-            printf("receive error from server!");
-    }
-    if (close(sck) < 0)
-        printf("close error\n");
-    return 0;
+	int handle = open(pDownloadFileName, O_WRONLY | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
+	int nread;
+	printf("%d\n", handle);
+	for (;;)
+	{
+		if ((nread = recv(sck, rbuf1, MAXBUF, 0)) < 0)
+		{
+			printf("receive error\n");
+		}
+		else if (nread == 0)
+		{
+			printf("over\n");
+			break;
+		}
+		if (write(handle, rbuf1, nread) != nread)
+			printf("receive error from server!");
+		if (write(STDOUT_FILENO, rbuf1, nread) != nread)
+			printf("receive error from server!");
+	}
+	if (close(sck) < 0)
+		printf("close error\n");
+	return 0;
 }
 
 
 int ftp_put(int sck, char *data, int size)
 {
-    if (sck < 0)
-    {
-        printf("socket open failed!\n");
-        return -1;
-    }
-    int nread = 0;
-    int i = 0;
-    // int sum=strlen(data);
-    int sum = size;
-    while (i < sum)
-    {
-        nread = (i + MAXBUFDATA <= sum) ? MAXBUFDATA : (sum - i);
-        if (write(sck, &data[i], nread) != nread)
-            printf("send error nread is not equal send!\n");
-        i += nread;
-    }
-    if (close(sck) < 0)
-        printf("close error\n");
-    return 0;
+	if (sck < 0)
+	{
+		printf("socket open failed!\n");
+		return -1;
+	}
+	int nread = 0;
+	int i = 0;
+	// int sum=strlen(data);
+	int sum = size;
+	while (i < sum)
+	{
+		nread = (i + MAXBUFDATA <= sum) ? MAXBUFDATA : (sum - i);
+		if (write(sck, &data[i], nread) != nread)
+			printf("send error nread is not equal send!\n");
+		i += nread;
+	}
+	if (close(sck) < 0)
+		printf("close error\n");
+	return 0;
 }
 
 
@@ -257,289 +354,289 @@ int ftp_put(int sck, char *data, int size)
 //void cmd_tcp(int sockfd)
 int cmd_tcp(int sockfd, char *data, int size, char fileOut[] )
 {
-    int maxfdp1, nread, nwrite, replycode, tag = 0, data_sock;
-    replycode = 0;
-    //int port;
-    //   char *pathname;
-    fd_set rset;
-    FD_ZERO(&rset);
-    maxfdp1 = sockfd + 1;
-    //int index=0;
-    for (;;)
-    {
-        if (1)
-        {
-            nwrite = 0;
-            nread = 0;
-            bzero(wbuf, MAXBUF);         //zero
-            bzero(rbuf1, MAXBUF);
-            nwrite = nread + 5;
-            // printf("%dddf,%d\n",nread,replycode);
-            if (replycode == USERNAME)
-            {
-                // int lenName=strlen(name);
-                // nwrite+=lenName;
-                // strcpy(rbuf1,name);
+	int maxfdp1, nread, nwrite, replycode, tag = 0, data_sock;
+	replycode = 0;
+	//int port;
+	//   char *pathname;
+	fd_set rset;
+	FD_ZERO(&rset);
+	maxfdp1 = sockfd + 1;
+	//int index=0;
+	for (;;)
+	{
+		if (1)
+		{
+			nwrite = 0;
+			nread = 0;
+			bzero(wbuf, MAXBUF);         //zero
+			bzero(rbuf1, MAXBUF);
+			nwrite = nread + 5;
+			// printf("%dddf,%d\n",nread,replycode);
+			if (replycode == USERNAME)
+			{
+				// int lenName=strlen(name);
+				// nwrite+=lenName;
+				// strcpy(rbuf1,name);
 
-                // printf("asdf\n");
-                //    strcpy(rbuf1,"xyz\n");
-                //rbuf1[3]=;
-                sprintf(wbuf, "USER %s\n", ftp_name);
-                nwrite = 5 + strnlen(ftp_name, CHAR20) + 1;
-                //  nwrite+=3;
-                if (write(sockfd, wbuf, nwrite) != nwrite)
-                {
-                    printf("write error\n");
-                }
-                //   printf("wbuf:%s\n",wbuf);
-                //memset(rbuf1,0,sizeof(rbuf1));
-                //memset(wbuf,0,sizeof(wbuf));
-                //printf("1:%s\n",wbuf);
-            }
-
-
-            if (replycode == PASSWORD)
-            {
-
-                //strcpy(rbuf1,"1\n");
-                // nwrite+=2;
-                // printf("%s\n",rbuf1);
-                // int lenPwd=strlen(pwd);
-                //  nwrite+=lenPwd;
-                // strcpy(rbuf1,pwd);a
-                nwrite = 5 + strnlen(ftp_pwd, CHAR20) + 1;
-                sprintf(wbuf, "PASS %s\n", ftp_pwd);
-                if (write(sockfd, wbuf, nwrite) != nwrite)
-                    printf("write error\n");
-                //bzero(rbuf,sizeof(rbuf));
-                // printf("%s\n",wbuf);
-                //printf("2:%s\n",wbuf);
-            }
-            if (replycode == LOGIN)
-            {
-
-                // strcpy(rbuf1,"put\n");
-                strcpy(rbuf1, "cwd\n");
-            }
-            if (replycode == ACTIONOK)
-            {
-                strcpy(rbuf1, "put\n");
-            }
-            if (replycode == CLOSEDATA)
-            {
-                printf("quit is ready\n");
-                strcpy(rbuf1, "quit\n");
-            }
-            if (replycode == 550 || replycode == LOGIN || replycode == CLOSEDATA || replycode == PATHNAME || replycode == ACTIONOK)
-            {
-                if (strncmp(rbuf1, "pwd", 3) == 0)
-                {
-                    //printf("%s\n",rbuf1);
-                    sprintf(wbuf, "%s", "PWD\n");
-                    write(sockfd, wbuf, 4);
-                    // continue;
-                }
-                if (strncmp(rbuf1, "quit", 4) == 0)
-                {
-                    sprintf(wbuf, "%s", "QUIT\n");
-                    write(sockfd, wbuf, 5);
-                    //close(sockfd);
-                    if (close(sockfd) < 0)
-                        printf("close error\n");
-                    break;
-                }
-                if (strncmp(rbuf1, "cwd", 3) == 0)
-                {
-                    //sprintf(wbuf,"%s","PASV\n");
-                    sprintf(wbuf, "CWD %s\n", ftp_path);
-                    write(sockfd, wbuf, strnlen(wbuf, 50));
-
-                    //sprintf(wbuf1,"%s","CWD\n");
-
-                    // continue;
-                }
-                if (strncmp(rbuf1, "ls", 2) == 0)
-                {
-                    tag = 2;
-                    //printf("%s\n",rbuf1);
-                    sprintf(wbuf, "%s", "PASV\n");
-                    //printf("%s\n",wbuf);
-                    write(sockfd, wbuf, 5);
-                    //read
-                    //sprintf(wbuf1,"%s","LIST -al\n");
-                    nwrite = 0;
-                    //write(sockfd,wbuf1,nwrite);
-                    //ftp_list(sockfd);
-                    //  continue;
-                }
-                if (strncmp(rbuf1, "get", 3) == 0)
-                {
-                    tag = 1;
-                    sprintf(wbuf, "%s", "PASV\n");
-                    //printf("%s\n",s(rbuf1));
-                    //char filename[100];
-                    s(rbuf1, fileOut);
-                    printf("%s\n", fileOut);
-                    write(sockfd, wbuf, 5);
-                    //  continue;
-                }
-                if (strncmp(rbuf1, "put", 3) == 0)
-                {
-                    tag = 3;
-                    sprintf(wbuf, "%s", "PASV\n");
-                    // st(rbuf1,filename);
-                    write(sockfd, wbuf, 5);
-                    //     continue;
-                }
-            }
-            /*if(close(sockfd) <0)
-              printf("close error\n");*/
-        }
-
-        FD_ZERO(&rset);
-        FD_SET(sockfd, &rset);
-        // printf("seb\n");
-        int ret = select(maxfdp1, &rset, NULL, NULL, NULL);
-        // printf("sed\n");
-        //int ret=select(maxfdp1,&rset,NULL,NULL,NULL);
-        if (ret < 0)
-        {
-            printf("select error\n");
-        }
-        if (FD_ISSET(sockfd, &rset))
-        {
-            bzero(rbuf, strlen(rbuf));
-            if ((nread = recv(sockfd, rbuf, MAXBUF, 0)) < 0)
-                printf("recv error\n");
-            else if (nread == 0)
-                break;
-
-            if (strncmp(rbuf, "220", 3) == 0 || strncmp(rbuf, "530", 3) == 0)
-            {
-                /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
-                  printf("write error to stdout\n");*/
-                strcat(rbuf, "your name:");
-                //printf("%s\n",rbuf);
-                nread += 12;
-                /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
-                  printf("write error to stdout\n");*/
-                replycode = USERNAME;
-            }
-            if (strncmp(rbuf, "331", 3) == 0)
-            {
-                /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
-                  printf("write error to stdout\n")*/;
-                strcat(rbuf, "your password:");
-                nread += 16;
-                /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
-                  printf("write error to stdout\n");*/
-                replycode = PASSWORD;
-            }
-            if (strncmp(rbuf, "230", 3) == 0)
-            {
-                /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
-                  printf("write error to stdout\n");*/
-                replycode = LOGIN;
-            }
-            if (strncmp(rbuf, "257", 3) == 0)
-            {
-                /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
-                  printf("write error to stdout\n");*/
-                replycode = PATHNAME;
-            }
-            if (strncmp(rbuf, "226", 3) == 0)
-            {
-                /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
-                  printf("write error to stdout\n");*/
-                replycode = CLOSEDATA;
-            }
-            if (strncmp(rbuf, "250", 3) == 0)
-            {
-                /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
-                  printf("write error to stdout\n");*/
-                replycode = ACTIONOK;
-            }
-            if (strncmp(rbuf, "550", 3) == 0)
-            {
-                replycode = 550;
-            }
-            /*if(strncmp(rbuf,"150",3) == 0)
-              {
-              if(write(STDOUT_FILENO,rbuf,nread) != nread)
-              printf("write error to stdout\n");
-              }*/
-            //fprintf(stderr,"%d\n",1);
-            if (strncmp(rbuf, "227", 3) == 0)
-            {
-                printf("227%d\n", 13);
-                /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
-                  printf("write error to stdout\n");*/
-                int port1 = strtosrv(rbuf);
-                printf("%d\n", port1);
-                printf("%s\n", host);
-                data_sock = cliopen(host, port1);
+				// printf("asdf\n");
+				//    strcpy(rbuf1,"xyz\n");
+				//rbuf1[3]=;
+				sprintf(wbuf, "USER %s\n", ftp_name);
+				nwrite = 5 + strnlen(ftp_name, CHAR20) + 1;
+				//  nwrite+=3;
+				if (write(sockfd, wbuf, nwrite) != nwrite)
+				{
+					printf("write error\n");
+				}
+				//   printf("wbuf:%s\n",wbuf);
+				//memset(rbuf1,0,sizeof(rbuf1));
+				//memset(wbuf,0,sizeof(wbuf));
+				//printf("1:%s\n",wbuf);
+			}
 
 
+			if (replycode == PASSWORD)
+			{
 
-                //bzero(rbuf,sizeof(rbuf));
-                //printf("%d\n",fd);
-                //if(strncmp(rbuf1,"ls",2) == 0)
-                if (tag == 2)
-                {
-                    write(sockfd, "list\n", strlen("list\n"));
-                    ftp_list(data_sock);
-                    /*if(write(STDOUT_FILENO,rbuf,nread) != nread)
-                      printf("write error to stdout\n");*/
+				//strcpy(rbuf1,"1\n");
+				// nwrite+=2;
+				// printf("%s\n",rbuf1);
+				// int lenPwd=strlen(pwd);
+				//  nwrite+=lenPwd;
+				// strcpy(rbuf1,pwd);a
+				nwrite = 5 + strnlen(ftp_pwd, CHAR20) + 1;
+				sprintf(wbuf, "PASS %s\n", ftp_pwd);
+				if (write(sockfd, wbuf, nwrite) != nwrite)
+					printf("write error\n");
+				//bzero(rbuf,sizeof(rbuf));
+				// printf("%s\n",wbuf);
+				//printf("2:%s\n",wbuf);
+			}
+			if (replycode == LOGIN)
+			{
 
-                }
-                //else if(strncmp(rbuf1,"get",3) == 0)
-                else if (tag == 1)
-                {
-                    //sprintf(wbuf,"%s","RETR\n");
-                    //printf("%s\n",wbuf);
-                    //int str = strlen(filename);
-                    //printf("%d\n",str);
+				// strcpy(rbuf1,"put\n");
+				strcpy(rbuf1, "cwd\n");
+			}
+			if (replycode == ACTIONOK)
+			{
+				strcpy(rbuf1, "put\n");
+			}
+			if (replycode == CLOSEDATA)
+			{
+				printf("quit is ready\n");
+				strcpy(rbuf1, "quit\n");
+			}
+			if (replycode == 550 || replycode == LOGIN || replycode == CLOSEDATA || replycode == PATHNAME || replycode == ACTIONOK)
+			{
+				if (strncmp(rbuf1, "pwd", 3) == 0)
+				{
+					//printf("%s\n",rbuf1);
+					sprintf(wbuf, "%s", "PWD\n");
+					write(sockfd, wbuf, 4);
+					// continue;
+				}
+				if (strncmp(rbuf1, "quit", 4) == 0)
+				{
+					sprintf(wbuf, "%s", "QUIT\n");
+					write(sockfd, wbuf, 5);
+					//close(sockfd);
+					if (close(sockfd) < 0)
+						printf("close error\n");
+					break;
+				}
+				if (strncmp(rbuf1, "cwd", 3) == 0)
+				{
+					//sprintf(wbuf,"%s","PASV\n");
+					sprintf(wbuf, "CWD %s\n", ftp_path);
+					write(sockfd, wbuf, strnlen(wbuf, 50));
 
-                    sprintf(wbuf, "RETR %s\n", fileOut);
-                    printf("%s\n", wbuf);
-                    //int p = 5 + str + 1;
+					//sprintf(wbuf1,"%s","CWD\n");
+
+					// continue;
+				}
+				if (strncmp(rbuf1, "ls", 2) == 0)
+				{
+					tag = 2;
+					//printf("%s\n",rbuf1);
+					sprintf(wbuf, "%s", "PASV\n");
+					//printf("%s\n",wbuf);
+					write(sockfd, wbuf, 5);
+					//read
+					//sprintf(wbuf1,"%s","LIST -al\n");
+					nwrite = 0;
+					//write(sockfd,wbuf1,nwrite);
+					//ftp_list(sockfd);
+					//  continue;
+				}
+				if (strncmp(rbuf1, "get", 3) == 0)
+				{
+					tag = 1;
+					sprintf(wbuf, "%s", "PASV\n");
+					//printf("%s\n",s(rbuf1));
+					//char filename[100];
+					s(rbuf1, fileOut);
+					printf("%s\n", fileOut);
+					write(sockfd, wbuf, 5);
+					//  continue;
+				}
+				if (strncmp(rbuf1, "put", 3) == 0)
+				{
+					tag = 3;
+					sprintf(wbuf, "%s", "PASV\n");
+					// st(rbuf1,filename);
+					write(sockfd, wbuf, 5);
+					//     continue;
+				}
+			}
+			/*if(close(sockfd) <0)
+			  printf("close error\n");*/
+		}
+
+		FD_ZERO(&rset);
+		FD_SET(sockfd, &rset);
+		// printf("seb\n");
+		int ret = select(maxfdp1, &rset, NULL, NULL, NULL);
+		// printf("sed\n");
+		//int ret=select(maxfdp1,&rset,NULL,NULL,NULL);
+		if (ret < 0)
+		{
+			printf("select error\n");
+		}
+		if (FD_ISSET(sockfd, &rset))
+		{
+			bzero(rbuf, strlen(rbuf));
+			if ((nread = recv(sockfd, rbuf, MAXBUF, 0)) < 0)
+				printf("recv error\n");
+			else if (nread == 0)
+				break;
+
+			if (strncmp(rbuf, "220", 3) == 0 || strncmp(rbuf, "530", 3) == 0)
+			{
+				/*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+				  printf("write error to stdout\n");*/
+				strcat(rbuf, "your name:");
+				//printf("%s\n",rbuf);
+				nread += 12;
+				/*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+				  printf("write error to stdout\n");*/
+				replycode = USERNAME;
+			}
+			if (strncmp(rbuf, "331", 3) == 0)
+			{
+				/*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+				  printf("write error to stdout\n")*/;
+				strcat(rbuf, "your password:");
+				nread += 16;
+				/*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+				  printf("write error to stdout\n");*/
+				replycode = PASSWORD;
+			}
+			if (strncmp(rbuf, "230", 3) == 0)
+			{
+				/*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+				  printf("write error to stdout\n");*/
+				replycode = LOGIN;
+			}
+			if (strncmp(rbuf, "257", 3) == 0)
+			{
+				/*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+				  printf("write error to stdout\n");*/
+				replycode = PATHNAME;
+			}
+			if (strncmp(rbuf, "226", 3) == 0)
+			{
+				/*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+				  printf("write error to stdout\n");*/
+				replycode = CLOSEDATA;
+			}
+			if (strncmp(rbuf, "250", 3) == 0)
+			{
+				/*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+				  printf("write error to stdout\n");*/
+				replycode = ACTIONOK;
+			}
+			if (strncmp(rbuf, "550", 3) == 0)
+			{
+				replycode = 550;
+			}
+			/*if(strncmp(rbuf,"150",3) == 0)
+			  {
+			  if(write(STDOUT_FILENO,rbuf,nread) != nread)
+			  printf("write error to stdout\n");
+			  }*/
+			//fprintf(stderr,"%d\n",1);
+			if (strncmp(rbuf, "227", 3) == 0)
+			{
+				printf("227%d\n", 13);
+				/*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+				  printf("write error to stdout\n");*/
+				int port1 = strtosrv(rbuf);
+				printf("%d\n", port1);
+				printf("%s\n", host);
+				data_sock = cliopen(host, port1);
 
 
-                    //printf("%d\n",write(sockfd,wbuf,strlen(wbuf)));
-                    write(sockfd, wbuf, strlen(wbuf));
-                    //printf("%d\n",p);
-                    ftp_get(data_sock, fileOut);
-                }
-                else if (tag == 3)
-                {
-                    time_t timep;
-                    struct tm *p;
-                    struct timeval tval;
-                    gettimeofday(&tval, NULL);
-                    time(&timep);
-                    p = localtime(&timep); /*取得当地时间*/
-                    sprintf(fileOut, "%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d%ld.jpg", (1900 + p->tm_year), (1 + p->tm_mon), p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec, tval.tv_usec);
-                    //  printf("%s\n",fileOut);
-                    sprintf(wbuf, "STOR %s\n", fileOut);
-                    printf("%s\n", wbuf);
-                    write(sockfd, wbuf, strlen(wbuf));
-                    ftp_put(data_sock, data, size);
-                    // sprintf(fileOut,"%s/%s",ftp_path,fileOut);
-                }
-                nwrite = 0;
-            }
-            /*if(strncmp(rbuf,"150",3) == 0)
-              {
-              if(write(STDOUT_FILENO,rbuf,nread) != nread)
-              printf("write error to stdout\n");
-              }*/
-            //printf("%s\n",rbuf);
-            //  if(write(STDOUT_FILENO,rbuf,nread) != nread)
-            //    printf("write error to stdout\n");
-            /*else
-              printf("%d\n",-1);*/
-        }
-    }
-    printf("cmd_tcp finish!\n");
-    return 1;
+
+				//bzero(rbuf,sizeof(rbuf));
+				//printf("%d\n",fd);
+				//if(strncmp(rbuf1,"ls",2) == 0)
+				if (tag == 2)
+				{
+					write(sockfd, "list\n", strlen("list\n"));
+					ftp_list(data_sock);
+					/*if(write(STDOUT_FILENO,rbuf,nread) != nread)
+					  printf("write error to stdout\n");*/
+
+				}
+				//else if(strncmp(rbuf1,"get",3) == 0)
+				else if (tag == 1)
+				{
+					//sprintf(wbuf,"%s","RETR\n");
+					//printf("%s\n",wbuf);
+					//int str = strlen(filename);
+					//printf("%d\n",str);
+
+					sprintf(wbuf, "RETR %s\n", fileOut);
+					printf("%s\n", wbuf);
+					//int p = 5 + str + 1;
+
+
+					//printf("%d\n",write(sockfd,wbuf,strlen(wbuf)));
+					write(sockfd, wbuf, strlen(wbuf));
+					//printf("%d\n",p);
+					ftp_get(data_sock, fileOut);
+				}
+				else if (tag == 3)
+				{
+					time_t timep;
+					struct tm *p;
+					struct timeval tval;
+					gettimeofday(&tval, NULL);
+					time(&timep);
+					p = localtime(&timep); /*取得当地时间*/
+					sprintf(fileOut, "%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d%ld.jpg", (1900 + p->tm_year), (1 + p->tm_mon), p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec, tval.tv_usec);
+					//  printf("%s\n",fileOut);
+					sprintf(wbuf, "STOR %s\n", fileOut);
+					printf("%s\n", wbuf);
+					write(sockfd, wbuf, strlen(wbuf));
+					ftp_put(data_sock, data, size);
+					// sprintf(fileOut,"%s/%s",ftp_path,fileOut);
+				}
+				nwrite = 0;
+			}
+			/*if(strncmp(rbuf,"150",3) == 0)
+			  {
+			  if(write(STDOUT_FILENO,rbuf,nread) != nread)
+			  printf("write error to stdout\n");
+			  }*/
+			//printf("%s\n",rbuf);
+			//  if(write(STDOUT_FILENO,rbuf,nread) != nread)
+			//    printf("write error to stdout\n");
+			/*else
+			  printf("%d\n",-1);*/
+		}
+	}
+	printf("cmd_tcp finish!\n");
+	return 1;
 }

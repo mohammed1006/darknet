@@ -263,9 +263,12 @@ void sendData(char *data, int size, float thresh)
 	if (NULL != data && size > 0 && thresh >= threshg)
 	{
 		printf("%f\n", threshg);
-		ftp(data, size, fileOut);
-		url = &fileOut[0];
-		retData = 'b';
+		if (ftp(data, size, fileOut) >= 0)
+		{
+			url = &fileOut[0];
+			retData = 'b';
+
+		}
 	}
 	// return;
 	printf("send end\n");

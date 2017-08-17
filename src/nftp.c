@@ -59,6 +59,7 @@ int connect_server( char *host, int port )
 	ctrl_sock = socket_connect(host, port);
 	if (ctrl_sock == -1)
 	{
+		printf("socket_connect failed\n");
 		return -1;
 	}
 
@@ -68,6 +69,7 @@ int connect_server( char *host, int port )
 	if ( result != 220 )
 	{
 		close( ctrl_sock );
+		printf("connet_server recv failed\n");
 		return -1;
 	}
 
@@ -81,10 +83,17 @@ int ftp_sendcmd_re( int sock, char *cmd, void *re_buf, ssize_t *len)
 	ssize_t     r_len;
 
 	if ( send( sock, cmd, strlen(cmd), 0 ) == -1 )
+	{
+		printf("ftp_sendcmd_re send failed\n");
 		return -1;
+	}
 
 	r_len = recv( sock, buf, 512, 0 );
-	if ( r_len < 1 ) return -1;
+	if ( r_len < 1 )
+	{
+		printf("sendcmd_re recv failed\n");
+		return -1;
+	}
 	buf[r_len] = 0;
 
 	if (len != NULL) *len = r_len;
@@ -117,15 +126,26 @@ int login_server( int sock, char *user, char *pwd )
 
 	sprintf( buf, "USER %s\r\n", user );
 	result = ftp_sendcmd( sock, buf );
-	if ( result == 230 ) return 0;
+	if ( result == 230 )
+	{
+		printf("login_server result=230\n");
+		return 0;
+	}
 	else if ( result == 331 )
 	{
 		sprintf( buf, "PASS %s\r\n", pwd );
-		if ( ftp_sendcmd( sock, buf ) != 230 ) return -1;
+		if ( ftp_sendcmd( sock, buf ) != 230 )
+		{
+			printf("login_server screat failed\n");
+			return -1;
+		}
 		return 0;
 	}
 	else
+	{
+		printf("login_server failed result=%d\n", result);
 		return -1;
+	}
 }
 
 int create_datasock( int ctrl_sock )
@@ -137,17 +157,24 @@ int create_datasock( int ctrl_sock )
 	char    cmd[128];
 
 	lsn_sock = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP );
-	if ( lsn_sock == -1 ) return -1;
+	if ( lsn_sock == -1 )
+	{
+		printf("create datasocket socket set tcp proto\n");
+		return -1;
+	}
 	memset( (char *)&sin, 0, sizeof(sin) );
 	sin.sin_family = AF_INET;
 	if ( bind(lsn_sock, (struct sockaddr *)&sin, sizeof(sin)) == -1 )
 	{
+		printf("create datasocket bind failed\n");
 		close( lsn_sock );
 		return -1;
 	}
 
 	if ( listen(lsn_sock, 2) == -1 )
 	{
+
+		printf("create datasocket listen failed\n");
 		close( lsn_sock );
 		return -1;
 	}
@@ -155,6 +182,8 @@ int create_datasock( int ctrl_sock )
 	len = sizeof( struct sockaddr );
 	if ( getsockname( lsn_sock, (struct sockaddr *)&sin, (socklen_t *)&len ) == -1 )
 	{
+
+		printf("create datasocket getsockname1 failed\n");
 		close( lsn_sock );
 		return -1;
 	}
@@ -162,6 +191,7 @@ int create_datasock( int ctrl_sock )
 
 	if ( getsockname( ctrl_sock, (struct sockaddr *)&sin, (socklen_t *)&len ) == -1 )
 	{
+		printf("create datasocket getsockname2 failed\n");
 		close( lsn_sock );
 		return -1;
 	}
@@ -176,6 +206,7 @@ int create_datasock( int ctrl_sock )
 	if ( ftp_sendcmd( ctrl_sock, cmd ) != 200 )
 	{
 		close( lsn_sock );
+		printf("create_datasock ftp_sendcmd failed\n");
 		return -1;
 	}
 	return lsn_sock;
@@ -227,7 +258,10 @@ int ftp_cwd( int c_sock, char *path )
 	sprintf( buf, "CWD %s\r\n", path );
 	re = ftp_sendcmd( c_sock, buf );
 	if ( re != 250 )
+	{
+		printf("ftp_cwd failed.ret=%d\n", re);
 		return -1;
+	}
 	else
 		return 0;
 }
@@ -236,9 +270,12 @@ int ftp_cwd( int c_sock, char *path )
 int ftp_cdup( int c_sock )
 {
 	int     re;
-	re = ftp_sendcmd( c_sock,(char*) "CDUP\r\n" );
+	re = ftp_sendcmd( c_sock, (char*) "CDUP\r\n" );
 	if ( re != 250 )
+	{
+		printf("ftp_cdup failed,ret=%d\n", re);
 		return re;
+	}
 	else
 		return 0;
 }
@@ -251,7 +288,10 @@ int ftp_mkd( int c_sock, char *path )
 	sprintf( buf, "MKD %s\r\n", path );
 	re = ftp_sendcmd( c_sock, buf );
 	if ( re != 257 )
+	{
+		printf("ftp_mkd failed.ret = %d\n", re);
 		return re;
+	}
 	else
 		return 0;
 }
@@ -269,7 +309,7 @@ int ftp_list_n( int c_sock, char *path, void **data, unsigned long long *data_le
 	d_sock = ftp_pasv_connect(c_sock);
 	if (d_sock == -1)
 	{
-		printf("d_sock failed\n");	
+		printf("d_sock failed\n");
 		return -1;
 	}
 
@@ -277,8 +317,9 @@ int ftp_list_n( int c_sock, char *path, void **data, unsigned long long *data_le
 	bzero(buf, sizeof(buf));
 	sprintf( buf, "LIST %s\r\n", path);
 	send_re = ftp_sendcmd( c_sock, buf );
-	if (send_re >= 300 || send_re == 0){
-   		printf("list error!ret=%d\n",send_re);
+	if (send_re >= 300 || send_re == 0)
+	{
+		printf("list error!ret=%d\n", send_re);
 		return send_re;
 	}
 
@@ -308,7 +349,8 @@ int ftp_list_n( int c_sock, char *path, void **data, unsigned long long *data_le
 	if ( result != 226 )
 	{
 		free(re_buf);
-		re_buf=NULL;
+		re_buf = NULL;
+		printf("ftp_list_n failed ret=%d\n", result);
 		return result;
 	}
 
@@ -432,6 +474,7 @@ int ftp_storefile_data(int c_sock, char *data, char* name, unsigned long long si
 	d_sock = ftp_pasv_connect(c_sock);
 	if (d_sock == -1)
 	{
+		printf("ftp_storefile_data ftp_pasv_connect failed\n");
 		return -1;
 	}
 
@@ -441,6 +484,7 @@ int ftp_storefile_data(int c_sock, char *data, char* name, unsigned long long si
 	send_re = ftp_sendcmd( c_sock, buf );
 	if (send_re >= 300 || send_re == 0)
 	{
+		printf("ftp_storefile_data ftp_sendcmd failed.ret=%d\n", send_re);
 		return send_re;
 	}
 
@@ -470,6 +514,7 @@ int ftp_storefile_data(int c_sock, char *data, char* name, unsigned long long si
 	sscanf( buf, "%d", &result );
 	if ( result >= 300 )
 	{
+		printf("ftp_storefile_data recv code failed.ret=%d\n", result);
 		return result;
 	}
 	return 0;
@@ -588,10 +633,15 @@ int ftp_connect( char *host, int port, char *user, char *pwd )
 {
 	int     c_sock;
 	c_sock = connect_server( host, port );
-	if ( c_sock == -1 ) return -1;
+	if ( c_sock == -1 )
+	{
+		printf("connect_server failed\n");
+		return -1;
+	}
 	if ( login_server( c_sock, user, pwd ) == -1 )
 	{
 		close( c_sock );
+		printf("login_server failed\n");
 		return -1;
 	}
 	return c_sock;
@@ -601,7 +651,7 @@ int ftp_connect( char *host, int port, char *user, char *pwd )
 int ftp_quit( int c_sock)
 {
 	int re = 0;
-	re = ftp_sendcmd( c_sock,(char*) "QUIT\r\n" );
+	re = ftp_sendcmd( c_sock, (char*) "QUIT\r\n" );
 	close( c_sock );
 	return re;
 }

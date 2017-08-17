@@ -214,6 +214,13 @@ void reciveData()
 }
 void setupSocket(char *server, int port, char *robotID, float thresh)
 {
+	int static socketAgainCount=0;
+	printf("setupSocket %s,%d,%s,%.2f,%d\n",server,port,robotID,thresh,socketAgainCount);
+	if(socketAgainCount>10)
+	{
+		exit(0);
+	}
+	socketAgainCount++;
 	robotIDg = robotID;
 //	int rec_len;
 //	char    buf[MAXLINE];

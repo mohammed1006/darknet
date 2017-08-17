@@ -93,6 +93,13 @@ void setupFtpTimeOut(const char* timeChar, int len)
 }
 void setupFTP(const char *ip, const char *name, const char *pwd, const char *path)
 {
+	int static againCount = 0;
+	printf("setupFTP %s,%s,%s,%s,count=%d\n", ip, name, pwd, path, againCount);
+	if (againCount > 10)
+		exit(0);
+	else
+		againCount++;
+
 	strcpy(host, ip);
 	strcpy(ftp_name, name);
 	strcpy(ftp_pwd, pwd);

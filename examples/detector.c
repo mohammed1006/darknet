@@ -834,8 +834,8 @@ void run_detector(int argc, char **argv)
 		printf("robot_param:ftp(%s,%s,%s,%s,%f),server(%s,%d),camera(%s),socket_ftp_time_out(%s,%s),frame_time(%f)", ftp_ip, ftp_name1, ftp_pwd1, ftp_path1, ftp_thresh, server, port, cam_indexg, socket_time_out, ftp_time_out,frame_time_g);
 		setupSocketTimeOut(socket_time_out, strlen(socket_time_out));
 		setupFtpTimeOut(ftp_time_out, strlen(ftp_time_out));
-		setupSocket(server, port, robotID, ftp_thresh);
 		setupFTP(ftp_ip, ftp_name1, ftp_pwd1, ftp_path1);
+		setupSocket(server, port, robotID, ftp_thresh);
 		demo(cfg, weights, thresh, cam_indexg, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);
 		destroy();
 		destroyFTP();

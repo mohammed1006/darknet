@@ -121,7 +121,7 @@ void modifyFtp(const char *ip, const char *name, const char *pwd, const char *pa
 }
 void printfFtp(char out[], int size)
 {
-	sprintf(out, "ftp_ip=%s\nftp_name=%s\nftp_pwd=%s\nftp_path=%s\nftp_timeout=%.3f\n", host, ftp_name, ftp_pwd, ftp_path, ftp_sec + 0.001 * ftp_usec);
+	sprintf(out, "ftp_ip=%s\nftp_name=%s\nftp_pwd=%s\nftp_path=%s\nftp_time_out=%.3f\n", host, ftp_name, ftp_pwd, ftp_path, ftp_sec + 0.001 * ftp_usec);
 }
 int ftp_active()
 {

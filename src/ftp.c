@@ -36,6 +36,9 @@
 char rbuf[MAXBUF], rbuf1[MAXBUF], wbuf[MAXBUF], wbuf1[MAXBUF];
 char ftp_name[CHAR20], ftp_pwd[CHAR20], ftp_path[CHAR60];
 char host[CHAR20];
+//char rec_time_out[CHAR20] = "0.20";
+int ftp_usec = 10;
+int ftp_sec = 0;
 struct sockaddr_in servaddr;
 int fd = -1;
 
@@ -62,7 +65,23 @@ void handle_pipe(int sig)
 	setupFTP(host, ftp_name, ftp_pwd, ftp_path);
 	printf("socket close error ,pipe break!,link again\n");
 }
-
+void setupFtpTimeOut(const char* timeChar, int len)
+{
+	int i = 0;
+	char setT[CHAR20] = {0};
+	for (; i < len; i++)
+	{
+		setT[i]=timeChar[i];	
+		if ('.' == timeChar[i])
+		{
+          setT[i]='\0';
+		  ftp_sec=atoi(setT);
+		  ftp_usec=atoi(&timeChar[i+1]);
+		  break;
+		}
+	}
+	printf("set sec=%d,usec=%d\n",ftp_sec,ftp_usec);
+}
 void setupFTP(const char *ip, const char *name, const char *pwd, const char *path)
 {
 	strcpy(host, ip);
@@ -100,7 +119,7 @@ void modifyFtp(const char *ip, const char *name, const char *pwd, const char *pa
 }
 void printfFtp(char out[], int size)
 {
-	sprintf(out, "ftp_ip=%s\nftp_name=%s\nftp_pwd=%s\nftp_path=%s\n", host, ftp_name, ftp_pwd, ftp_path);
+	sprintf(out, "ftp_ip=%s\nftp_name=%s\nftp_pwd=%s\nftp_path=%s\nftp_timeout=%d.%d\n", host, ftp_name, ftp_pwd, ftp_path,ftp_sec,ftp_usec);
 }
 int ftp_active()
 {
@@ -114,8 +133,8 @@ int ftp_active()
 		FD_ZERO(&fdR);
 		FD_SET(fd, &fdR);
 		struct timeval timeout;
-		timeout.tv_usec = 10;
-		timeout.tv_sec = 0;
+		timeout.tv_usec = ftp_usec;
+		timeout.tv_sec = ftp_sec;
 		switch (select(fd + 1, &fdR, NULL, NULL, &timeout))
 		{
 		case -1:
@@ -172,9 +191,9 @@ int  ftp(char *data, int size, char fileOut_O[])
 	/*printf("ls %s\n", ftp_path);*/
 	ret = ftp_list_n(fd, (char*) "."/*ftp_path*/, (void **) &listdat, &listlen);
 	printf("ftp_list_n:ret=%d", ret);
-	if(0!=ret)
+	if (0 != ret)
 	{
-			return -1;
+		return -1;
 	}
 //	printf("%s\n", listdat);
 	time_t timep;

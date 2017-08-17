@@ -825,8 +825,12 @@ void run_detector(int argc, char **argv)
 		char *server = option_find_str(options2, "server_ip", "127.0.0.21");
 		char *robotID = option_find_str(options2, "robot_id", "123abc");
 		cam_indexg = option_find_str(options2, "camera", "rtsp://127.0.0.1:8554/a.mkv");
-		int port = option_find_int(options2, "server_port", 123321);
-		printf("robot_param:ftp(%s,%s,%s,%s,%f),server(%s,%d),camera(%s)", ftp_ip, ftp_name1, ftp_pwd1, ftp_path1, ftp_thresh, server, port, cam_indexg);
+		int port = option_find_int(options2, "server_port", 123321);    
+		char *socket_time_out = option_find_str(options2,"socket_time_out","0.10");
+		char *ftp_time_out = option_find_str(options2,"ftp_time_out","0.10");
+		printf("robot_param:ftp(%s,%s,%s,%s,%f),server(%s,%d),camera(%s),time_out(%s,%s)", ftp_ip, ftp_name1, ftp_pwd1, ftp_path1, ftp_thresh, server, port, cam_indexg,socket_time_out,ftp_time_out);
+		setupSocketTimeOut(socket_time_out,strlen(socket_time_out));
+		setupFtpTimeOut(ftp_time_out,strlen(ftp_time_out));
 		setupSocket(server, port, robotID, ftp_thresh);
 		setupFTP(ftp_ip, ftp_name1, ftp_pwd1, ftp_path1);
 		demo(cfg, weights, thresh, cam_indexg, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);

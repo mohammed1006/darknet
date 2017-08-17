@@ -55,6 +55,14 @@ int main(int argc, char *argv[])
     ftp((char*)"asdf", 4, file);
     destroyFTP();
 }*/
+void handle_pipe(int sig)
+{
+	//fd = -1;
+	destroyFTP();
+	setupFTP(host, ftp_name, ftp_pwd, ftp_path);
+	printf("socket close error ,pipe break!,link again\n");
+}
+
 void setupFTP(const char *ip, const char *name, const char *pwd, const char *path)
 {
 	strcpy(host, ip);
@@ -86,6 +94,7 @@ void modifyFtp(const char *ip, const char *name, const char *pwd, const char *pa
 	strcpy(ftp_name, name);
 	strcpy(ftp_pwd, pwd);
 	strcpy(ftp_path, path);*/
+	destroyFTP();
 	setupFTP(ip, name, pwd, path);
 
 }
@@ -162,6 +171,11 @@ int  ftp(char *data, int size, char fileOut_O[])
 	unsigned long long listlen;
 	/*printf("ls %s\n", ftp_path);*/
 	ret = ftp_list_n(fd, (char*) "."/*ftp_path*/, (void **) &listdat, &listlen);
+	printf("ftp_list_n:ret=%d", ret);
+	if(0!=ret)
+	{
+			return -1;
+	}
 //	printf("%s\n", listdat);
 	time_t timep;
 	struct tm *p;
@@ -179,20 +193,23 @@ int  ftp(char *data, int size, char fileOut_O[])
 	if (NULL == strstr(listdat, dict))
 	{
 		//  ftp_cdup(fd);
-		ftp_mkd(fd,/* mkd*/dict);
-		ftp_cwd(fd,/* mkd*/dict);
-		printf("mkdir dict\n");
+		ret = ftp_mkd(fd,/* mkd*/dict);
+		printf("ftp_mkd:ret=%d", ret);
+		ret = ftp_cwd(fd,/* mkd*/dict);
+		printf("mkdir dict:ret=%d\n", ret);
 	}
 	else/*if (NULL == strstr(listdat, ".jpg"))*/
 	{
-		ftp_cwd(fd, dict);
-		printf("have dict but not end\n");
+		ret = ftp_cwd(fd, dict);
+		printf("have dict but not end:ret=%d\n", ret);
 	}
 	free(listdat);
 	/*ftp_cwd(fd, mkd);*/
 	ret = ftp_storefile_data(fd, data, fileOut, size);
+	printf("ftp_storefile_data:ret=%d", ret);
 	if (0 != ftp_cdup(fd))
 	{
+		printf("cd .,failed .again link\n");
 		destroyFTP();
 		setupFTP(host, ftp_name, ftp_pwd, ftp_path);
 		return ret;

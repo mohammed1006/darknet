@@ -34,22 +34,6 @@ void setupSocketTimeOut(const char* timeChar, int len)
 	float value = atof(timeChar);
 	socket_sec = (int)value;
 	socket_usec = (value - socket_sec) * 1000;
-	/* for (; i < len; i++)*/
-	/*{*/
-	/*setT[i] = timeChar[i];*/
-	/*if ('.' == timeChar[i])*/
-	/*{*/
-	/*setT[i] = '\0';*/
-	/*socket_sec = atoi(setT);*/
-	/*socket_usec = ((i + 1) == len) ? 0 : (atoi(&timeChar[i + 1]) );*/
-	/*break;*/
-	/*}*/
-	/*}*/
-	/*if (i == len)*/
-	/*{*/
-	/*socket_sec = atoi(timeChar);*/
-	/*socket_usec = 0;*/
-	/*}*/
 	printf("socket set sec=%d,usec=%d\n", socket_sec, socket_usec);
 }
 
@@ -184,11 +168,11 @@ void reciveData()
 		rec_len = recv(sockfd, &buf[sum_len], MAXLINE, 0);
 		if (rec_len <= 0)
 		{
-			perror("recv error");
-			printf("rec_len=%d,connect has bean close , reconnect... ...\n",rec_len);
+			printf("recv error");
+			printf("rec_len=%d,connect has bean close , reconnect... ...\n", rec_len);
 			printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
 			destroy();
-			setupSocket(ipg,portg,robotIDg,threshg);
+			setupSocket(ipg, portg, robotIDg, threshg);
 			return;
 		}
 		printf("recv data:%s\n,len:%d\n", &buf[sum_len], rec_len);
@@ -207,7 +191,8 @@ void reciveData()
 			{
 				printf("recvData:%s", &buf[rec_len]);
 				char *ret = getParam(&buf[rec_len]);
-				free(ret);
+				if (NULL != ret)
+					free(ret);
 			}
 			break;
 		case '}':
@@ -218,9 +203,9 @@ void reciveData()
 }
 void setupSocket(char *server, int port, char *robotID, float thresh)
 {
-	int static socketAgainCount=0;
-	printf("setupSocket %s,%d,%s,%.2f,%d\n",server,port,robotID,thresh,socketAgainCount);
-	if(socketAgainCount>10)
+	int static socketAgainCount = 0;
+	printf("setupSocket %s,%d,%s,%.2f,%d\n", server, port, robotID, thresh, socketAgainCount);
+	if (socketAgainCount > 10)
 	{
 		exit(0);
 	}
@@ -317,6 +302,8 @@ void sendData(char *data, int size, float thresh)
 	char mess[1000];
 	long crc = Crc32((unsigned char *)sj, len);
 	sprintf(mess, "ContentLength:%d\r\n%s\r\nCRC32Verify:%ld\\", len, sj, crc);
+	if (NULL != sj)
+		free(sj);
 	if ( send(sockfd, mess, strlen(mess), MSG_NOSIGNAL) <= 0)
 	{
 		printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
@@ -324,14 +311,13 @@ void sendData(char *data, int size, float thresh)
 		//again setup
 		destroy();
 		setupSocket(ipg, portg, robotIDg, threshg);
-	}
-	if (NULL == sj)
-		free(sj);
-	if (-1 == sockfd)
-	{
-		printf("socket again link , but sockfd is still error\n");
 		return;
 	}
+	/*  if (-1 == sockfd)
+	{
+	    printf("socket again link , but sockfd is still error\n");
+	    return;
+	}*/
 	fd_set fdR;
 	FD_ZERO(&fdR);
 	FD_SET(sockfd, &fdR);

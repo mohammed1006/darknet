@@ -67,24 +67,6 @@ void handle_pipe(int sig)
 }
 void setupFtpTimeOut(const char* timeChar, int len)
 {
-	/*int i = 0;*/
-	/*char setT[CHAR20] = {0};*/
-	/*for (; i < len; i++)*/
-	/*{*/
-	/*setT[i] = timeChar[i];*/
-	/*if ('.' == timeChar[i])*/
-	/*{*/
-	/*setT[i] = '\0';*/
-	/*ftp_sec = atoi(setT);*/
-	/*ftp_usec = ((i+1)==len)?0:(atoi(&timeChar[i + 1]) * 1000);;*/
-	/*break;*/
-	/*}*/
-	/*}*/
-	/*if (i == len)*/
-	/*{*/
-	/*ftp_sec = atoi(timeChar);*/
-	/*ftp_usec = 0;*/
-	/*}*/
 	float value = atof(timeChar);
 	ftp_sec = (int)value;
 	ftp_usec = (value - ftp_sec) * 1000;

@@ -29,24 +29,27 @@ extern int againConnect();
 extern void modifyFtp(const char *ip, const char *name, const char *pwd, const char *path);
 void setupSocketTimeOut(const char* timeChar, int len)
 {
-	int i = 0;
-	char setT[CHAR20] = {0};
-	for (; i < len; i++)
-	{
-		setT[i] = timeChar[i];
-		if ('.' == timeChar[i])
-		{
-			setT[i] = '\0';
-			socket_sec = atoi(setT);
-			socket_usec =((i+1)==len)?0:(atoi(&timeChar[i + 1]) * 1000);
-			break;
-		}
-	}
-	if (i == len)
-	{
-		socket_sec = atoi(timeChar);
-		socket_usec = 0;
-	}
+//	int i = 0;
+//	char setT[CHAR20] = {0};
+	float value = atof(timeChar);
+	socket_sec = (int)value;
+	socket_usec = (value - socket_sec) * 1000;
+	/* for (; i < len; i++)*/
+	/*{*/
+	/*setT[i] = timeChar[i];*/
+	/*if ('.' == timeChar[i])*/
+	/*{*/
+	/*setT[i] = '\0';*/
+	/*socket_sec = atoi(setT);*/
+	/*socket_usec = ((i + 1) == len) ? 0 : (atoi(&timeChar[i + 1]) );*/
+	/*break;*/
+	/*}*/
+	/*}*/
+	/*if (i == len)*/
+	/*{*/
+	/*socket_sec = atoi(timeChar);*/
+	/*socket_usec = 0;*/
+	/*}*/
 	printf("socket set sec=%d,usec=%d\n", socket_sec, socket_usec);
 }
 
@@ -91,7 +94,7 @@ void write_to_cfg()
 	int thresh = 100 * threshg;
 	FILE *pFile = fopen("robot.cfg", "w");
 
-	sprintf(buf, "robot_id=%s\nserver_ip =%s\nserver_port=%d\nftp_thresh=%d\ncamera=%s\nframe_skip=%d\nsocket_time_out=%d.%d\nframe_time=%.1f\n", robotIDg, ipg, portg, thresh, cam_indexg, frame_skip_g, socket_sec, socket_usec, frame_time_g);
+	sprintf(buf, "robot_id=%s\nserver_ip =%s\nserver_port=%d\nftp_thresh=%d\ncamera=%s\nframe_skip=%d\nsocket_time_out=%.3f\nframe_time=%.1f\n", robotIDg, ipg, portg, thresh, cam_indexg, frame_skip_g, socket_sec + 0.001 * socket_usec, frame_time_g);
 	fwrite (buf, 1, strnlen(buf, MAXLINE), pFile);
 	printf("write server information:%s", buf);
 	printfFtp(buf, MAXLINE);
@@ -311,7 +314,8 @@ void sendData(char *data, int size, float thresh)
 		destroy();
 		setupSocket(ipg, portg, robotIDg, threshg);
 	}
-	free(sj);
+	if (NULL == sj)
+		free(sj);
 	if (-1 == sockfd)
 	{
 		printf("socket again link , but sockfd is still error\n");
@@ -327,7 +331,7 @@ void sendData(char *data, int size, float thresh)
 	switch (selectRet)
 	{
 	case -1:
-		perror("select -1\n");
+		printf("select -1\n");
 		printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
 		break;
 	case 0:

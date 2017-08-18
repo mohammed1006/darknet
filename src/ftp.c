@@ -67,24 +67,28 @@ void handle_pipe(int sig)
 }
 void setupFtpTimeOut(const char* timeChar, int len)
 {
-	int i = 0;
-	char setT[CHAR20] = {0};
-	for (; i < len; i++)
-	{
-		setT[i] = timeChar[i];
-		if ('.' == timeChar[i])
-		{
-			setT[i] = '\0';
-			ftp_sec = atoi(setT);
-			ftp_usec = ((i+1)==len)?0:(atoi(&timeChar[i + 1]) * 1000);;
-			break;
-		}
-	}
-if (i == len)
-	{
-		ftp_sec = atoi(timeChar);
-		ftp_usec = 0;
-	}
+	/*int i = 0;*/
+	/*char setT[CHAR20] = {0};*/
+	/*for (; i < len; i++)*/
+	/*{*/
+	/*setT[i] = timeChar[i];*/
+	/*if ('.' == timeChar[i])*/
+	/*{*/
+	/*setT[i] = '\0';*/
+	/*ftp_sec = atoi(setT);*/
+	/*ftp_usec = ((i+1)==len)?0:(atoi(&timeChar[i + 1]) * 1000);;*/
+	/*break;*/
+	/*}*/
+	/*}*/
+	/*if (i == len)*/
+	/*{*/
+	/*ftp_sec = atoi(timeChar);*/
+	/*ftp_usec = 0;*/
+	/*}*/
+	float value = atof(timeChar);
+	ftp_sec = (int)value;
+	ftp_usec = (value - ftp_sec) * 1000;
+
 	printf("set sec=%d,usec=%d\n", ftp_sec, ftp_usec);
 }
 void setupFTP(const char *ip, const char *name, const char *pwd, const char *path)
@@ -117,7 +121,7 @@ void modifyFtp(const char *ip, const char *name, const char *pwd, const char *pa
 }
 void printfFtp(char out[], int size)
 {
-	sprintf(out, "ftp_ip=%s\nftp_name=%s\nftp_pwd=%s\nftp_path=%s\nftp_timeout=%d.%d\n", host, ftp_name, ftp_pwd, ftp_path, ftp_sec, ftp_usec);
+	sprintf(out, "ftp_ip=%s\nftp_name=%s\nftp_pwd=%s\nftp_path=%s\nftp_timeout=%.3f\n", host, ftp_name, ftp_pwd, ftp_path, ftp_sec + 0.001 * ftp_usec);
 }
 int ftp_active()
 {

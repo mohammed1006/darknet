@@ -1,3 +1,54 @@
+
+```
+graph TB
+A{sockfd}-->|-1|B[destroy,setup]
+B-->C[return]
+A-->D{thresh,data}
+D-->|threshg,-NULL|E{FTP}
+E-->|0|F[ftp success]
+E-->|other|G[ftp again]
+G-->|l|H[crc]
+F-->|b|H
+H-->I{send}
+I-->|<=0|B
+I-->|>0|J{select}
+J-->|>0|K[recevice]
+J-->|<1|C
+K-->C
+```
+```
+
+```
+```
+graph TB
+A{sockfd}-->|-1|B[destroy,setup]
+A-->C{receive}
+C-->|<=0|B
+B-->D[return]
+C-->|>=1|E{rec_len==MaxLen}
+E-->C
+E-->F{getParam}
+F-->D
+```
+```
+```
+```
+graph TB
+A{fd}-->|<0|B[return -1]
+A-->|=>0|C{ftp_list_n}
+C-->B
+C-->|=0|E{检查是否有目录}
+E-->|N|F{ftp_mkd}
+F-->B
+F-->|=0|H
+E-->|Y|H{ftp_cwd}
+H-->B
+H-->|=0|I{ftp_store_file}
+I-->B
+I-->|=0|J[ftp_cdip]
+J-->B
+```
+```
 # Yolo-Windows v2
 
 1. [How to use](#how-to-use)

@@ -45,7 +45,7 @@ static float *last_avg2;
 static float *last_avg;
 static float *avg;
 double demo_time;
-
+extern float frame_time_g;
 double get_wall_time()
 {
 	struct timeval time;
@@ -262,7 +262,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 		cap = NULL;
 		while (!cap)
 		{
-				printf("begin camera capture!\n");
+			printf("begin camera capture!\n");
 			if ('-' == cam_index[0])
 				cap = cvCaptureFromCAM(-1);
 			else
@@ -306,31 +306,40 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 	ipl = cvCreateImage(cvSize(buff[0].w, buff[0].h), IPL_DEPTH_8U, buff[0].c);
 
 	int count = 0;
-	if (!prefix)
-	{
-		//cvNamedWindow("Demo", CV_WINDOW_NORMAL);
-		if (fullscreen)
-		{
-			cvSetWindowProperty("Demo", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-		}
-		else
-		{
-			cvMoveWindow("Demo", 0, 0);
-			cvResizeWindow("Demo", 1352, 1013);
-		}
-	}
+	/*  if (!prefix)
+	    {
+	        //cvNamedWindow("Demo", CV_WINDOW_NORMAL);
+	        if (fullscreen)
+	        {
+	            cvSetWindowProperty("Demo", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+	        }
+	        else
+	        {
+	            cvMoveWindow("Demo", 0, 0);
+	            cvResizeWindow("Demo", 1352, 1013);
+	        }
+	    }*/
 
 	demo_time = get_wall_time();
-
+	int frame_again_count = 5;
+	int frame_again_index = 0;
 	while (1)
 	{
+
 		if (1 == demo_done)
 		{
+			printf("begin capture!\n");
 			cvReleaseCapture(&cap);
 			cap = cvCreateFileCapture(cam_index);
+			if (!cap)
+			{
+				printf("again capture,but still error\n");
+				break;
+			}
 			demo_done = 0;
 		}
 		buff_index = (buff_index + 1) % 3;
+		printf("create fetch and detect");
 		if (pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
 		if (pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
 		if (!prefix)
@@ -338,6 +347,14 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 			printf("fps conut\n");
 			if (count % (demo_delay + 1) == 0)
 			{
+				float during = (get_wall_time() - demo_time);
+				if (during > frame_time_g)
+				{
+					//      if(frame_again_index=frame_again_count)
+					printf("frame time is during=%f,thresh=%f,so reset capture\n", during, frame_time_g);
+					if (2 == count % 3)
+						demo_done = 1;
+				}
 				fps = 1. / (get_wall_time() - demo_time);
 				demo_time = get_wall_time();
 				float *swap = last_avg;
@@ -358,8 +375,12 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 		pthread_join(fetch_thread, 0);
 		pthread_join(detect_thread, 0);
 		display_in_thread(0);
-		printf("next frame\n");
+		printf("next frame,count=%d\n",count);
 		++count;
+		if(count<1){
+             demo_done=1;
+			 count=0;
+		}
 		if ( kbhit() )
 		{
 			const int key = getchar();
@@ -367,10 +388,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 			if (key == 'q')
 				break;
 		}
-		else
-		{
-			fprintf(stderr, "<no key detected>\n");
-		}
+		printf("demo frame finish!\n");
+		/*  else
+		    {
+		        fprintf(stderr, "<no key detected>\n");
+		    }*/
 	}
 	if (tty_set_flag == 0)
 		tty_reset();

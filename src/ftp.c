@@ -71,16 +71,16 @@ void setupFtpTimeOut(const char* timeChar, int len)
 	char setT[CHAR20] = {0};
 	for (; i < len; i++)
 	{
-		setT[i]=timeChar[i];	
+		setT[i] = timeChar[i];
 		if ('.' == timeChar[i])
 		{
-          setT[i]='\0';
-		  ftp_sec=atoi(setT);
-		  ftp_usec=atoi(&timeChar[i+1]);
-		  break;
+			setT[i] = '\0';
+			ftp_sec = atoi(setT);
+			ftp_usec = atoi(&timeChar[i + 1]);
+			break;
 		}
 	}
-	printf("set sec=%d,usec=%d\n",ftp_sec,ftp_usec);
+	printf("set sec=%d,usec=%d\n", ftp_sec, ftp_usec);
 }
 void setupFTP(const char *ip, const char *name, const char *pwd, const char *path)
 {
@@ -94,18 +94,11 @@ void setupFTP(const char *ip, const char *name, const char *pwd, const char *pat
 		printf("ftp connect fail!\n");
 		return;
 	}
-	/* time_t timep;*/
-	/*struct tm *p;*/
-	/*struct timeval tval;*/
-	/*gettimeofday(&tval, NULL);*/
-	/*time(&timep);*/
-	/*p = localtime(&timep); [>取得当地时间<]*/
-	/*char dict[50];*/
-	/*sprintf(dict, "%4.4d%2.2d%2.2d", (1900 + p->tm_year), (1 + p->tm_mon), p->tm_mday);*/
-	/*char mkd[100];*/
-	/*sprintf(mkd, "%s/%s", ftp_path, dict);*/
-	/*ftp_cwd(fd, mkd);*/
-	ftp_cwd(fd, ftp_path);
+	int ret = ftp_cwd(fd, ftp_path);
+	if (0 != ret)
+	{
+		printf("setup cwd is error,ret=%d", ret);
+	}
 }
 void modifyFtp(const char *ip, const char *name, const char *pwd, const char *path)
 {
@@ -119,7 +112,7 @@ void modifyFtp(const char *ip, const char *name, const char *pwd, const char *pa
 }
 void printfFtp(char out[], int size)
 {
-	sprintf(out, "ftp_ip=%s\nftp_name=%s\nftp_pwd=%s\nftp_path=%s\nftp_timeout=%d.%d\n", host, ftp_name, ftp_pwd, ftp_path,ftp_sec,ftp_usec);
+	sprintf(out, "ftp_ip=%s\nftp_name=%s\nftp_pwd=%s\nftp_path=%s\nftp_timeout=%d.%d\n", host, ftp_name, ftp_pwd, ftp_path, ftp_sec, ftp_usec);
 }
 int ftp_active()
 {
@@ -173,29 +166,33 @@ int ftp_active()
 	}
 	return 1;
 }
-
+int againConnect()
+{
+	printf("again Ftp!\n");
+	destroyFTP();
+	setupFTP(host, ftp_name, ftp_pwd, ftp_path);
+	return fd;
+}
 int  ftp(char *data, int size, char fileOut_O[])
 {
 	int ret = -1;
 	/*int fd = ftp_connect(host, PORT, ftp_name, ftp_pwd);*/
 	if (fd < 0)
 	{
-		destroyFTP();
-		setupFTP(host, ftp_name, ftp_pwd, ftp_path);
-		return ret;
+		printf("fd is error,please ftp of fd!\n");
+		return -1;
 	}
-	if (ftp_active() == 0)
-		return ret;
+//	if (ftp_active() == 0)
+//		return ret;
 	char *listdat;
 	unsigned long long listlen;
 	/*printf("ls %s\n", ftp_path);*/
 	ret = ftp_list_n(fd, (char*) "."/*ftp_path*/, (void **) &listdat, &listlen);
-	printf("ftp_list_n:ret=%d", ret);
 	if (0 != ret)
 	{
+		printf("ftp_list_n:ret=%d", ret);
 		return -1;
 	}
-//	printf("%s\n", listdat);
 	time_t timep;
 	struct tm *p;
 	struct timeval tval;
@@ -206,57 +203,50 @@ int  ftp(char *data, int size, char fileOut_O[])
 	sprintf(fileOut, "%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d%ld.jpg", (1900 + p->tm_year), (1 + p->tm_mon), p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec, tval.tv_usec);
 	char dict[50];
 	sprintf(dict, "%4.4d%2.2d%2.2d", (1900 + p->tm_year), (1 + p->tm_mon), p->tm_mday);
-	//printf("%s", listdat);
 	/*char mkd[100];*/
 	/*sprintf(mkd, "%s/%s", ftp_path, dict);*/
 	if (NULL == strstr(listdat, dict))
 	{
 		//  ftp_cdup(fd);
+		printf("list:%s,", listdat);
 		ret = ftp_mkd(fd,/* mkd*/dict);
-		printf("ftp_mkd:ret=%d", ret);
-		ret = ftp_cwd(fd,/* mkd*/dict);
-		printf("mkdir dict:ret=%d\n", ret);
 	}
-	else/*if (NULL == strstr(listdat, ".jpg"))*/
+	if (NULL != listdat)
+		free(listdat);
+	if (0 != ret)
 	{
-		ret = ftp_cwd(fd, dict);
-		printf("have dict but not end:ret=%d\n", ret);
+		printf("mkdir is error!ret=%d,", ret);
+		return -1;
 	}
-	free(listdat);
+	ret = ftp_cwd(fd, dict);
+	printf("cd:ret=%d\n", ret);
+	if (0 != ret)
+	{
+		printf("cwd is error,please check ret\n");
+		return -1;
+	}
 	/*ftp_cwd(fd, mkd);*/
-	ret = ftp_storefile_data(fd, data, fileOut, size);
-	printf("ftp_storefile_data:ret=%d", ret);
-	if (0 != ftp_cdup(fd))
+	if (0 !=  (ret = ftp_storefile_data(fd, data, fileOut, size)))
 	{
-		printf("cd .,failed .again link\n");
-		destroyFTP();
-		setupFTP(host, ftp_name, ftp_pwd, ftp_path);
-		return ret;
+
+		printf("ftp_storefile_data:ret=%d", ret);
+		return -1;
 	}
-	if (ret >= 300)
-		ret = -1;
+	if ( 0 != (ret = ftp_cdup(fd)))
+	{
+		printf("cd ..,failed .again link:ret=%d\n", ret);
+		return -1;
+	}
 	/*ret = ftp_quit(fd);*/
 	sprintf(fileOut_O, "/%s/%s/%s", ftp_path, dict, fileOut);
-//sprintf(fileOut, "/%s/%s/%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d%ld.jpg", ftp_path, dict, (1900 + p->tm_year), (1 + p->tm_mon), p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec, tval.tv_usec);
 	return ret;
-	/*
-	    int fd;
-	    // int port = 21;
-	    fd = cliopen(host,PORT);
-	    if(fd<0)
-	        printf("link error\n");
-	    char fileOutName[100];
-	    int ret=cmd_tcp(fd,data,size,fileOutName);
-	    sprintf(fileOut,"/%s/%s",ftp_path,fileOutName);
-	    printf("ftp finish!\n");
-	    return ret;*/
 }
 void destroyFTP()
 {
 	if (fd > 0)
 	{
 		int ret = ftp_quit(fd);
-		printf("destroy:%d\n", ret);
+		printf("destroy:ret=%d\n", ret);
 		fd = -1;
 	}
 }

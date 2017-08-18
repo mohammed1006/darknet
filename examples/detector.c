@@ -2,6 +2,7 @@
 #include <signal.h>
 static int coco_ids[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 67, 70, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 84, 85, 86, 87, 88, 89, 90};
 int frame_skip_g = 1;
+float frame_time_g = 1.0;
 char* cam_indexg;
 //static char* ftp_ip;
 //static char* ftp_name;
@@ -825,12 +826,14 @@ void run_detector(int argc, char **argv)
 		char *server = option_find_str(options2, "server_ip", "127.0.0.21");
 		char *robotID = option_find_str(options2, "robot_id", "123abc");
 		cam_indexg = option_find_str(options2, "camera", "rtsp://127.0.0.1:8554/a.mkv");
-		int port = option_find_int(options2, "server_port", 123321);    
-		char *socket_time_out = option_find_str(options2,"socket_time_out","0.10");
-		char *ftp_time_out = option_find_str(options2,"ftp_time_out","0.10");
-		printf("robot_param:ftp(%s,%s,%s,%s,%f),server(%s,%d),camera(%s),time_out(%s,%s)", ftp_ip, ftp_name1, ftp_pwd1, ftp_path1, ftp_thresh, server, port, cam_indexg,socket_time_out,ftp_time_out);
-		setupSocketTimeOut(socket_time_out,strlen(socket_time_out));
-		setupFtpTimeOut(ftp_time_out,strlen(ftp_time_out));
+		int port = option_find_int(options2, "server_port", 123321);
+		char *socket_time_out = option_find_str(options2, "socket_time_out", "0.10");
+		char *ftp_time_out = option_find_str(options2, "ftp_time_out", "0.10");
+        char *frame_time = option_find_str(options2,"frame_time","1.0");
+		frame_time_g=atof(frame_time);
+		printf("robot_param:ftp(%s,%s,%s,%s,%f),server(%s,%d),camera(%s),socket_ftp_time_out(%s,%s),frame_time(%f)", ftp_ip, ftp_name1, ftp_pwd1, ftp_path1, ftp_thresh, server, port, cam_indexg, socket_time_out, ftp_time_out,frame_time_g);
+		setupSocketTimeOut(socket_time_out, strlen(socket_time_out));
+		setupFtpTimeOut(ftp_time_out, strlen(ftp_time_out));
 		setupSocket(server, port, robotID, ftp_thresh);
 		setupFTP(ftp_ip, ftp_name1, ftp_pwd1, ftp_path1);
 		demo(cfg, weights, thresh, cam_indexg, filename, names, classes, frame_skip, prefix, avg, hier_thresh, width, height, fps, fullscreen);

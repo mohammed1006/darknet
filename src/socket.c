@@ -10,20 +10,22 @@
 #include <cJSON.h>
 #include "verifyutil.h"
 int sockfd;
-int socket_sec=0;
-int socket_usec=10;
+int socket_sec = 0;
+int socket_usec = 10;
 static char *robotIDg = (char *) "";
 static float threshg = 0;
 static char ipg[100];
 static int portg;
 extern char *cam_indexg;
 extern int frame_skip_g;
-int ftp(char *, int, char file[]);
+extern float frame_time_g;
+extern int ftp(char *, int, char file[]);
 void modiftFtp(const char *ip, const char *name, const char *pwd, const char *path);
 void destroy();
 void setupSocket(char *server, int port, char *robotID, float thresh);
 int modifyIP(cJSON *pSub );
-int printfFtp(char a[], int s);
+extern int printfFtp(char a[], int s);
+extern int againConnect();
 extern void modifyFtp(const char *ip, const char *name, const char *pwd, const char *path);
 void setupSocketTimeOut(const char* timeChar, int len)
 {
@@ -31,16 +33,16 @@ void setupSocketTimeOut(const char* timeChar, int len)
 	char setT[CHAR20] = {0};
 	for (; i < len; i++)
 	{
-		setT[i]=timeChar[i];	
+		setT[i] = timeChar[i];
 		if ('.' == timeChar[i])
 		{
-          setT[i]='\0';
-		  socket_sec=atoi(setT);
-		  socket_usec=atoi(&timeChar[i+1]);
-		  break;
+			setT[i] = '\0';
+			socket_sec = atoi(setT);
+			socket_usec = atoi(&timeChar[i + 1]);
+			break;
 		}
 	}
-	printf("socket set sec=%d,usec=%d\n",socket_sec,socket_usec);
+	printf("socket set sec=%d,usec=%d\n", socket_sec, socket_usec);
 }
 
 char *request(char param, char *url)
@@ -84,11 +86,12 @@ void write_to_cfg()
 	int thresh = 100 * threshg;
 	FILE *pFile = fopen("robot.cfg", "w");
 
-	sprintf(buf, "robot_id=%s\nserver_ip =%s\nserver_port=%d\nftp_thresh=%d\ncamera=%s\nframe_skip=%d\nsocket_time_out=%d.%d\n", robotIDg, ipg, portg, thresh, cam_indexg, frame_skip_g,socket_sec,socket_usec);
+	sprintf(buf, "robot_id=%s\nserver_ip =%s\nserver_port=%d\nftp_thresh=%d\ncamera=%s\nframe_skip=%d\nsocket_time_out=%d.%d\nframe_time=%.1f", robotIDg, ipg, portg, thresh, cam_indexg, frame_skip_g, socket_sec, socket_usec, frame_time_g);
 	fwrite (buf, 1, strnlen(buf, MAXLINE), pFile);
+	printf("write server information:%s", buf);
 	printfFtp(buf, MAXLINE);
 	fwrite (buf, 1, strnlen(buf, MAXLINE), pFile);
-
+	printf("write Ftp information:%s", buf);
 	fclose(pFile);
 }
 int modifyIP(cJSON *pSub )
@@ -111,13 +114,12 @@ char *getParam(char *pMsg)
 {
 	if (NULL == pMsg)
 	{
-		printf("json is NULL\n");
+		printf("jsonpMsg is NULL\n");
 		return NULL;
 	}
 	cJSON *pJson = cJSON_Parse(pMsg);
 	if (NULL == pJson)
 	{
-
 		printf("json parse fail\n");
 		return NULL;
 	}
@@ -136,7 +138,6 @@ char *getParam(char *pMsg)
 		else if ('0' == thrChar[0])
 		{
 			threshg = atof(thrChar);
-
 		}
 		else
 		{
@@ -155,9 +156,7 @@ char *getParam(char *pMsg)
 	//cJSON_AddNumberToObject(pJson,"statusCode",1000);
 	cJSON_AddStringToObject(pJson, "statusCode", "1000");
 	char *p = cJSON_Print(pJson);
-
 	cJSON_Delete(pJson);
-
 	return p;
 }
 void reciveData()
@@ -180,7 +179,7 @@ void reciveData()
 			printf("recv error setup socket fail");
 			break;
 		}
-		printf("recv data:%s,end:c,len:%d\n", &buf[sum_len], rec_len);
+		printf("recv data:%s\n,len:%d\n", &buf[sum_len], rec_len);
 		sum_len += rec_len;
 	}
 	while (rec_len == MAXLINE);
@@ -194,30 +193,22 @@ void reciveData()
 			match++;
 			if (1 == match)
 			{
-//                                   begin=rec_len;
-				//          getParam(&buf[rec_len]);
 				printf("recvData:%s", &buf[rec_len]);
 				char *ret = getParam(&buf[rec_len]);
 				free(ret);
-				//  write_to_cfg();
-
 			}
 			break;
 		case '}':
 			match--;
 			break;
-			/*       if(0==match){
-			           getParam(buf[begin]);
-			         }
-			         break;     */
 		}
 	}
 }
 void setupSocket(char *server, int port, char *robotID, float thresh)
 {
 	robotIDg = robotID;
-	int rec_len;
-	char    buf[MAXLINE];
+//	int rec_len;
+//	char    buf[MAXLINE];
 	struct sockaddr_in    servaddr;
 	threshg = thresh;
 	strcpy(ipg, server);
@@ -225,6 +216,7 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 	if ( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 	{
 		printf("create socket error: %s(errno: %d)\n", strerror(errno), errno);
+		return;
 	}
 	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
@@ -232,6 +224,7 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 	if ( inet_pton(AF_INET, server, &servaddr.sin_addr) <= 0)
 	{
 		printf("inet_pton error for %s\n", server);
+		destroy();
 		return;
 		// exit(0);
 	}
@@ -239,10 +232,10 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 	{
 		printf("connect error: %s(errno: %d)\n", strerror(errno), errno);
 		//  exit(0); a
-		sockfd = -1;
+		destroy();
 		return;
 	}
-	struct timeval timeout = {0, 20};
+	//struct timeval timeout = {0, 20};
 	//设置发送超时
 //setsockopt(sockfd，SOL_SOCKET,SO_SNDTIMEO，(char *)&timeout,sizeof(struct timeval));
 //设置接收超时
@@ -261,40 +254,45 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 	{
 		printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
 	}
-	free(sendjson);
-//  buf[rec_len]  = '\0';
+	if (NULL != sendjson)
+	{
+		free(sendjson);
+	}
+	else
+	{
+		printf("json create error\n");
+	}
 	reciveData();
-	printf("socket finish\n");
+	printf("socketsetup finish\n");
 }
 void sendData(char *data, int size, float thresh)
 {
-	printf("socket send!\n");
+	printf("socket send,begin!\n");
 	if (-1 == sockfd)
 	{
 		destroy();
 		setupSocket(ipg, portg, robotIDg, threshg);
-		if (-1 == sockfd)
-			return;
+		return;
 	}
-	static int index = 0;
+	static unsigned long long index = 0;
 	char retData = 'a';
 	char *url = NULL;
 	char fileOut[100] = {0};
-	printf("thresh:%f,", thresh);
+	printf("yolo check thresh=%f,", thresh);
 	if (NULL != data && size > 0 && thresh >= threshg)
 	{
-		printf("%f\n", threshg);
+		printf("ftp_thresh=%f\n", threshg);
 		if (ftp(data, size, fileOut) == 0)
 		{
 			url = &fileOut[0];
 			retData = 'b';
-
+		}
+		else
+		{
+			printf("ftp is error,again connect\n");
+			againConnect();
 		}
 	}
-	// return;
-	printf("send end\n");
-	//char urlChar[100];
-	//sprintf(urlChar,"%s",url);
 	char *sj = request(retData, url);
 	int len = strlen(sj);
 	char mess[1000];
@@ -310,61 +308,42 @@ void sendData(char *data, int size, float thresh)
 	}
 	free(sj);
 	if (-1 == sockfd)
+	{
+		printf("socket again link , but sockfd is still error\n");
 		return;
+	}
 	fd_set fdR;
 	FD_ZERO(&fdR);
 	FD_SET(sockfd, &fdR);
 	struct timeval timeout;
 	timeout.tv_usec = socket_usec;
 	timeout.tv_sec = socket_sec;
-	switch (select(sockfd + 1, &fdR, NULL, NULL, &timeout))
+	int selectRet = select(sockfd + 1, &fdR, NULL, NULL, &timeout);
+	switch (selectRet)
 	{
 	case -1:
 		perror("select -1\n");
 		printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
 		break;
 	case 0:
+		printf("select is not recv new message\n");
 		break;
 	default:
 		if (FD_ISSET(sockfd, &fdR))
 		{
-			/*  char buf[MAXLINE];
-			    int rec_len = -1;
-			    if ((rec_len = recv(sockfd, buf, MAXLINE, 0)) == -1)
-			    {
-			        perror("recv error");
-			        //  exit(1);
-			    }
-			    else
-			    {
-			        printf("revive %d\n", rec_len);
-			        char *beginJson = strchr(buf, '{');
-			        int index = 0;
-			        for (; index < rec_len; index++)
-			        {
-			            if ('}' == buf[index])
-			            {
-			                buf[index + 1] = '}';
-			                break;
-			            }
-			        }
-			        //      strcat(beginJson, "}");
-			        //  char *endJson = strrchr(buf,'}');
-			        //  *(endJson+1)='\0';
-			        char *ret = getParam(beginJson);
-			        free(ret);
-			        write_to_cfg();
-			    }*/
+			printf("select is recv,selectRet=%d\n", selectRet);
 			reciveData();
-			// free(para);
 		}
 
 	}
-	printf("socket finsh num:%d\n", index++);
+	printf("socket finsh num:%lld\n", index++);
 }
 
 void destroy()
 {
 	if (close(sockfd) < 0)
+	{
 		printf("close error\n");
+	}
+	sockfd = -1;
 }

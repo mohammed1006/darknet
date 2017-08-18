@@ -269,6 +269,7 @@ int ftp_list_n( int c_sock, char *path, void **data, unsigned long long *data_le
 	d_sock = ftp_pasv_connect(c_sock);
 	if (d_sock == -1)
 	{
+		printf("d_sock failed\n");	
 		return -1;
 	}
 
@@ -276,8 +277,10 @@ int ftp_list_n( int c_sock, char *path, void **data, unsigned long long *data_le
 	bzero(buf, sizeof(buf));
 	sprintf( buf, "LIST %s\r\n", path);
 	send_re = ftp_sendcmd( c_sock, buf );
-	if (send_re >= 300 || send_re == 0)
+	if (send_re >= 300 || send_re == 0){
+   		printf("list error!ret=%d\n",send_re);
 		return send_re;
+	}
 
 	len = total_len = 0;
 	buf_len = 512;
@@ -305,6 +308,7 @@ int ftp_list_n( int c_sock, char *path, void **data, unsigned long long *data_le
 	if ( result != 226 )
 	{
 		free(re_buf);
+		re_buf=NULL;
 		return result;
 	}
 

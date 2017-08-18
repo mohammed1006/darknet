@@ -90,12 +90,14 @@ void setupFTP(const char *ip, const char *name, const char *pwd, const char *pat
 	if (fd < 0)
 	{
 		printf("ftp connect fail!\n");
+		destroyFTP();
 		return;
 	}
 	int ret = ftp_cwd(fd, ftp_path);
 	if (0 != ret)
 	{
 		printf("setup cwd is error,ret=%d", ret);
+		destroyFTP();
 	}
 }
 void modifyFtp(const char *ip, const char *name, const char *pwd, const char *path)
@@ -245,8 +247,8 @@ void destroyFTP()
 	{
 		int ret = ftp_quit(fd);
 		printf("destroy:ret=%d\n", ret);
-		fd = -1;
 	}
+	fd = -1;
 }
 
 

@@ -323,16 +323,27 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 	demo_time = get_wall_time();
 	int frame_again_count = 5;
 	int frame_again_index = 0;
+	int static frame_capture_failed = 0;
 	while (1)
 	{
 
 		if (1 == demo_done)
 		{
 			printf("begin capture!\n");
-			cvReleaseCapture(&cap);
+			if (!cap)
+				cvReleaseCapture(&cap);
 			cap = cvCreateFileCapture(cam_index);
 			if (!cap)
 			{
+				if (frame_capture_failed > 10)
+				{
+					printf("again capture greate 10 exit\n");
+					exit(0);
+				}
+				else
+				{
+					frame_capture_failed++;
+				}
 				printf("again capture,but still error\n");
 				break;
 			}
@@ -375,11 +386,12 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 		pthread_join(fetch_thread, 0);
 		pthread_join(detect_thread, 0);
 		display_in_thread(0);
-		printf("next frame,count=%d\n",count);
+		printf("next frame,count=%d\n", count);
 		++count;
-		if(count<1){
-             demo_done=1;
-			 count=0;
+		if (count < 1)
+		{
+			demo_done = 1;
+			count = 0;
 		}
 		if ( kbhit() )
 		{

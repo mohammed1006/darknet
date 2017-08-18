@@ -38,9 +38,14 @@ void setupSocketTimeOut(const char* timeChar, int len)
 		{
 			setT[i] = '\0';
 			socket_sec = atoi(setT);
-			socket_usec = atoi(&timeChar[i + 1]);
+			socket_usec =((i+1)==len)?0:(atoi(&timeChar[i + 1]) * 1000);
 			break;
 		}
+	}
+	if (i == len)
+	{
+		socket_sec = atoi(timeChar);
+		socket_usec = 0;
 	}
 	printf("socket set sec=%d,usec=%d\n", socket_sec, socket_usec);
 }
@@ -86,7 +91,7 @@ void write_to_cfg()
 	int thresh = 100 * threshg;
 	FILE *pFile = fopen("robot.cfg", "w");
 
-	sprintf(buf, "robot_id=%s\nserver_ip =%s\nserver_port=%d\nftp_thresh=%d\ncamera=%s\nframe_skip=%d\nsocket_time_out=%d.%d\nframe_time=%.1f", robotIDg, ipg, portg, thresh, cam_indexg, frame_skip_g, socket_sec, socket_usec, frame_time_g);
+	sprintf(buf, "robot_id=%s\nserver_ip =%s\nserver_port=%d\nftp_thresh=%d\ncamera=%s\nframe_skip=%d\nsocket_time_out=%d.%d\nframe_time=%.1f\n", robotIDg, ipg, portg, thresh, cam_indexg, frame_skip_g, socket_sec, socket_usec, frame_time_g);
 	fwrite (buf, 1, strnlen(buf, MAXLINE), pFile);
 	printf("write server information:%s", buf);
 	printfFtp(buf, MAXLINE);

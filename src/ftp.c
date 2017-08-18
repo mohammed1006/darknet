@@ -76,9 +76,14 @@ void setupFtpTimeOut(const char* timeChar, int len)
 		{
 			setT[i] = '\0';
 			ftp_sec = atoi(setT);
-			ftp_usec = atoi(&timeChar[i + 1]);
+			ftp_usec = ((i+1)==len)?0:(atoi(&timeChar[i + 1]) * 1000);;
 			break;
 		}
+	}
+if (i == len)
+	{
+		ftp_sec = atoi(timeChar);
+		ftp_usec = 0;
 	}
 	printf("set sec=%d,usec=%d\n", ftp_sec, ftp_usec);
 }

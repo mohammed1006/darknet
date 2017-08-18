@@ -181,11 +181,15 @@ void reciveData()
 	//char *message[10];
 	do
 	{
-		if ((rec_len = recv(sockfd, &buf[sum_len], MAXLINE, 0)) < 1)
+		rec_len = recv(sockfd, &buf[sum_len], MAXLINE, 0);
+		if (rec_len <= 0)
 		{
 			perror("recv error");
-			printf("recv error setup socket fail");
-			break;
+			printf("rec_len=%d,connect has bean close , reconnect... ...\n",rec_len);
+			printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
+			destroy();
+			setupSocket(ipg,portg,robotIDg,threshg);
+			return;
 		}
 		printf("recv data:%s\n,len:%d\n", &buf[sum_len], rec_len);
 		sum_len += rec_len;
@@ -313,7 +317,7 @@ void sendData(char *data, int size, float thresh)
 	char mess[1000];
 	long crc = Crc32((unsigned char *)sj, len);
 	sprintf(mess, "ContentLength:%d\r\n%s\r\nCRC32Verify:%ld\\", len, sj, crc);
-	if ( send(sockfd, mess, strlen(mess), MSG_NOSIGNAL) < 0)
+	if ( send(sockfd, mess, strlen(mess), MSG_NOSIGNAL) <= 0)
 	{
 		printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
 		printf("begin again link to server(%s,%d,%s,%f)\n", ipg, portg, robotIDg, threshg);

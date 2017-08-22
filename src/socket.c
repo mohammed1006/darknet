@@ -2,9 +2,11 @@
 #include<stdlib.h>
 #include<string.h>
 #include<errno.h>
+#include<unistd.h>
 #include<sys/types.h>
 #include<sys/socket.h>
 #include<netinet/in.h>
+#include<arpa/inet.h>
 #define MAXLINE 4096
 #define CHAR20 20
 #include <cJSON.h>
@@ -34,7 +36,7 @@ void setupSocketTimeOut(const char* timeChar, int len)
 	float value = atof(timeChar);
 	socket_sec = (int)value;
 	socket_usec = (value - socket_sec) * 1000;
-	printf("socket set sec=%d,usec=%d\n", socket_sec, socket_usec);
+	printf("socket%d set sec=%d,usec=%d\n",len, socket_sec, socket_usec);
 }
 
 char *request(char param, char *url)

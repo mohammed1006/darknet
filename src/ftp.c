@@ -63,7 +63,7 @@ void handle_pipe(int sig)
 	//fd = -1;
 	destroyFTP();
 	setupFTP(host, ftp_name, ftp_pwd, ftp_path);
-	printf("socket close error ,pipe break!,link again\n");
+	printf("socket close error ,pipe break!,link again%d\n",sig);
 }
 void setupFtpTimeOut(const char* timeChar, int len)
 {
@@ -71,7 +71,7 @@ void setupFtpTimeOut(const char* timeChar, int len)
 	ftp_sec = (int)value;
 	ftp_usec = (value - ftp_sec) * 1000;
 
-	printf("set sec=%d,usec=%d\n", ftp_sec, ftp_usec);
+	printf("set%d sec=%d,usec=%d\n",len, ftp_sec, ftp_usec);
 }
 void setupFTP(const char *ip, const char *name, const char *pwd, const char *path)
 {
@@ -113,6 +113,7 @@ void modifyFtp(const char *ip, const char *name, const char *pwd, const char *pa
 void printfFtp(char out[], int size)
 {
 	sprintf(out, "ftp_ip=%s\nftp_name=%s\nftp_pwd=%s\nftp_path=%s\nftp_time_out=%.3f\n", host, ftp_name, ftp_pwd, ftp_path, ftp_sec + 0.001 * ftp_usec);
+	printf("modifyFtp:%s,%d\n",out,size);
 }
 int ftp_active()
 {

@@ -4,6 +4,7 @@ static int coco_ids[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 
 int frame_skip_g = 1;
 float frame_time_g = 1.0;
 char* cam_indexg;
+int paramScale = 30;
 //static char* ftp_ip;
 //static char* ftp_name;
 //static char* ftp_pwd;
@@ -829,9 +830,10 @@ void run_detector(int argc, char **argv)
 		int port = option_find_int(options2, "server_port", 123321);
 		char *socket_time_out = option_find_str(options2, "socket_time_out", "0.10");
 		char *ftp_time_out = option_find_str(options2, "ftp_time_out", "0.10");
-        char *frame_time = option_find_str(options2,"frame_time","1.0");
-		frame_time_g=atof(frame_time);
-		printf("robot_param:ftp(%s,%s,%s,%s,%f),server(%s,%d),camera(%s),socket_ftp_time_out(%s,%s),frame_time(%f)", ftp_ip, ftp_name1, ftp_pwd1, ftp_path1, ftp_thresh, server, port, cam_indexg, socket_time_out, ftp_time_out,frame_time_g);
+		char *frame_time = option_find_str(options2, "frame_time", "1.0");
+		paramScale = option_find_int(options2,"compressibility",30);
+		frame_time_g = atof(frame_time);
+		printf("robot_param:ftp(%s,%s,%s,%s,%f),server(%s,%d),camera(%s),socket_ftp_time_out(%s,%s),frame_time(%f),compressiblity(%d)", ftp_ip, ftp_name1, ftp_pwd1, ftp_path1, ftp_thresh, server, port, cam_indexg, socket_time_out, ftp_time_out, frame_time_g,paramScale);
 		setupSocketTimeOut(socket_time_out, strlen(socket_time_out));
 		setupFtpTimeOut(ftp_time_out, strlen(ftp_time_out));
 		setupFTP(ftp_ip, ftp_name1, ftp_pwd1, ftp_path1);

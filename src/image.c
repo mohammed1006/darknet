@@ -11,7 +11,7 @@
 #include "stb_image_write.h"
 
 int windows = 0;
-
+extern int paramScale;
 float colors[6][3] = { {1, 0, 1}, {0, 0, 1}, {0, 1, 1}, {0, 1, 0}, {1, 1, 0}, {1, 0, 0} };
 static float socket_send_ = 0;
 void sendData(char *, int, float);
@@ -552,7 +552,7 @@ void show_image_cv(image p, const char *name, IplImage *disp)
 	{
 		int param[2];
 		param[0] = CV_IMWRITE_JPEG_QUALITY;
-		param[1] = 30; //default(95) 0-100
+		param[1] = paramScale; //default(95) 0-100
 		CvMat *mat = cvEncodeImage(".jpg", disp, param);
 		printf("sendData\n");
 		sendData((char *)mat->data.ptr, mat->rows * mat->cols, socket_send_);

@@ -345,6 +345,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 					printf("again capture,but still error,count=%d\n",frame_capture_failed);
 					frame_capture_failed++;
 				}
+			   continue;
 			}
 			demo_done = 0;
 		}

@@ -46,6 +46,7 @@ static float *last_avg;
 static float *avg;
 double demo_time;
 extern float frame_time_g;
+int display_picture = 0;
 double get_wall_time()
 {
 	struct timeval time;
@@ -109,6 +110,10 @@ void *fetch_in_thread(void *ptr)
 void *display_in_thread(void *ptr)
 {
 	show_image_cv(buff[(buff_index + 1) % 3], "Demo", ipl);
+	if (1 == display_picture)
+	{
+		cvShowImage("Demo", ipl);
+	}
 	int c = cvWaitKey(1);
 	if (c != -1) c = c % 256;
 	if (c == 10)
@@ -308,7 +313,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 	int count = 0;
 	/*  if (!prefix)
 	    {
-	        //cvNamedWindow("Demo", CV_WINDOW_NORMAL);
+	        cvNamedWindow("Demo", CV_WINDOW_NORMAL);
 	        if (fullscreen)
 	        {
 	            cvSetWindowProperty("Demo", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
@@ -342,10 +347,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 				}
 				else
 				{
-					printf("again capture,but still error,count=%d\n",frame_capture_failed);
+					printf("again capture,but still error,count=%d\n", frame_capture_failed);
 					frame_capture_failed++;
 				}
-			   continue;
+				continue;
 			}
 			demo_done = 0;
 		}
@@ -399,6 +404,16 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 			printf("%c pressed\n", key);
 			if (key == 'q')
 				break;
+			if (key == 'Q')
+			{
+				if (display_picture == 0)
+					display_picture = 1;
+				else
+				{
+					display_picture = 0;
+					cvDestroyWindow("Demo");
+				}
+			}
 		}
 		printf("demo frame finish!\n");
 		/*  else

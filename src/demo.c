@@ -84,8 +84,8 @@ void *detect_in_thread(void *ptr)
 	}
 	if (nms > 0) do_nms_obj(boxes, probs, l.w * l.h * l.n, l.classes, nms);
 
-	printf("\033[2J");
-	printf("\033[1;1H");
+	/*printf("\033[2J");*/
+	/*printf("\033[1;1H");*/
 	printf("\nFPS:%.1f\n", fps);
 	printf("Objects:\n\n");
 	image display = buff[(buff_index + 2) % 3];
@@ -388,7 +388,16 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 			//save_image(buff[(buff_index + 1)%3], name);
 		}
 		printf("thread join\n");
-		pthread_join(fetch_thread, 0);
+  struct timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+	ts.tv_sec += 5;
+	 int s = pthread_timedjoin_np(fetch_thread, NULL, &ts);
+	 if(0!=s)
+	 {
+					 printf("capture timeOut so exit\n");
+					 exit(0);
+	 }
+		//pthread_join(fetch_thread, 0);
 		pthread_join(detect_thread, 0);
 		display_in_thread(0);
 		printf("next frame,count=%d\n", count);

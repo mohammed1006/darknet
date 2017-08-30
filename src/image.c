@@ -669,6 +669,7 @@ int fill_image_from_stream(CvCapture *cap, image im)
 	printf("capture frame\n");
 	IplImage *src = cvQueryFrame(cap);
 	int i = 0;
+	printf("capture frame:frame_skip_g=%d,",frame_skip_g);
 	for (; i < frame_skip_g; i++)
 	{
 
@@ -679,7 +680,9 @@ int fill_image_from_stream(CvCapture *cap, image im)
 		}
 
 		src = cvQueryFrame(cap);
+		printf("%d,",i);
 	}
+	printf("|\n");
 	ipl_into_image(src, im);
 	rgbgr_image(im);
 	return 1;

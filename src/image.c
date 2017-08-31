@@ -12,9 +12,16 @@
 
 int windows = 0;
 extern int paramScale;
+extern float threshg;
 float colors[6][3] = { {1, 0, 1}, {0, 0, 1}, {0, 1, 1}, {0, 1, 0}, {1, 1, 0}, {1, 0, 0} };
 static float socket_send_ = 0;
 void sendData(char *, int, float);
+
+
+extern pthread_mutex_t mtx;
+extern pthread_cond_t cond;
+extern list* pictureList;
+int  max_buffer_size = 5;
 float get_color(int c, int x, int max)
 {
 	float ratio = ((float)x / max) * 5;
@@ -515,7 +522,7 @@ void show_image_cv(image p, const char *name, IplImage *disp)
 	int x, y, k;
 	if (p.c == 3) rgbgr_image(p);
 	//normalize_image(copy);
-
+	static int send_heart_index = 0;
 	char buff[256];
 	//sprintf(buff, "%s (%d)", name, windows);
 	sprintf(buff, "%s", name);
@@ -549,22 +556,50 @@ void show_image_cv(image p, const char *name, IplImage *disp)
 		cvReleaseImage(&buffer);
 	}
 	//cvShowImage(buff, disp);
-	if (socket_send_ > 0)
+	printf("sendData(%.2f,%.2f)\n",socket_send_,threshg);
+	if (socket_send_ > threshg || send_heart_index > 5)
 	{
-		int param[2];
-		param[0] = CV_IMWRITE_JPEG_QUALITY;
-		param[1] = paramScale; //default(95) 0-100
-		CvMat *mat = cvEncodeImage(".jpg", disp, param);
+    send_heart_index=0;
+		CvMat *mat = NULL;
+		if (socket_send_ > threshg)
+		{
+			int param[2];
+			param[0] = CV_IMWRITE_JPEG_QUALITY;
+			param[1] = paramScale; //default(95) 0-100
+			mat = cvEncodeImage(".jpg", disp, param);
+		}
 		printf("sendData\n");
-		sendData((char *)mat->data.ptr, mat->rows * mat->cols, socket_send_);
+		pthread_mutex_lock(&mtx);
+		if (NULL != pictureList)
+		{
+			if (pictureList->size > max_buffer_size)
+			{
+				do
+				{
+					CvMat* tmp = (CvMat*)list_pop_front(pictureList);
+					if (NULL != tmp)
+					{
+						cvReleaseMat(&tmp);
+						break;
+					}
+				}
+				while (pictureList->size > 0);
+			}
+			list_insert(pictureList, (void*)mat);
+		}
+		pthread_cond_signal(&cond);
+		pthread_mutex_unlock(&mtx);
+
+		//sendData((char *)mat->data.ptr, mat->rows * mat->cols, socket_send_);
 		printf("release\n");
-		cvReleaseMat(&mat);
+		//cvReleaseMat(&mat);
 		socket_send_ = -1;
 
 	}
 	else
 	{
-		sendData(NULL, 0, 0);
+		//  sendData(NULL, 0, 0);
+		send_heart_index++;
 	}
 
 	cvWaitKey(100);
@@ -669,7 +704,6 @@ int fill_image_from_stream(CvCapture *cap, image im)
 	printf("capture frame\n");
 	IplImage *src = cvQueryFrame(cap);
 	int i = 0;
-	printf("capture frame:frame_skip_g=%d,",frame_skip_g);
 	for (; i < frame_skip_g; i++)
 	{
 
@@ -680,9 +714,7 @@ int fill_image_from_stream(CvCapture *cap, image im)
 		}
 
 		src = cvQueryFrame(cap);
-		printf("%d,",i);
 	}
-	printf("|\n");
 	ipl_into_image(src, im);
 	rgbgr_image(im);
 	return 1;

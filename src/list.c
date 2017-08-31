@@ -25,17 +25,41 @@ void transfer_node(list *s, list *d, node *n)
 }
 */
 
-void *list_pop(list *l){
-    if(!l->back) return 0;
-    node *b = l->back;
-    void *val = b->val;
-    l->back = b->prev;
-    if(l->back) l->back->next = 0;
-    free(b);
-    --l->size;
-    
-    return val;
+void *list_pop(list *l)
+{
+	if (!l->back) return 0;
+	node *b = l->back;
+	void *val = b->val;
+	l->back = b->prev;
+	if (l->back) l->back->next = 0;
+	free(b);
+	--l->size;
+
+	return val;
 }
+
+void *list_pop_front(list *l)
+{
+
+	printf("ll0 size=%d\n", l->size);
+	if (!l->front)
+	{
+		printf("l->front null\n");
+		return 0;
+	}
+
+	node *b = l->front;
+	void *val = b->val;
+
+	l->front = b->next;
+	if (l->front) l->front->prev = 0;
+
+	free(b);
+	--l->size;
+	printf("ll size=%d\n", l->size);
+	return val;
+}
+
 
 void list_insert(list *l, void *val)
 {
@@ -43,10 +67,13 @@ void list_insert(list *l, void *val)
 	new->val = val;
 	new->next = 0;
 
-	if(!l->back){
+	if (!l->back)
+	{
 		l->front = new;
 		new->prev = 0;
-	}else{
+	}
+	else
+	{
 		l->back->next = new;
 		new->prev = l->back;
 	}
@@ -57,7 +84,8 @@ void list_insert(list *l, void *val)
 void free_node(node *n)
 {
 	node *next;
-	while(n) {
+	while (n)
+	{
 		next = n->next;
 		free(n);
 		n = next;
@@ -73,7 +101,8 @@ void free_list(list *l)
 void free_list_contents(list *l)
 {
 	node *n = l->front;
-	while(n){
+	while (n)
+	{
 		free(n->val);
 		n = n->next;
 	}
@@ -81,12 +110,13 @@ void free_list_contents(list *l)
 
 void **list_to_array(list *l)
 {
-    void **a = calloc(l->size, sizeof(void*));
-    int count = 0;
-    node *n = l->front;
-    while(n){
-        a[count++] = n->val;
-        n = n->next;
-    }
-    return a;
+	void **a = calloc(l->size, sizeof(void*));
+	int count = 0;
+	node *n = l->front;
+	while (n)
+	{
+		a[count++] = n->val;
+		n = n->next;
+	}
+	return a;
 }

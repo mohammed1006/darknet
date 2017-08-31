@@ -465,33 +465,48 @@ int ftp_storefile_data(int c_sock, char *data, char* name, unsigned long long si
 	char    buf[512];
 	int send_re;
 	int result;
+	struct timeval begin;
+	struct timeval end;
 
-
+	gettimeofday(&begin, NULL);
+	printf("ftp_type begin time : %ld&%ld\n", begin.tv_sec, begin.tv_usec);
 	//设置传输模式
 	ftp_type(c_sock, 'I');
+	gettimeofday(&end, NULL);
+	printf("ftp_type end time : %ld&%ld\n", end.tv_sec, end.tv_usec);
 
 	//连接到PASV接口
+	gettimeofday(&begin, NULL);
+	printf("ftp_pasv_connect begin time : %ld&%ld\n", begin.tv_sec, begin.tv_usec);
 	d_sock = ftp_pasv_connect(c_sock);
 	if (d_sock == -1)
 	{
 		printf("ftp_storefile_data ftp_pasv_connect failed\n");
 		return -1;
 	}
+	gettimeofday(&end, NULL);
+	printf("ftp_pasv_connect end time : %ld&%ld\n", end.tv_sec, end.tv_usec);
 
 	//发送STOR命令
 	bzero(buf, sizeof(buf));
 	sprintf( buf, "STOR %s\r\n", name );
+	gettimeofday(&begin, NULL);
+	printf("ftp_sendcmd begin time : %ld&%ld\n", begin.tv_sec, begin.tv_usec);
 	send_re = ftp_sendcmd( c_sock, buf );
 	if (send_re >= 300 || send_re == 0)
 	{
 		printf("ftp_storefile_data ftp_sendcmd failed.ret=%d\n", send_re);
 		return send_re;
 	}
+	gettimeofday(&end, NULL);
+	printf("ftp_sendcmd end time : %ld&%ld\n", end.tv_sec, end.tv_usec);
 
 	int nread = 0;
 	int i = 0;
 	// int sum=strlen(data);
 	int sum = size;
+	gettimeofday(&begin, NULL);
+	printf("while (i < sum) begin time : %ld&%ld\n", begin.tv_sec, begin.tv_usec);
 	while (i < sum)
 	{
 		nread = (i + MAXBUFDATA <= sum) ? MAXBUFDATA : (sum - i);
@@ -502,11 +517,14 @@ int ftp_storefile_data(int c_sock, char *data, char* name, unsigned long long si
 		}
 		i += nread;
 	}
-
+	gettimeofday(&end, NULL);
+	printf("while (i < sum) end time : %ld&%ld\n", end.tv_sec, end.tv_usec);
 
 	//开始向PASV通道写数据
 	close( d_sock );
-
+	
+	gettimeofday(&begin, NULL);
+	printf("recv begin time : %ld&%ld", begin.tv_sec, begin.tv_usec);
 	//向服务器接收返回值
 	bzero(buf, sizeof(buf));
 	len = recv( c_sock, buf, 512, 0 );
@@ -517,6 +535,9 @@ int ftp_storefile_data(int c_sock, char *data, char* name, unsigned long long si
 		printf("ftp_storefile_data recv code failed.ret=%d\n", result);
 		return result;
 	}
+	gettimeofday(&end, NULL);
+	printf("recv end time : %ld&%ld\n", end.tv_sec, end.tv_usec);
+
 	return 0;
 
 }

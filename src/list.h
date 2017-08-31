@@ -9,5 +9,5 @@ void list_insert(list *, void *);
 
 
 void free_list_contents(list *l);
-
+void* list_pop_front(list*);
 #endif

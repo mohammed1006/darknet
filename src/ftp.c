@@ -176,6 +176,12 @@ int againConnect()
 }
 int  ftp(char *data, int size, char fileOut_O[])
 {
+	time_t timep;
+	struct tm *p;
+	struct timeval tval;
+	struct timeval begin;
+	struct timeval end;
+	
 	int ret = -1;
 	/*int fd = ftp_connect(host, PORT, ftp_name, ftp_pwd);*/
 	if (fd < 0)
@@ -188,15 +194,18 @@ int  ftp(char *data, int size, char fileOut_O[])
 	char *listdat;
 	unsigned long long listlen;
 	/*printf("ls %s\n", ftp_path);*/
+	
+	gettimeofday(&begin, NULL);
+	printf("ftp_list_n begin time : %ld&%ld\n", begin.tv_sec, begin.tv_usec);
 	ret = ftp_list_n(fd, (char*) "."/*ftp_path*/, (void **) &listdat, &listlen);
 	if (0 != ret)
 	{
 		printf("ftp_list_n:ret=%d", ret);
 		return -1;
 	}
-	time_t timep;
-	struct tm *p;
-	struct timeval tval;
+	gettimeofday(&end, NULL);
+	printf("ftp_list_n end time : %ld&%ld\n", end.tv_sec, end.tv_usec);
+	
 	gettimeofday(&tval, NULL);
 	time(&timep);
 	p = localtime(&timep); /*取得当地时间*/
@@ -219,14 +228,25 @@ int  ftp(char *data, int size, char fileOut_O[])
 		printf("mkdir is error!ret=%d,", ret);
 		return -1;
 	}
+	
+	gettimeofday(&begin, NULL);
+	printf("ftp_cwd begin time : %ld&%ld\n", begin.tv_sec, begin.tv_usec);
+	
 	ret = ftp_cwd(fd, dict);
 	printf("cd:ret=%d\n", ret);
+	
+	gettimeofday(&end, NULL);
+	printf("ftp_cwd begin time : %ld&%ld\n", end.tv_sec, end.tv_usec);
+	
 	if (0 != ret)
 	{
 		printf("cwd is error,please check ret\n");
 		return -1;
 	}
 	/*ftp_cwd(fd, mkd);*/
+	gettimeofday(&begin, NULL);
+	printf("ftp_storefile_data begin time : %ld&%ld\n", begin.tv_sec, begin.tv_usec);
+	
 	if (0 !=  (ret = ftp_storefile_data(fd, data, fileOut, size)))
 	{
 

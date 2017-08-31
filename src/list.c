@@ -41,7 +41,7 @@ void *list_pop(list *l)
 void *list_pop_front(list *l)
 {
 
-	printf("ll0 size=%d\n", l->size);
+//	printf("ll0 size=%d\n", l->size);
 	if (!l->front)
 	{
 		printf("l->front null\n");
@@ -52,11 +52,14 @@ void *list_pop_front(list *l)
 	void *val = b->val;
 
 	l->front = b->next;
-	if (l->front) l->front->prev = 0;
+	if (l->front)
+		l->front->prev = 0;
+	else
+		l->back = 0;
 
 	free(b);
 	--l->size;
-	printf("ll size=%d\n", l->size);
+	//printf("ll size=%d\n", l->size);
 	return val;
 }
 

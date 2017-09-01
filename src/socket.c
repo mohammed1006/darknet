@@ -297,17 +297,17 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 		//这个mutex主要是用来保证pthread_cond_wait的并发性
 		while (pictureList->size == 0)
 		{
-			printf("sleep\n");
+			printf("pictureList size is 0,so wait detect person into pictureList\n");
 			pthread_cond_wait(&cond, &mtx);
-			printf("cond_notify,size=%d\n", pictureList->size);
+			printf("get a picture in pictureList,so notify , get picture ready!picture size=%d\n", pictureList->size);
 		}
-		printf("cond_notify2,size=%d\n", pictureList->size);
+		printf("get picture,picturelist size=%d\n", pictureList->size);
 		//CvMat* mat = (CvMat*)list_pop_front(pictureList);
 		IplImage* mat = (IplImage*)list_pop_front(pictureList);
 		pthread_mutex_unlock(&mtx);             //临界区数据操作完毕，释放互斥锁
 		if (NULL != mat)
 		{
-			printf("send true data\n");
+			printf("ready send data\n");
 			int param[2];
 			param[0] = CV_IMWRITE_JPEG_QUALITY;
 			param[1] = 95;//paramScale;default(95) 0-100
@@ -320,7 +320,7 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 		}
 		else
 		{
-			printf("send heartbeat\n");
+			printf("ready send heartbeat\n");
 			sendData((char *)NULL, 0, 0);
 		}
 
@@ -332,7 +332,7 @@ void sendData(char *data, int size, float thresh)
 	printf("socket send,begin!\n");
 	if (-1 == sockfd)
 	{
-		printf("socketfd is -1\n");
+		printf("socketfd is -1,begin link\n");
 		destroy();
 		setupSocket(ipg, portg, robotIDg, threshg);
 		return;

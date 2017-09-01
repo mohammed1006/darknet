@@ -760,7 +760,7 @@ image get_image_from_stream(CvCapture *cap)
 int fill_image_from_stream(CvCapture *cap, image im, IplImage* imcv)
 {
 	double st = get_wall_time();
-	printf("capture1f frame begin %lf\n", st);
+	/*printf("capture1f frame begin %lf\n", st);*/
 	IplImage *src = NULL;//cvQueryFrame(cap);
 	/*  int i = 0;
 	    for (; i < frame_skip_g; i++)
@@ -780,9 +780,9 @@ int fill_image_from_stream(CvCapture *cap, image im, IplImage* imcv)
 		src = (IplImage*)list_pop_front(pictureList2);
 		while (NULL == src)
 		{
-			printf("src is empty,so wait\n");
+			printf("pictureList2 is size o,so wait(capture slow,frame_skip_g should small)\n");
 			pthread_cond_wait(&cond2, &mtx2);
-			printf("wait condition\n");
+			printf("capture picture from pictureList2\n");
 			src = (IplImage*)list_pop_front(pictureList2);
 		}
 		cvCopy(src, imcv, NULL);
@@ -799,7 +799,7 @@ int fill_image_from_stream(CvCapture *cap, image im, IplImage* imcv)
 	// printf("image2 size(%d,%d),size(%d,%d)\n",src->depth,0,imcv->depth,0);
 	ipl_into_image(src, im);
 	rgbgr_image(im);
-	printf("capture1f end %lf\n", get_wall_time()-st);
+	printf("fill a picture in buff,cost: %lf\n", get_wall_time()-st);
 	return 1;
 }
 

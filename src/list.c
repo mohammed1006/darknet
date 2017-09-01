@@ -4,7 +4,7 @@
 
 list *make_list()
 {
-	list *l = malloc(sizeof(list));
+	list *l = (list*)malloc(sizeof(list));
 	l->size = 0;
 	l->front = 0;
 	l->back = 0;
@@ -41,7 +41,7 @@ void *list_pop(list *l)
 void *list_pop_front(list *l)
 {
 
-//	printf("ll0 size=%d\n", l->size);
+//	printf("before pop_front ll0 size=%d, list->front=%p\n", l->size, l->front);
 	if (!l->front)
 	{
 		printf("l->front null\n");
@@ -53,20 +53,24 @@ void *list_pop_front(list *l)
 
 	l->front = b->next;
 	if (l->front)
+	{
 		l->front->prev = 0;
+	}
 	else
+	{
 		l->back = 0;
+	}
 
 	free(b);
 	--l->size;
-	//printf("ll size=%d\n", l->size);
+//	printf("ll size=%d front=%p\n", l->size, l->front);
 	return val;
 }
 
 
 void list_insert(list *l, void *val)
 {
-	node *new = malloc(sizeof(node));
+	node *new = (node*)malloc(sizeof(node));
 	new->val = val;
 	new->next = 0;
 
@@ -82,6 +86,14 @@ void list_insert(list *l, void *val)
 	}
 	l->back = new;
 	++l->size;
+
+//       printf("after insert:front=%p, back=%p, size=%d, ", l->front, l->back, l->size);
+
+	/*     if (l->front)
+	     {
+	         printf("front->next=%p\n", l->front->next);
+	     }
+	     */
 }
 
 void free_node(node *n)

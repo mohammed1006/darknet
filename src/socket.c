@@ -17,6 +17,7 @@
 int sockfd;
 int socket_sec = 0;
 int socket_usec = 10;
+char  servertime[] = "20160212";
 static char *robotIDg = (char *) "";
 float threshg = 0;
 static char ipg[100];
@@ -24,6 +25,9 @@ static int portg;
 extern char *cam_indexg;
 extern int frame_skip_g;
 extern float frame_time_g;
+extern int paramScale;
+extern int throwRepeat;
+extern char* srcID;
 pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 list* pictureList = NULL;
@@ -60,7 +64,7 @@ char *request(char param, char *url)
 	cJSON_AddStringToObject(pJsonRoot, "mode", "request");
 	cJSON_AddStringToObject(pJsonRoot, "robotid", robotIDg);
 	cJSON_AddStringToObject(pJsonRoot, "targetID", "4");
-	cJSON_AddStringToObject(pJsonRoot, "sourceID", "6");
+	cJSON_AddStringToObject(pJsonRoot, "sourceID", srcID);
 	switch (param)
 	{
 	case 'a':
@@ -87,7 +91,7 @@ void write_to_cfg()
 	int thresh = 100 * threshg;
 	FILE *pFile = fopen("robot.cfg", "w");
 
-	sprintf(buf, "robot_id=%s\nserver_ip =%s\nserver_port=%d\nftp_thresh=%d\ncamera=%s\nframe_skip=%d\nsocket_time_out=%.3f\nframe_time=%.1f\n", robotIDg, ipg, portg, thresh, cam_indexg, frame_skip_g, socket_sec + 0.001 * socket_usec, frame_time_g);
+	sprintf(buf, "robot_id=%s\nserver_ip =%s\nserver_port=%d\nftp_thresh=%d\ncamera=%s\nframe_skip=%d\nsocket_time_out=%.3f\nframe_time=%.1f\ncompressibility=%d\nthrowRepeat=%d\nsrcID=%s\n", robotIDg, ipg, portg, thresh, cam_indexg, frame_skip_g, socket_sec + 0.001 * socket_usec, frame_time_g, paramScale, throwRepeat, srcID);
 	fwrite (buf, 1, strnlen(buf, MAXLINE), pFile);
 	printf("write server information:%s", buf);
 	printfFtp(buf, MAXLINE);
@@ -154,6 +158,12 @@ char *getParam(char *pMsg)
 		printf("modifyIP and_ftp\n");
 		write_to_cfg();
 	}
+	else if (0 == strncmp(orderType->valuestring, "loginMainServer", 15))
+	{
+		cJSON *pSubSub = cJSON_GetObjectItem(pSub, "time");
+		strncpy(servertime, pSubSub->valuestring, 30);
+		//  servertime = pSubSub->valuestring;
+	}
 	//cJSON_AddNumberToObject(pJson,"statusCode",1000);
 	cJSON_AddStringToObject(pJson, "statusCode", "1000");
 	char *p = cJSON_Print(pJson);
@@ -217,7 +227,7 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 	printf("setupSocket %s,%d,%s,%.2f,%d\n", server, port, robotID, thresh, socketAgainCount);
 	if (socketAgainCount > 10)
 	{
-		exit(0);
+		//exit(0);
 	}
 	socketAgainCount++;
 	robotIDg = robotID;
@@ -292,17 +302,28 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 			printf("cond_notify,size=%d\n", pictureList->size);
 		}
 		printf("cond_notify2,size=%d\n", pictureList->size);
-		CvMat* mat = (CvMat*)list_pop_front(pictureList);
+		//CvMat* mat = (CvMat*)list_pop_front(pictureList);
+		IplImage* mat = (IplImage*)list_pop_front(pictureList);
+		pthread_mutex_unlock(&mtx);             //临界区数据操作完毕，释放互斥锁
 		if (NULL != mat)
 		{
-			sendData((char *)mat->data.ptr, mat->rows * mat->cols, 1);
-			cvReleaseMat(&mat);
+			printf("send true data\n");
+			int param[2];
+			param[0] = CV_IMWRITE_JPEG_QUALITY;
+			param[1] = 95;//paramScale;default(95) 0-100
+			double stt = get_wall_time();
+			CvMat* matEn = cvEncodeImage(".jpg", mat, param);
+			// sendData((char *)mat->data.ptr, mat->rows * mat->cols, 1);
+			sendData((char *)matEn->data.ptr, matEn->rows * matEn->cols, 1);
+			cvReleaseMat(&matEn);
+			cvReleaseImage(&mat);
 		}
 		else
 		{
+			printf("send heartbeat\n");
 			sendData((char *)NULL, 0, 0);
 		}
-		pthread_mutex_unlock(&mtx);             //临界区数据操作完毕，释放互斥锁
+
 	}
 
 }
@@ -311,6 +332,7 @@ void sendData(char *data, int size, float thresh)
 	printf("socket send,begin!\n");
 	if (-1 == sockfd)
 	{
+		printf("socketfd is -1\n");
 		destroy();
 		setupSocket(ipg, portg, robotIDg, threshg);
 		return;

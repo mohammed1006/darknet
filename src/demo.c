@@ -27,6 +27,7 @@ static box *boxes;
 static network net;
 static image buff [3];
 static image buff_letter[3];
+static IplImage* buffCV[3];
 static int buff_index = 0;
 static CvCapture * cap;
 static IplImage  * ipl;
@@ -60,6 +61,7 @@ double get_wall_time()
 void *detect_in_thread(void *ptr)
 {
 	running = 1;
+	double st = get_wall_time();
 	float nms = .4;
 
 	layer l = net.layers[net.n - 1];
@@ -93,23 +95,28 @@ void *detect_in_thread(void *ptr)
 
 	demo_index = (demo_index + 1) % demo_frame;
 	running = 0;
-	printf("detect finish\n");
+	double en = get_wall_time();
+	printf("detect finish:%lf\n", en - st);
 	return 0;
 }
 
 void *fetch_in_thread(void *ptr)
 {
-	int status = fill_image_from_stream(cap, buff[buff_index]);
+	double st = get_wall_time();
+	int status = fill_image_from_stream(cap, buff[buff_index], buffCV[buff_index]);
 	printf("captrue finish\n");
+	double stt = get_wall_time();
 	letterbox_image_into(buff[buff_index], net.w, net.h, buff_letter[buff_index]);
-	printf("thread fetch finish\n");
+	double en = get_wall_time();
 	if (status == 0) demo_done = 1;
+	printf("thread fetch finish,fill_image time=%lf,letterboc time2=%lf\n", en - st, en - stt);
 	return 0;
 }
 
 void *display_in_thread(void *ptr)
 {
-	show_image_cv(buff[(buff_index + 1) % 3], "Demo", ipl);
+	show_image_cv(buff[(buff_index + 1) % 3], "Demo", buffCV[(buff_index + 1) % 3]);
+	return 0;
 	if (1 == display_picture)
 	{
 		cvShowImage("Demo", ipl);
@@ -154,14 +161,6 @@ void *display_loop(void *ptr)
 	while (1)
 	{
 		display_in_thread(0);
-	}
-}
-
-void *detect_loop(void *ptr)
-{
-	while (1)
-	{
-		detect_in_thread(0);
 	}
 }
 static struct termios ori_attr, cur_attr;
@@ -286,7 +285,6 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 			cvSetCaptureProperty(cap, CV_CAP_PROP_FPS, frames);
 		}
 	}
-
 	if (!cap) error("Couldn't connect to webcam.\n");
 
 	layer l = net.layers[net.n - 1];
@@ -309,21 +307,12 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 	buff_letter[1] = letterbox_image(buff[0], net.w, net.h);
 	buff_letter[2] = letterbox_image(buff[0], net.w, net.h);
 	ipl = cvCreateImage(cvSize(buff[0].w, buff[0].h), IPL_DEPTH_8U, buff[0].c);
+	buffCV[0] = cvCreateImage(cvSize(buff[0].w, buff[0].h), IPL_DEPTH_8U, 3);
+	buffCV[1] = cvCreateImage(cvSize(buff[0].w, buff[0].h), IPL_DEPTH_8U, 3);
+	buffCV[2] = cvCreateImage(cvSize(buff[0].w, buff[0].h), IPL_DEPTH_8U, 3);
 
 	int count = 0;
-	/*  if (!prefix)
-	    {
-	        cvNamedWindow("Demo", CV_WINDOW_NORMAL);
-	        if (fullscreen)
-	        {
-	            cvSetWindowProperty("Demo", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-	        }
-	        else
-	        {
-	            cvMoveWindow("Demo", 0, 0);
-	            cvResizeWindow("Demo", 1352, 1013);
-	        }
-	    }*/
+
 
 	demo_time = get_wall_time();
 	int frame_again_count = 5;
@@ -343,7 +332,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 				if (frame_capture_failed > 10)
 				{
 					printf("again capture greate 10 exit\n");
-					exit(0);
+					//exit(0);
 				}
 				else
 				{
@@ -355,7 +344,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 			demo_done = 0;
 		}
 		buff_index = (buff_index + 1) % 3;
-		printf("create fetch and detect");
+		printf("create fetch and detect\n");
 		if (pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
 		if (pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
 		if (!prefix)
@@ -388,10 +377,14 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 			//save_image(buff[(buff_index + 1)%3], name);
 		}
 		printf("thread join\n");
+
 		pthread_join(fetch_thread, 0);
 		pthread_join(detect_thread, 0);
+		double st = get_wall_time();
 		display_in_thread(0);
-		printf("next frame,count=%d\n", count);
+		double en = get_wall_time();
+
+		printf("next frame,count=%d,display_in:%lf\n", count, en - st);
 		++count;
 		if (count < 1)
 		{
@@ -415,12 +408,13 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 				}
 			}
 		}
+		/*st = get_wall_time();*/
 		printf("demo frame finish!\n");
-		/*  else
-		    {
-		        fprintf(stderr, "<no key detected>\n");
-		    }*/
+		/*printf("demo frame finish!i,%lf\n", st - en);*/
 	}
+	cvReleaseImage(&buffCV[0]);
+	cvReleaseImage(&buffCV[1]);
+	cvReleaseImage(&buffCV[2]);
 	if (tty_set_flag == 0)
 		tty_reset();
 }

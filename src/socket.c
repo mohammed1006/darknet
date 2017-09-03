@@ -17,7 +17,7 @@
 int sockfd;
 int socket_sec = 0;
 int socket_usec = 10;
-char  servertime[] = "20160212";
+//char  servertime[30] = "20160212";
 static char *robotIDg = (char *) "";
 float threshg = 0;
 static char ipg[100];
@@ -39,7 +39,12 @@ int modifyIP(cJSON *pSub );
 extern int printfFtp(char a[], int s);
 extern int againConnect();
 extern void modifyFtp(const char *ip, const char *name, const char *pwd, const char *path);
+//struct timeval tv;
+//struct timeval tvBegin;
+double time_begin;
+long time_begin_server;
 void sendData(char*, int, float);
+extern double get_wall_time();
 void setupSocketTimeOut(const char* timeChar, int len)
 {
 //	int i = 0;
@@ -161,7 +166,50 @@ char *getParam(char *pMsg)
 	else if (0 == strncmp(orderType->valuestring, "loginMainServer", 15))
 	{
 		cJSON *pSubSub = cJSON_GetObjectItem(pSub, "time");
-		strncpy(servertime, pSubSub->valuestring, 30);
+                time_begin_server = atol(pSubSub->valuestring);
+		//sscanf(pSubSub->valuestring,"%ld",time_begin_server);
+                time_begin=get_wall_time();
+                printf("reve time:%lf\n",time_begin); 
+//		struct tm tptr;
+	//	struct timeval tv;
+
+		//20150427153618
+               /* char timeCh[5]={0};
+                strncpy(timeCh,&pSubSub->valuestring[0],4);
+                int timeInt=atoi(timeCh);   
+		tptr.tm_year = timeInt - 1900;
+		
+		strncpy(timeCh,&pSubSub->valuestring[4],2);
+                timeCh[2]=0;
+                timeInt=atoi(timeCh);   
+		tptr.tm_mon = timeInt - 1;
+	
+		strncpy(timeCh,&pSubSub->valuestring[6],2);
+                timeCh[2]=0;
+                timeInt=atoi(timeCh);   
+		tptr.tm_mday = timeInt;
+		
+		strncpy(timeCh,&pSubSub->valuestring[8],2);
+                timeCh[2]=0;
+                timeInt=atoi(timeCh);   
+                tptr.tm_hour = timeInt;
+
+		strncpy(timeCh,&pSubSub->valuestring[10],2);
+                timeCh[2]=0;
+                timeInt=atoi(timeCh);   
+		tptr.tm_min = timeInt;
+	
+		strncpy(timeCh,&pSubSub->valuestring[12],2);
+                timeCh[2]=0;
+                timeInt=atoi(timeCh);   
+		tptr.tm_sec = timeInt;
+
+		printf("set year(%d,%d,%d,%d,%d,%d)i\n",tptr.tm_year+1900,tptr.tm_mon+1,tptr.tm_mday,tptr.tm_hour,tptr.tm_min,tptr.tm_sec);
+		tv.tv_sec = mktime(&tptr);
+		tv.tv_usec = 0;
+	//	settimeofday(&tv, NULL);
+                gettimeofday(&tvBegin,NULL);
+	//	strncpy(servertime, pSubSub->valuestring, 30);*/
 		//  servertime = pSubSub->valuestring;
 	}
 	//cJSON_AddNumberToObject(pJson,"statusCode",1000);

@@ -103,7 +103,7 @@ void *detect_in_thread(void *ptr)
 void *fetch_in_thread(void *ptr)
 {
 	double st = get_wall_time();
-	int status = fill_image_from_stream(cap, buff[buff_index], buffCV[buff_index]);
+	int status = fill_image_from_stream(cap, buff[buff_index], &buffCV[buff_index]);
 	printf("captrue finish\n");
 	double stt = get_wall_time();
 	letterbox_image_into(buff[buff_index], net.w, net.h, buff_letter[buff_index]);
@@ -310,7 +310,21 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 	buffCV[0] = cvCreateImage(cvSize(buff[0].w, buff[0].h), IPL_DEPTH_8U, 3);
 	buffCV[1] = cvCreateImage(cvSize(buff[0].w, buff[0].h), IPL_DEPTH_8U, 3);
 	buffCV[2] = cvCreateImage(cvSize(buff[0].w, buff[0].h), IPL_DEPTH_8U, 3);
-
+	IplImage* relMat[3]={buffCV[0],buffCV[1],buffCV[2]};
+	int y, x, k, step;
+	step =buffCV[0]->widthStep;
+	for (y = 0; y < buff[0].h; ++y)
+	{
+		for (x = 0; x < buff[0].w; ++x)
+		{
+			for (k = 0; k < buff[0].c; ++k)
+			{
+				buffCV[0]->imageData[y * step + x * buff[0].c + k] = (unsigned char)(get_pixel(buff[0], x, y, k) * 255);
+			}
+		}
+	}
+	cvCopy(buffCV[0], buffCV[1], 0);
+	cvCopy(buffCV[0], buffCV[2], 0);
 	int count = 0;
 
 
@@ -412,9 +426,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 		printf("demo frame finish!\n");
 		/*printf("demo frame finish!i,%lf\n", st - en);*/
 	}
-	cvReleaseImage(&buffCV[0]);
-	cvReleaseImage(&buffCV[1]);
-	cvReleaseImage(&buffCV[2]);
+	cvReleaseImage(&relMat[0]);
+	cvReleaseImage(&relMat[1]);
+	cvReleaseImage(&relMat[2]);
+	
 	if (tty_set_flag == 0)
 		tty_reset();
 }

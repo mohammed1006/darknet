@@ -581,8 +581,9 @@ void show_image_cv(image p, const char *name, IplImage *disp)
 			mat = cvEncodeImage(".jpg", disp, param);
 			           */
 
-			mat = cvCreateImage(cvSize(disp->width, disp->height), IPL_DEPTH_8U, 3);
-			cvCopy(disp, mat, NULL);
+			/*mat = cvCreateImage(cvSize(disp->width, disp->height), IPL_DEPTH_8U, 3);*/
+			/*cvCopy(disp, mat, NULL);*/
+			mat = disp;
 			printf("disp copy to list\n");
 			//  double enn = get_wall_time();
 			//  printf("encodeImage,now IplImage:%lf\n", enn - stt);
@@ -604,13 +605,14 @@ void show_image_cv(image p, const char *name, IplImage *disp)
 						break;
 
 					}
-					printf("delete list a data,data is %s\n",(NULL==tmp)?"NULL":"picutre");
+					printf("delete list a data,data is %s\n", (NULL == tmp) ? "NULL" : "picutre");
 				}
 				while (pictureList->size > 0);
 			}
 			if (mat != NULL)
 			{
 				printf("send a picture ,size=%d, mat=null\n", pictureList->size, mat);
+				disp = NULL;
 			}
 			else
 			{
@@ -621,8 +623,8 @@ void show_image_cv(image p, const char *name, IplImage *disp)
 		pthread_cond_signal(&cond);
 		pthread_mutex_unlock(&mtx);
 		//sendData((char *)mat->data.ptr, mat->rows * mat->cols, socket_send_);
-		double en=get_wall_time();
-		printf("data into list,time cost:%lf\n",en-st);
+		double en = get_wall_time();
+		printf("data into list,time cost:%lf\n", en - st);
 		//cvReleaseMat(&mat);
 		socket_send_ = -1;
 	}
@@ -630,6 +632,11 @@ void show_image_cv(image p, const char *name, IplImage *disp)
 	{
 		send_heart_index++;
 	}
+	if (NULL != disp)
+	{
+		cvReleaseImage(&disp);
+	}
+
 }
 #endif
 
@@ -757,7 +764,7 @@ image get_image_from_stream(CvCapture *cap)
 
 	return im;
 }
-int fill_image_from_stream(CvCapture *cap, image im, IplImage* imcv)
+int fill_image_from_stream(CvCapture *cap, image im, IplImage** imcv)
 {
 	double st = get_wall_time();
 	/*printf("capture1f frame begin %lf\n", st);*/
@@ -782,12 +789,12 @@ int fill_image_from_stream(CvCapture *cap, image im, IplImage* imcv)
 		{
 			printf("pictureList2 is size o,so wait(capture slow,frame_skip_g should small)\n");
 			pthread_cond_wait(&cond2, &mtx2);
-			printf("capture picture from pictureList2\n");
+			printf("capture picture from pictureList2,notify\n");
 			src = (IplImage*)list_pop_front(pictureList2);
 		}
-		cvCopy(src, imcv, NULL);
-		cvReleaseImage(&src);
-		src = imcv;
+		//  cvCopy(src, imcv, NULL);
+		//  cvReleaseImage(&src);
+		*imcv = src;
 	}
 	else
 	{
@@ -799,7 +806,7 @@ int fill_image_from_stream(CvCapture *cap, image im, IplImage* imcv)
 	// printf("image2 size(%d,%d),size(%d,%d)\n",src->depth,0,imcv->depth,0);
 	ipl_into_image(src, im);
 	rgbgr_image(im);
-	printf("fill a picture in buff,cost: %lf\n", get_wall_time()-st);
+	printf("fill a picture in buff,cost: %lf\n", get_wall_time() - st);
 	return 1;
 }
 

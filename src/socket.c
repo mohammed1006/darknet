@@ -454,7 +454,7 @@ void sendData(char *data, int size, float thresh)
 
 void destroy()
 {
-	if (close(sockfd) < 0)
+	if (shutdown(sockfd,SHUT_RDWR) < 0)
 	{
 		printf("close error\n");
 	}

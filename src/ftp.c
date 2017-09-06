@@ -205,22 +205,22 @@ int  ftp(char *data, int size, char fileOut_O[])
 
 	gettimeofday(&tval, NULL);
 	time(&timep);
-        double now=get_wall_time();
-        
-        double diff=now-time_begin;
-       
-        timep=time_begin_server+(long)diff;
+	double now = get_wall_time();
+
+	double diff = now - time_begin;
+
+	timep = time_begin_server + (long)diff;
 	p = localtime(&timep); /*取得当地时间*/
 	char fileOut[50];
 	sprintf(fileOut, "%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d%ld.jpg", (1900 + p->tm_year), (1 + p->tm_mon), p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec, tval.tv_usec);
 	char dict[50];
 	sprintf(dict, "%4.4d%2.2d%2.2d", (1900 + p->tm_year), (1 + p->tm_mon), p->tm_mday);
-        
-/*	if (strncmp(dict, "20160212", 8) == 0 && strncmp(dict, servertime, 8) != 0)
-	{
-		strcpy(dict, servertime);
-	}*/
-	printf("dict @@@ : %s,run(%ld,%lf,%lf,%lfs)\n", dict,time_begin_server,now,time_begin,diff);
+
+	/*  if (strncmp(dict, "20160212", 8) == 0 && strncmp(dict, servertime, 8) != 0)
+	    {
+	        strcpy(dict, servertime);
+	    }*/
+	printf("dict @@@ : %s,run(%ld,%lf,%lf,%lfs)\n", dict, time_begin_server, now, time_begin, diff);
 	/*char mkd[100];*/
 	/*sprintf(mkd, "%s/%s", ftp_path, dict);*/
 	if (NULL == strstr(listdat, dict))

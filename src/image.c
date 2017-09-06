@@ -523,10 +523,20 @@ void rgbgr_image(image im)
 }
 
 #ifdef OPENCV
+#define MY_PRINTF  \
+	time_t timep;\
+	struct tm *ptm;\
+	struct timeval tval;\
+	gettimeofday(&tval, NULL);\
+	time(&timep);\
+	ptm = localtime(&timep);\
+	printf("%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d%ld:", (1900 + ptm->tm_year), (1 + ptm->tm_mon), ptm->tm_mday, ptm->tm_hour, ptm->tm_min, ptm->tm_sec, tval.tv_usec);\
+	printf
+	
 void show_image_cv(image p, const char *name, IplImage *disp)
 {
 	static int send_heart_index = 0;
-	printf("send_image_thresh(%.2f,%.2f)\n", socket_send_, threshg);
+	MY_PRINTF("send_image_thresh(%.2f,%.2f)\n", socket_send_, threshg);
 	double st = get_wall_time();
 	if (socket_send_ > threshg || send_heart_index > 5)
 	{
@@ -536,42 +546,36 @@ void show_image_cv(image p, const char *name, IplImage *disp)
 		if (socket_send_ > threshg)
 		{
 			mat = disp;
-			printf("disp copy to list\n");
+			MY_PRINTF("disp copy to list\n");
 		}
 		pthread_mutex_lock(&mtx);
 		if (NULL != pictureList)
 		{
-			printf("it is time to insert into pictureList,check size(%d,%d)\n", pictureList->size, ftpCacheSize);
-			if (pictureList->size > ftpCacheSize)
-			{
-				do
-				{
-					IplImage* tmp = (IplImage*)list_pop_front(pictureList);
-					printf("pictureList delete a data,data is %s\n", (NULL == tmp) ? "NULL" : "picutre");
-					if (NULL != tmp)
-					{
-						cvReleaseImage(&tmp);
-						break;
-
-					}
-				}
-				while (pictureList->size > 0);
-			}
+			MY_PRINTF("it is time to insert into pictureList,check size(%d,%d)\n", pictureList->size, ftpCacheSize);
 			if (mat != NULL)
 			{
-				printf("send a picture ,size=%d, mat!=null\n", pictureList->size, mat);
+				MY_PRINTF("send a picture ,size=%d, mat!=null\n", pictureList->size, mat);
+				if (pictureList->size > ftpCacheSize)
+				{
+					MY_PRINTF("picturelist is full(%d),so delete a picture\n", ftpCacheSize);
+					IplImage* tmp = (IplImage*)list_pop_front(pictureList);
+					cvReleaseImage(&tmp);
+				}
 				disp = NULL;
+				list_insert(pictureList, (void*)mat);
 			}
 			else
 			{
-				printf("send a heart\n");
+				MY_PRINTF("send a heart\n");
+				if (0 == pictureList->size)
+					list_insert(pictureList, (void*)mat);
+
 			}
-			list_insert(pictureList, (void*)mat);
 		}
 		pthread_cond_signal(&cond);
 		pthread_mutex_unlock(&mtx);
 		double en = get_wall_time();
-		printf("data into list,time cost:%lf\n", en - st);
+		MY_PRINTF("data into list,time cost:%lf\n", en - st);
 		socket_send_ = -1;
 	}
 	else

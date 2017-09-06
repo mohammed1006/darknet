@@ -537,7 +537,11 @@ int ftp_storefile_data(int c_sock, char *data, char* name, unsigned long long si
 	}
 	/*gettimeofday(&end, NULL);*/
 	/*printf("recv end time : %ld&%ld\n", end.tv_sec, end.tv_usec);*/
-
+        if(i<sum)
+	{   
+             printf("Error!!!!!!!send error data no equal,%d,%d\n",i,sum);
+             return -1;
+	}
 	return 0;
 
 }

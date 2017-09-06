@@ -13,6 +13,8 @@
 int windows = 0;
 extern int paramScale;
 extern float threshg;
+extern int fmCacheSize;
+extern int ftpCacheSize;
 float colors[6][3] = { {1, 0, 1}, {0, 0, 1}, {0, 1, 1}, {0, 1, 0}, {1, 1, 0}, {1, 0, 0} };
 static float socket_send_ = 0;
 void sendData(char *, int, float);
@@ -592,7 +594,7 @@ void show_image_cv(image p, const char *name, IplImage *disp)
 		if (NULL != pictureList)
 		{
 			printf("capture1 frame list_insert,111\n");
-			if (pictureList->size > max_buffer_size)
+			if (pictureList->size > ftpCacheSize)
 			{
 				do
 				{
@@ -605,7 +607,7 @@ void show_image_cv(image p, const char *name, IplImage *disp)
 						break;
 
 					}
-					printf("delete list a data,data is %s\n", (NULL == tmp) ? "NULL" : "picutre");
+					printf("pictureList delete a data,data is %s\n", (NULL == tmp) ? "NULL" : "picutre");
 				}
 				while (pictureList->size > 0);
 			}
@@ -726,11 +728,11 @@ void flush_stream_buffer(CvCapture *cap, int n)
 	pthread_mutex_lock( &mtx2 );
 	if (NULL != pictureList2 && NULL != src)
 	{
-		if (pictureList2->size > 5)
+		if (pictureList2->size > fmCacheSize)
 		{
 			IplImage* ret = (IplImage*)list_pop_front(pictureList2);
 			cvReleaseImage(&ret);
-			printf("pictureList2 is size great 30,delete\n");
+			printf("pictureList2 is size great %d,delete\n",fmCacheSize);
 		}
 		IplImage* clone = cvCreateImage(cvSize(src->width, src->height), IPL_DEPTH_8U, 3);
 		cvCopy(src, clone, NULL);

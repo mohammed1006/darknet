@@ -6,6 +6,8 @@ float frame_time_g = 1.0;
 char* cam_indexg;
 int paramScale = 30;
 int throwRepeat = 0;
+int fmCacheSize = 5;
+int ftpCacheSize = 5;
 char* srcID = "8";
 
 //static char* ftp_ip;
@@ -849,6 +851,8 @@ void run_detector(int argc, char **argv)
 		char *frame_time = option_find_str(options2, "frame_time", "1.0");
 		paramScale = option_find_int(options2, "compressibility", 30);
 		throwRepeat = option_find_int(options2, "throwRepeat", 0);
+		fmCacheSize = option_find_int(options2, "fmCacheSize", 5);
+		ftpCacheSize = option_find_int(options, "ftpCacheSize", 5);
 		srcID = option_find_str(options2, "srcID", "8");
 		frame_time_g = atof(frame_time);
 		printf("robot_param:ftp(%s,%s,%s,%s,%f),server(%s,%d),camera(%s),socket_ftp_time_out(%s,%s),frame_time(%f),compressiblity(%d)", ftp_ip, ftp_name1, ftp_pwd1, ftp_path1, ftp_thresh, server, port, cam_indexg, socket_time_out, ftp_time_out, frame_time_g, paramScale);

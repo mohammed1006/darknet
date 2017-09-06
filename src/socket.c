@@ -27,6 +27,8 @@ extern int frame_skip_g;
 extern float frame_time_g;
 extern int paramScale;
 extern int throwRepeat;
+extern int fmCacheSize;
+extern int ftpCacheSize;
 extern char* srcID;
 pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
@@ -96,7 +98,7 @@ void write_to_cfg()
 	int thresh = 100 * threshg;
 	FILE *pFile = fopen("robot.cfg", "w");
 
-	sprintf(buf, "robot_id=%s\nserver_ip =%s\nserver_port=%d\nftp_thresh=%d\ncamera=%s\nframe_skip=%d\nsocket_time_out=%.3f\nframe_time=%.1f\ncompressibility=%d\nthrowRepeat=%d\nsrcID=%s\n", robotIDg, ipg, portg, thresh, cam_indexg, frame_skip_g, socket_sec + 0.001 * socket_usec, frame_time_g, paramScale, throwRepeat, srcID);
+	sprintf(buf, "robot_id=%s\nserver_ip =%s\nserver_port=%d\nftp_thresh=%d\ncamera=%s\nframe_skip=%d\nsocket_time_out=%.3f\nframe_time=%.1f\ncompressibility=%d\nthrowRepeat=%d\nsrcID=%s\nfmCacheSize=%d\nftpCacheSize=%d\n", robotIDg, ipg, portg, thresh, cam_indexg, frame_skip_g, socket_sec + 0.001 * socket_usec, frame_time_g, paramScale, throwRepeat, srcID,fmCacheSize,ftpCacheSize);
 	fwrite (buf, 1, strnlen(buf, MAXLINE), pFile);
 	printf("write server information:%s", buf);
 	printfFtp(buf, MAXLINE);
@@ -155,6 +157,36 @@ char *getParam(char *pMsg)
 			threshg = 0.01 * th;
 		}
 		printf("modifty param:%f\n", threshg);
+		write_to_cfg();
+	}
+	else if (0 == strncmp(orderType->valuestring, "pDebug", 6))
+	{
+		cJSON *pSubSub = cJSON_GetObjectItem(pSub, "thresh");
+		char *thrChar = pSubSub->valuestring;
+		if (NULL == thrChar)
+		{
+			printf("recv data thresh error");
+		}
+		else if ('0' == thrChar[0])
+		{
+			threshg = atof(thrChar);
+		}
+		else
+		{
+			int th = atoi(pSubSub->valuestring);
+			threshg = 0.01 * th;
+		}
+		pSubSub = cJSON_GetObjectItem(pSub, "paramScale");
+		paramScale = atoi(pSubSub->valuestring);
+		pSubSub = cJSON_GetObjectItem(pSub, "throwRepeat");
+		throwRepeat = atoi(pSubSub->valuestring);
+		pSubSub = cJSON_GetObjectItem(pSub, "fmCacheSize");
+		fmCacheSize = atoi(pSubSub->valuestring);
+		pSubSub = cJSON_GetObjectItem(pSub, "ftpCacheSize");
+		ftpCacheSize = atoi(pSubSub->valuestring);
+		pSubSub = cJSON_GetObjectItem(pSub, "filterFmSize");
+		frame_skip_g = atoi(pSubSub->valuestring);
+		printf("modify param information@@@\n");
 		write_to_cfg();
 	}
 	else if (0 == strncmp(orderType->valuestring, "serverAD", 8))
@@ -352,6 +384,18 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 		printf("get picture,picturelist size=%d\n", pictureList->size);
 		//CvMat* mat = (CvMat*)list_pop_front(pictureList);
 		IplImage* mat = (IplImage*)list_pop_front(pictureList);
+		
+		time_t timep;
+		struct tm *p;
+		struct timeval tval;
+		gettimeofday(&tval, NULL);
+		p = localtime(&timep); /*取得当地时间*/
+		char fileOut[50];
+		sprintf(fileOut, "FTP-%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d%ld.jpg", (1900 + p->tm_year), (1 + p->tm_mon), p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec, tval.tv_usec);
+		char path[100];
+		strcpy(path,"/home/nvidia/imagetest/");
+		strcat(path,fileOut);
+		//cvSaveImage(path,mat,0);
 		pthread_mutex_unlock(&mtx);             //临界区数据操作完毕，释放互斥锁
 		if (NULL != mat)
 		{
@@ -395,6 +439,19 @@ void sendData(char *data, int size, float thresh)
 		printf("ftp_thresh=%f\n", threshg);
 		if (ftp(data, size, fileOut) == 0)
 		{
+                     /* char *prex="/picture/persondetect/";
+                      char name[100]={0};
+                        strncpy(name,&fileOut[strlen(prex)],50);
+                       printf("saveFile:%s",name);
+			FILE *fp; 
+                        if(fp=fopen(name,"wb"))
+			{ 
+			    fwrite(data,1,size,fp);
+			    puts("打开文件成功"); 
+			}
+			else 
+				puts("打开文件成败");
+			fclose(fp); */
 			url = &fileOut[0];
 			retData = 'b';
 		}
@@ -454,7 +511,7 @@ void sendData(char *data, int size, float thresh)
 
 void destroy()
 {
-	if (shutdown(sockfd,SHUT_RDWR) < 0)
+	if (close(sockfd) < 0)
 	{
 		printf("close error\n");
 	}

@@ -523,15 +523,6 @@ void rgbgr_image(image im)
 }
 
 #ifdef OPENCV
-#define MY_PRINTF  \
-	time_t timep;\
-	struct tm *ptm;\
-	struct timeval tval;\
-	gettimeofday(&tval, NULL);\
-	time(&timep);\
-	ptm = localtime(&timep);\
-	printf("%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d%ld:", (1900 + ptm->tm_year), (1 + ptm->tm_mon), ptm->tm_mday, ptm->tm_hour, ptm->tm_min, ptm->tm_sec, tval.tv_usec);\
-	printf
 	
 void show_image_cv(image p, const char *name, IplImage *disp)
 {

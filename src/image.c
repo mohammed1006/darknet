@@ -545,7 +545,7 @@ void show_image_cv(image p, const char *name, IplImage *disp)
 			MY_PRINTF("it is time to insert into pictureList,check size(%d,%d)\n", pictureList->size, ftpCacheSize);
 			if (mat != NULL)
 			{
-				MY_PRINTF("send a picture ,size=%d, mat!=null\n", pictureList->size, mat);
+				MY_PRINTF("send a picture ,size=%d, mat!=null\n", pictureList->size);
 				if (pictureList->size > ftpCacheSize)
 				{
 					MY_PRINTF("picturelist is full(%d),so delete a picture\n", ftpCacheSize);

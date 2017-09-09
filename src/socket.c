@@ -49,8 +49,6 @@ void sendData(char*, int, float);
 extern double get_wall_time();
 void setupSocketTimeOut(const char* timeChar, int len)
 {
-//	int i = 0;
-//	char setT[CHAR20] = {0};
 	float value = atof(timeChar);
 	socket_sec = (int)value;
 	socket_usec = (value - socket_sec) * 1000;

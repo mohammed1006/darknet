@@ -41,8 +41,6 @@ int modifyIP(cJSON *pSub );
 extern int printfFtp(char a[], int s);
 extern int againConnect();
 extern void modifyFtp(const char *ip, const char *name, const char *pwd, const char *path);
-//struct timeval tv;
-//struct timeval tvBegin;
 double time_begin;
 long time_begin_server;
 void sendData(char*, int, float);

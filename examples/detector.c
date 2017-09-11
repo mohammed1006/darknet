@@ -750,7 +750,12 @@ void setupSocketWarp(void* arg)
 {
 	Args_MY * argA = (Args_MY*)arg;
 //	sleep(5);
-	setupSocket(argA->server, argA->port, argA->robotID, argA->ftp_thresh);
+	while (1)
+	{
+		setupSocket(argA->server, argA->port, argA->robotID, argA->ftp_thresh);
+		printf("socket link fail sleep(1),again");
+		sleep(1);
+	}
 }
 void handle_pipe(int sig);
 void run_detector(int argc, char **argv)

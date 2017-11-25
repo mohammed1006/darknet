@@ -9,7 +9,8 @@ int throwRepeat = 0;
 int fmCacheSize = 5;
 int ftpCacheSize = 5;
 char* srcID = "8";
-
+char* softwareVersion="1.0.0";
+char* softwareVersionCreateT="2017-11-11";
 //static char* ftp_ip;
 //static char* ftp_name;
 //static char* ftp_pwd;
@@ -750,12 +751,13 @@ void setupSocketWarp(void* arg)
 {
 	Args_MY * argA = (Args_MY*)arg;
 //	sleep(5);
-	while (1)
+	while(1)
 	{
 		setupSocket(argA->server, argA->port, argA->robotID, argA->ftp_thresh);
-		printf("socket link fail sleep(1),again");
 		sleep(1);
+		printf("connect failed , sleep(1) try again");
 	}
+	
 }
 void handle_pipe(int sig);
 void run_detector(int argc, char **argv)
@@ -857,8 +859,10 @@ void run_detector(int argc, char **argv)
 		paramScale = option_find_int(options2, "compressibility", 30);
 		throwRepeat = option_find_int(options2, "throwRepeat", 0);
 		fmCacheSize = option_find_int(options2, "fmCacheSize", 5);
-		ftpCacheSize = option_find_int(options, "ftpCacheSize", 5);
+		ftpCacheSize = option_find_int(options2, "ftpCacheSize", 5);
 		srcID = option_find_str(options2, "srcID", "8");
+		softwareVersion = option_find_str(options2, "softwareVersion", "1.0.0");
+		softwareVersionCreateT = option_find_str(options2, "softwareVersionCreateT", "2017-11-11");
 		frame_time_g = atof(frame_time);
 		printf("robot_param:ftp(%s,%s,%s,%s,%f),server(%s,%d),camera(%s),socket_ftp_time_out(%s,%s),frame_time(%f),compressiblity(%d)", ftp_ip, ftp_name1, ftp_pwd1, ftp_path1, ftp_thresh, server, port, cam_indexg, socket_time_out, ftp_time_out, frame_time_g, paramScale);
 		setupSocketTimeOut(socket_time_out, strlen(socket_time_out));

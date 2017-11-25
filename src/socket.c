@@ -30,6 +30,8 @@ extern int throwRepeat;
 extern int fmCacheSize;
 extern int ftpCacheSize;
 extern char* srcID;
+extern char* softwareVersion;
+extern char* softwareVersionCreateT;
 pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 list* pictureList = NULL;
@@ -41,12 +43,16 @@ int modifyIP(cJSON *pSub );
 extern int printfFtp(char a[], int s);
 extern int againConnect();
 extern void modifyFtp(const char *ip, const char *name, const char *pwd, const char *path);
+//struct timeval tv;
+//struct timeval tvBegin;
 double time_begin;
 long time_begin_server;
 void sendData(char*, int, float);
 extern double get_wall_time();
 void setupSocketTimeOut(const char* timeChar, int len)
 {
+//	int i = 0;
+//	char setT[CHAR20] = {0};
 	float value = atof(timeChar);
 	socket_sec = (int)value;
 	socket_usec = (value - socket_sec) * 1000;
@@ -78,6 +84,10 @@ char *request(char param, char *url)
 		break;
 	case 'l':
 		cJSON_AddStringToObject(pJsonRoot, "orderType", "loginMainServer");
+		cJSON * param = cJSON_CreateObject();
+		cJSON_AddStringToObject(param, "softwareVersion", softwareVersion);
+		cJSON_AddStringToObject(param, "softwareVersionCreateT", softwareVersionCreateT);
+		cJSON_AddItemToObject(pJsonRoot, "param", param);
 		break;
 	}
 	if (NULL != url)
@@ -94,7 +104,7 @@ void write_to_cfg()
 	int thresh = 100 * threshg;
 	FILE *pFile = fopen("robot.cfg", "w");
 
-	sprintf(buf, "robot_id=%s\nserver_ip =%s\nserver_port=%d\nftp_thresh=%d\ncamera=%s\nframe_skip=%d\nsocket_time_out=%.3f\nframe_time=%.1f\ncompressibility=%d\nthrowRepeat=%d\nsrcID=%s\nfmCacheSize=%d\nftpCacheSize=%d\n", robotIDg, ipg, portg, thresh, cam_indexg, frame_skip_g, socket_sec + 0.001 * socket_usec, frame_time_g, paramScale, throwRepeat, srcID,fmCacheSize,ftpCacheSize);
+	sprintf(buf, "robot_id=%s\nserver_ip =%s\nserver_port=%d\nftp_thresh=%d\ncamera=%s\nframe_skip=%d\nsocket_time_out=%.3f\nframe_time=%.1f\ncompressibility=%d\nthrowRepeat=%d\nsrcID=%s\nfmCacheSize=%d\nftpCacheSize=%d\nsoftwareVersion=%s\nsoftwareVersionCreateT=%s\n", robotIDg, ipg, portg, thresh, cam_indexg, frame_skip_g, socket_sec + 0.001 * socket_usec, frame_time_g, paramScale, throwRepeat, srcID,fmCacheSize,ftpCacheSize,softwareVersion,softwareVersionCreateT);
 	fwrite (buf, 1, strnlen(buf, MAXLINE), pFile);
 	printf("write server information:%s", buf);
 	printfFtp(buf, MAXLINE);

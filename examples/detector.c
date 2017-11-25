@@ -9,8 +9,8 @@ int throwRepeat = 0;
 int fmCacheSize = 5;
 int ftpCacheSize = 5;
 char* srcID = "8";
-char* softwareVersion="1.0.0";
-char* softwareVersionCreateT="2017-11-11";
+char* softwareVersion = "1.0.0";
+char* softwareVersionCreateT = "2017-11-11";
 //static char* ftp_ip;
 //static char* ftp_name;
 //static char* ftp_pwd;
@@ -751,13 +751,19 @@ void setupSocketWarp(void* arg)
 {
 	Args_MY * argA = (Args_MY*)arg;
 //	sleep(5);
-	while(1)
+	while (1)
 	{
+		//used stop socket for debug
+		if (argA->port < 10)
+		{
+			printf("port is smaller than 10,so stop socket debug");
+			break;
+		}
 		setupSocket(argA->server, argA->port, argA->robotID, argA->ftp_thresh);
 		sleep(1);
 		printf("connect failed , sleep(1) try again");
 	}
-	
+
 }
 void handle_pipe(int sig);
 void run_detector(int argc, char **argv)

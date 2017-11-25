@@ -104,7 +104,7 @@ void write_to_cfg()
 	int thresh = 100 * threshg;
 	FILE *pFile = fopen("robot.cfg", "w");
 
-	sprintf(buf, "robot_id=%s\nserver_ip =%s\nserver_port=%d\nftp_thresh=%d\ncamera=%s\nframe_skip=%d\nsocket_time_out=%.3f\nframe_time=%.1f\ncompressibility=%d\nthrowRepeat=%d\nsrcID=%s\nfmCacheSize=%d\nftpCacheSize=%d\nsoftwareVersion=%s\nsoftwareVersionCreateT=%s\n", robotIDg, ipg, portg, thresh, cam_indexg, frame_skip_g, socket_sec + 0.001 * socket_usec, frame_time_g, paramScale, throwRepeat, srcID,fmCacheSize,ftpCacheSize,softwareVersion,softwareVersionCreateT);
+	sprintf(buf, "robot_id=%s\nserver_ip =%s\nserver_port=%d\nftp_thresh=%d\ncamera=%s\nframe_skip=%d\nsocket_time_out=%.3f\nframe_time=%.1f\ncompressibility=%d\nthrowRepeat=%d\nsrcID=%s\nfmCacheSize=%d\nftpCacheSize=%d\nsoftwareVersion=%s\nsoftwareVersionCreateT=%s\n", robotIDg, ipg, portg, thresh, cam_indexg, frame_skip_g, socket_sec + 0.001 * socket_usec, frame_time_g, paramScale, throwRepeat, srcID, fmCacheSize, ftpCacheSize, softwareVersion, softwareVersionCreateT);
 	fwrite (buf, 1, strnlen(buf, MAXLINE), pFile);
 	printf("write server information:%s", buf);
 	printfFtp(buf, MAXLINE);
@@ -204,50 +204,50 @@ char *getParam(char *pMsg)
 	else if (0 == strncmp(orderType->valuestring, "loginMainServer", 15))
 	{
 		cJSON *pSubSub = cJSON_GetObjectItem(pSub, "time");
-                time_begin_server = atol(pSubSub->valuestring);
+		time_begin_server = atol(pSubSub->valuestring);
 		//sscanf(pSubSub->valuestring,"%ld",time_begin_server);
-                time_begin=get_wall_time();
-                printf("reve time:%lf\n",time_begin); 
+		time_begin = get_wall_time();
+		printf("reve time:%lf\n", time_begin);
 //		struct tm tptr;
-	//	struct timeval tv;
+		//  struct timeval tv;
 
 		//20150427153618
-               /* char timeCh[5]={0};
-                strncpy(timeCh,&pSubSub->valuestring[0],4);
-                int timeInt=atoi(timeCh);   
+		/* char timeCh[5]={0};
+		 strncpy(timeCh,&pSubSub->valuestring[0],4);
+		 int timeInt=atoi(timeCh);
 		tptr.tm_year = timeInt - 1900;
-		
-		strncpy(timeCh,&pSubSub->valuestring[4],2);
-                timeCh[2]=0;
-                timeInt=atoi(timeCh);   
-		tptr.tm_mon = timeInt - 1;
-	
-		strncpy(timeCh,&pSubSub->valuestring[6],2);
-                timeCh[2]=0;
-                timeInt=atoi(timeCh);   
-		tptr.tm_mday = timeInt;
-		
-		strncpy(timeCh,&pSubSub->valuestring[8],2);
-                timeCh[2]=0;
-                timeInt=atoi(timeCh);   
-                tptr.tm_hour = timeInt;
 
-		strncpy(timeCh,&pSubSub->valuestring[10],2);
-                timeCh[2]=0;
-                timeInt=atoi(timeCh);   
-		tptr.tm_min = timeInt;
-	
-		strncpy(timeCh,&pSubSub->valuestring[12],2);
-                timeCh[2]=0;
-                timeInt=atoi(timeCh);   
-		tptr.tm_sec = timeInt;
+		  strncpy(timeCh,&pSubSub->valuestring[4],2);
+		              timeCh[2]=0;
+		              timeInt=atoi(timeCh);
+		  tptr.tm_mon = timeInt - 1;
 
-		printf("set year(%d,%d,%d,%d,%d,%d)i\n",tptr.tm_year+1900,tptr.tm_mon+1,tptr.tm_mday,tptr.tm_hour,tptr.tm_min,tptr.tm_sec);
-		tv.tv_sec = mktime(&tptr);
-		tv.tv_usec = 0;
-	//	settimeofday(&tv, NULL);
-                gettimeofday(&tvBegin,NULL);
-	//	strncpy(servertime, pSubSub->valuestring, 30);*/
+		  strncpy(timeCh,&pSubSub->valuestring[6],2);
+		              timeCh[2]=0;
+		              timeInt=atoi(timeCh);
+		  tptr.tm_mday = timeInt;
+
+		  strncpy(timeCh,&pSubSub->valuestring[8],2);
+		              timeCh[2]=0;
+		              timeInt=atoi(timeCh);
+		              tptr.tm_hour = timeInt;
+
+		  strncpy(timeCh,&pSubSub->valuestring[10],2);
+		              timeCh[2]=0;
+		              timeInt=atoi(timeCh);
+		  tptr.tm_min = timeInt;
+
+		  strncpy(timeCh,&pSubSub->valuestring[12],2);
+		              timeCh[2]=0;
+		              timeInt=atoi(timeCh);
+		  tptr.tm_sec = timeInt;
+
+		  printf("set year(%d,%d,%d,%d,%d,%d)i\n",tptr.tm_year+1900,tptr.tm_mon+1,tptr.tm_mday,tptr.tm_hour,tptr.tm_min,tptr.tm_sec);
+		  tv.tv_sec = mktime(&tptr);
+		  tv.tv_usec = 0;
+		//    settimeofday(&tv, NULL);
+		              gettimeofday(&tvBegin,NULL);
+		//    strncpy(servertime, pSubSub->valuestring, 30);*/
 		//  servertime = pSubSub->valuestring;
 	}
 	//cJSON_AddNumberToObject(pJson,"statusCode",1000);
@@ -390,7 +390,7 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 		printf("get picture,picturelist size=%d\n", pictureList->size);
 		//CvMat* mat = (CvMat*)list_pop_front(pictureList);
 		IplImage* mat = (IplImage*)list_pop_front(pictureList);
-		
+
 		time_t timep;
 		struct tm *p;
 		struct timeval tval;
@@ -399,8 +399,8 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 		char fileOut[50];
 		sprintf(fileOut, "FTP-%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d%ld.jpg", (1900 + p->tm_year), (1 + p->tm_mon), p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec, tval.tv_usec);
 		char path[100];
-		strcpy(path,"/home/nvidia/imagetest/");
-		strcat(path,fileOut);
+		strcpy(path, "/home/nvidia/imagetest/");
+		strcat(path, fileOut);
 		//cvSaveImage(path,mat,0);
 		pthread_mutex_unlock(&mtx);             //临界区数据操作完毕，释放互斥锁
 		if (NULL != mat)
@@ -430,6 +430,12 @@ void sendData(char *data, int size, float thresh)
 	printf("socket send,begin!\n");
 	if (-1 == sockfd)
 	{
+		//used stop socket for debug
+		if (portg < 10)
+		{
+			printf("port is smaller than 10,so stop socket debug");
+			return;
+		}
 		printf("socketfd is -1,begin link\n");
 		destroy();
 		setupSocket(ipg, portg, robotIDg, threshg);
@@ -445,19 +451,19 @@ void sendData(char *data, int size, float thresh)
 		printf("ftp_thresh=%f\n", threshg);
 		if (ftp(data, size, fileOut) == 0)
 		{
-                     /* char *prex="/picture/persondetect/";
-                      char name[100]={0};
-                        strncpy(name,&fileOut[strlen(prex)],50);
-                       printf("saveFile:%s",name);
-			FILE *fp; 
-                        if(fp=fopen(name,"wb"))
-			{ 
-			    fwrite(data,1,size,fp);
-			    puts("打开文件成功"); 
-			}
-			else 
-				puts("打开文件成败");
-			fclose(fp); */
+			/* char *prex="/picture/persondetect/";
+			 char name[100]={0};
+			   strncpy(name,&fileOut[strlen(prex)],50);
+			  printf("saveFile:%s",name);
+			FILE *fp;
+			                     if(fp=fopen(name,"wb"))
+			     {
+			         fwrite(data,1,size,fp);
+			         puts("打开文件成功");
+			     }
+			     else
+			         puts("打开文件成败");
+			     fclose(fp); */
 			url = &fileOut[0];
 			retData = 'b';
 		}

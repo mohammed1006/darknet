@@ -565,6 +565,19 @@ void show_image_cv(image p, const char *name, IplImage *disp)
 	    }*/
 	//cvShowImage(buff, disp);
 	printf("show_image_cv(%.2f,%.2f)\n", socket_send_, threshg);
+	if (1)
+	{
+		//  printf("buff_index=%d\n", buff_index);
+		char name2[100];
+		sprintf(name2, "thresh:%f.", socket_send_);
+		CvFont font;
+		cvInitFont(&font, CV_FONT_HERSHEY_COMPLEX, 0.5, 0.5, 1, 2, 8);
+		cvPutText(disp, name2, cvPoint(150, 150), &font, CV_RGB(255, 0, 0));
+		cvShowImage("file", disp);
+		cvWaitKey(-1);
+		cvDestroyWindow("file");
+	}
+
 	double st = get_wall_time();
 	if (socket_send_ > threshg || send_heart_index > 5)
 	{
@@ -660,6 +673,7 @@ void show_image(image p, const char *name)
 #ifdef OPENCV
 
 void ipl_into_image(IplImage *src, image im)
+
 {
 	unsigned char *data = (unsigned char *)src->imageData;
 	int h = src->height;
@@ -720,6 +734,7 @@ image load_image_cv(char *filename, int channels)
 void flush_stream_buffer(CvCapture *cap, int n)
 {
 	int i;
+	static int index_cap_null = 0;
 	IplImage* src = NULL;
 	for (i = 0; i < n; ++i)
 	{
@@ -732,12 +747,25 @@ void flush_stream_buffer(CvCapture *cap, int n)
 		{
 			IplImage* ret = (IplImage*)list_pop_front(pictureList2);
 			cvReleaseImage(&ret);
-			printf("pictureList2 is size great %d,delete\n",fmCacheSize);
+			printf("pictureList2 is size great %d,delete\n", fmCacheSize);
 		}
 		IplImage* clone = cvCreateImage(cvSize(src->width, src->height), IPL_DEPTH_8U, 3);
 		cvCopy(src, clone, NULL);
 		list_insert(pictureList2, clone);
 		pthread_cond_signal(&cond2);
+	}
+	else if (NULL == src)
+	{
+		index_cap_null++;
+		if (index_cap_null < 5)
+		{
+			printf("pictureList2 size is %d\n", pictureList2->size);
+			printf("capture picture is null\n");
+		}
+	}
+	else
+	{
+		printf("pictureList2 is NULL\n");
 	}
 	pthread_mutex_unlock( &mtx2 );
 }
@@ -752,6 +780,10 @@ void flush_stream_warp(void* cap)
 image get_image_from_stream(CvCapture *cap)
 {
 	IplImage *src = cvQueryFrame(cap);
+	while (NULL == src)
+	{
+		src = cvQueryFrame(cap);
+	}
 	if (!src) return make_empty_image(0, 0, 0);
 	image im = ipl_to_image(src);
 	rgbgr_image(im);

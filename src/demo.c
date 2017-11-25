@@ -47,6 +47,7 @@ static float *last_avg;
 static float *avg;
 double demo_time;
 extern float frame_time_g;
+//extern static float socket_send_;
 int display_picture = 0;
 double get_wall_time()
 {
@@ -253,12 +254,13 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 
 	int tty_set_flag;
 	tty_set_flag = tty_set();
-
+	int captureFile = 0;
 
 	if (filename_video)
 	{
 		printf("video file: %s\n", filename_video);
 		cap = cvCaptureFromFile(filename_video);
+		captureFile = 1;
 	}
 	else
 	{
@@ -310,21 +312,24 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 	buffCV[0] = cvCreateImage(cvSize(buff[0].w, buff[0].h), IPL_DEPTH_8U, 3);
 	buffCV[1] = cvCreateImage(cvSize(buff[0].w, buff[0].h), IPL_DEPTH_8U, 3);
 	buffCV[2] = cvCreateImage(cvSize(buff[0].w, buff[0].h), IPL_DEPTH_8U, 3);
-	IplImage* relMat[3]={buffCV[0],buffCV[1],buffCV[2]};
+	IplImage* relMat[3] = {buffCV[0], buffCV[1], buffCV[2]};
 	int y, x, k, step;
-	step =buffCV[0]->widthStep;
+	step = buffCV[0]->widthStep;
 	for (y = 0; y < buff[0].h; ++y)
 	{
 		for (x = 0; x < buff[0].w; ++x)
 		{
 			for (k = 0; k < buff[0].c; ++k)
 			{
-				buffCV[0]->imageData[y * step + x * buff[0].c + k] = (unsigned char)(get_pixel(buff[0], x, y, k) * 255);
+				unsigned char pixi = (unsigned char)(get_pixel(buff[0], x, y, k) * 255);
+				buffCV[0]->imageData[y * step + x * buff[0].c + k] = pixi;
+				buffCV[1]->imageData[y * step + x * buff[0].c + k] = pixi;
+				buffCV[2]->imageData[y * step + x * buff[0].c + k] = pixi;
 			}
 		}
 	}
-	cvCopy(buffCV[0], buffCV[1], 0);
-	cvCopy(buffCV[0], buffCV[2], 0);
+//	cvCopy(buffCV[0], buffCV[1], 0);
+	//cvCopy(buffCV[0], buffCV[2], 0);
 	int count = 0;
 
 
@@ -388,13 +393,17 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 		{
 			char name[256];
 			sprintf(name, "%s_%08d", prefix, count);
-			//save_image(buff[(buff_index + 1)%3], name);
+			//save_image(buff[(buff_index + 2) % 3], name);
 		}
 		printf("thread join\n");
+		char name2[256];
+		sprintf(name2, "_%08d.jpg", count);
+		save_image(buff[(buff_index + 2) % 3], name2);
 
 		pthread_join(fetch_thread, 0);
 		pthread_join(detect_thread, 0);
 		double st = get_wall_time();
+
 		display_in_thread(0);
 		double en = get_wall_time();
 
@@ -429,7 +438,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 	cvReleaseImage(&relMat[0]);
 	cvReleaseImage(&relMat[1]);
 	cvReleaseImage(&relMat[2]);
-	
+
 	if (tty_set_flag == 0)
 		tty_reset();
 }

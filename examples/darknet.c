@@ -481,7 +481,7 @@ int main(int argc, char **argv1)
 		"cfg/coco.data",
 		"cfg/yolo.cfg",
 		"yolo.weights",
-		"-c",
+		/*"-c"*/"image/image_%02d.png",
 		"rtsp://192.168.168.101:8554/2.mkv"
 	};
 	if (argc < 2)

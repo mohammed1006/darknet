@@ -573,9 +573,9 @@ void show_image_cv(image p, const char *name, IplImage *disp)
 		CvFont font;
 		cvInitFont(&font, CV_FONT_HERSHEY_COMPLEX, 0.5, 0.5, 1, 2, 8);
 		cvPutText(disp, name2, cvPoint(150, 150), &font, CV_RGB(255, 0, 0));
-		cvShowImage("file", disp);
-		cvWaitKey(-1);
-		cvDestroyWindow("file");
+//		cvShowImage("file", disp);
+//		cvWaitKey(-1);
+//		cvDestroyWindow("file");
 	}
 
 	double st = get_wall_time();

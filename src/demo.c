@@ -407,9 +407,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 			//save_image(buff[(buff_index + 2) % 3], name);
 		}
 		printf("thread join\n");
-		char name2[256];
+	/*	char name2[256];
 		sprintf(name2, "_%08d.jpg", count);
-		save_image(buff[(buff_index + 2) % 3], name2);
+		save_image(buff[(buff_index + 2) % 3], name2);*/
 
 		pthread_join(fetch_thread, 0);
 		pthread_join(detect_thread, 0);

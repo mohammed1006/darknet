@@ -747,7 +747,7 @@ void flush_stream_buffer(CvCapture *cap, int n)
 		{
 			IplImage* ret = (IplImage*)list_pop_front(pictureList2);
 			cvReleaseImage(&ret);
-			printf("pictureList2 is size great %d,delete\n", fmCacheSize);
+		//	printf("pictureList2 is size great %d,delete\n", fmCacheSize);
 		}
 		IplImage* clone = cvCreateImage(cvSize(src->width, src->height), IPL_DEPTH_8U, 3);
 		cvCopy(src, clone, NULL);

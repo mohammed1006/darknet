@@ -24,7 +24,8 @@ static int demo_classes;
 
 static float **probs;
 static box *boxes;
-static network net;
+//static network net;
+static network *net;
 static image buff [3];
 static image buff_letter[3];
 static IplImage* buffCV[3];
@@ -65,7 +66,8 @@ void *detect_in_thread(void *ptr)
 	double st = get_wall_time();
 	float nms = .4;
 
-	layer l = net.layers[net.n - 1];
+	//layer l = net.layers[net.n - 1];
+ 	layer l = net->layers[net->n-1];
 	float *X = buff_letter[(buff_index + 2) % 3].data;
 	float *prediction = network_predict(net, X);
 
@@ -79,7 +81,8 @@ void *detect_in_thread(void *ptr)
 	}
 	else if (l.type == REGION)
 	{
-		get_region_boxes(l, buff[0].w, buff[0].h, net.w, net.h, demo_thresh, probs, boxes, 0, 0, 0, demo_hier, 1);
+		//get_region_boxes(l, buff[0].w, buff[0].h, net.w, net.h, demo_thresh, probs, boxes, 0, 0, 0, demo_hier, 1);
+		get_region_boxes(l, buff[0].w, buff[0].h, net->w, net->h, demo_thresh, probs, boxes, 0, 0, 0, demo_hier, 1);
 	}
 	else
 	{
@@ -107,7 +110,8 @@ void *fetch_in_thread(void *ptr)
 	int status = fill_image_from_stream(cap, buff[buff_index], &buffCV[buff_index]);
 	printf("captrue finish\n");
 	double stt = get_wall_time();
-	letterbox_image_into(buff[buff_index], net.w, net.h, buff_letter[buff_index]);
+	//letterbox_image_into(buff[buff_index], net.w, net.h, buff_letter[buff_index]);
+	letterbox_image_into(buff[buff_index], net->w, net->h, buff_letter[buff_index]);
 	double en = get_wall_time();
 	if (status == 0) demo_done = 1;
 	printf("thread fetch finish,fill_image time=%lf,letterboc time2=%lf\n", en - st, en - stt);
@@ -241,12 +245,15 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 	demo_thresh = thresh;
 	demo_hier = hier;
 	printf("Demo\n");
-	net = parse_network_cfg(cfgfile);
+	/*net = parse_network_cfg(cfgfile);
 	if (weightfile)
 	{
 		load_weights(&net, weightfile);
-	}
-	set_batch_network(&net, 1);
+	}*/
+	net = load_network(cfgfile, weightfile, 0);
+	
+	//set_batch_network(&net, 1);
+	set_batch_network(net, 1);
 	pthread_t detect_thread;
 	pthread_t fetch_thread;
 
@@ -289,7 +296,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 	}
 	if (!cap) error("Couldn't connect to webcam.\n");
 
-	layer l = net.layers[net.n - 1];
+	//layer l = net.layers[net.n - 1];
+	layer l = net->layers[net->n-1];
 	demo_detections = l.n * l.w * l.h;
 	int j;
 
@@ -305,9 +313,12 @@ void demo(char *cfgfile, char *weightfile, float thresh, char* cam_index, const 
 	buff[0] = get_image_from_stream(cap);
 	buff[1] = copy_image(buff[0]);
 	buff[2] = copy_image(buff[0]);
-	buff_letter[0] = letterbox_image(buff[0], net.w, net.h);
+	/*buff_letter[0] = letterbox_image(buff[0], net.w, net.h);
 	buff_letter[1] = letterbox_image(buff[0], net.w, net.h);
-	buff_letter[2] = letterbox_image(buff[0], net.w, net.h);
+	buff_letter[2] = letterbox_image(buff[0], net.w, net.h);*/
+	buff_letter[0] = letterbox_image(buff[0], net->w, net->h);
+	buff_letter[1] = letterbox_image(buff[0], net->w, net->h);
+	buff_letter[2] = letterbox_image(buff[0], net->w, net->h);
 	ipl = cvCreateImage(cvSize(buff[0].w, buff[0].h), IPL_DEPTH_8U, buff[0].c);
 	buffCV[0] = cvCreateImage(cvSize(buff[0].w, buff[0].h), IPL_DEPTH_8U, 3);
 	buffCV[1] = cvCreateImage(cvSize(buff[0].w, buff[0].h), IPL_DEPTH_8U, 3);

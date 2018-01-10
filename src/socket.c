@@ -50,6 +50,9 @@ double time_begin;
 long time_begin_server;
 void sendData(char*, int, float);
 extern double get_wall_time();
+int send_en(int fd,char* content,int len_char,int param);
+int recv_en(int fd,char* content,int len,int param);
+int getASE(int fd);
 void setupSocketTimeOut(const char* timeChar, int len)
 {
 //	int i = 0;
@@ -272,7 +275,7 @@ void reciveData()
 	//char *message[10];
 	do
 	{
-		rec_len = recv(sockfd, &buf[sum_len], MAXLINE, 0);
+		rec_len = recv_en(sockfd, &buf[sum_len], MAXLINE, 0);
 		if (rec_len <= 0)
 		{
 			printf("recv error");
@@ -352,6 +355,9 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 //setsockopt(sockfd，SOL_SOCKET,SO_SNDTIMEO，(char *)&timeout,sizeof(struct timeval));
 //设置接收超时
 //setsockopt(sockfd，SOL_SOCKET,SO_RCVTIMEO，(char *)&timeout,sizeof(struct timeval));
+	getASE(sockfd);
+
+
 	printf("send msg to server: \n");
 	//fgets(sendline, 4096, stdin);
 	char *sendjson = request('l', NULL);
@@ -361,7 +367,7 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 	sprintf(mess, "ContentLength:%d\r\n%s\r\nCRC32Verify:%ld\\", len, sendjson, crc);
 	// printf("sj finish\n");
 	printf("send message:%s,%d\n", mess, (int)strlen(mess));
-	int sendLen = send(sockfd, mess, strlen(mess), 0) ;
+	int sendLen = send_en(sockfd, mess, strlen(mess), 0) ;
 	if (  sendLen != (int)strlen(mess))
 	{
 		printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
@@ -482,7 +488,7 @@ void sendData(char *data, int size, float thresh)
 	sprintf(mess, "ContentLength:%d\r\n%s\r\nCRC32Verify:%ld\\", len, sj, crc);
 	if (NULL != sj)
 		free(sj);
-	if ( send(sockfd, mess, strlen(mess), MSG_NOSIGNAL) <= 0)
+	if ( send_en(sockfd, mess, strlen(mess), MSG_NOSIGNAL) <= 0)
 	{
 		printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
 		printf("begin again link to server(%s,%d,%s,%f)\n", ipg, portg, robotIDg, threshg);

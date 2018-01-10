@@ -3,6 +3,16 @@
 #include <math.h>
 #include <stdlib.h>
 
+double get_wall_time()
+{
+	struct timeval time;
+	if (gettimeofday(&time, NULL))
+	{
+		return 0;
+	}
+	return (double)time.tv_sec + (double)time.tv_usec * .000001;
+}
+
 box float_to_box(float *f, int stride)
 {
     box b;
@@ -250,14 +260,17 @@ void do_nms_obj(box *boxes, float **probs, int total, int classes, float thresh)
 {
     int i, j, k;
     sortable_bbox *s = calloc(total, sizeof(sortable_bbox));
-
+    double do1 = get_wall_time();
     for(i = 0; i < total; ++i){
         s[i].index = i;       
         s[i].class = classes;
         s[i].probs = probs;
     }
-
+    double do2 = get_wall_time();
+    printf("@@@@ do_nms_obj total=%d ,do2-do1=%lf\n", total,do2-do1);
     qsort(s, total, sizeof(sortable_bbox), nms_comparator);
+    double do3 = get_wall_time();
+    printf("@@@@ do_nms_obj ,do3-do2=%lf\n", do3-do2);
     for(i = 0; i < total; ++i){
         if(probs[s[i].index][classes] == 0) continue;
         box a = boxes[s[i].index];
@@ -271,6 +284,8 @@ void do_nms_obj(box *boxes, float **probs, int total, int classes, float thresh)
         }
     }
     free(s);
+    double do4 = get_wall_time();
+    printf("@@@@ do_nms_obj ,do4-do3=%lf\n", do4-do3);
 }
 
 

@@ -11,6 +11,7 @@ int ftpCacheSize = 5;
 char* srcID = "8";
 char* softwareVersion = "1.0.0";
 char* softwareVersionCreateT = "2017-11-11";
+float persontop=0.68;
 //static char* ftp_ip;
 //static char* ftp_name;
 //static char* ftp_pwd;
@@ -897,6 +898,7 @@ void run_detector(int argc, char **argv)
 		throwRepeat = option_find_int(options2, "throwRepeat", 0);
 		fmCacheSize = option_find_int(options2, "fmCacheSize", 5);
 		ftpCacheSize = option_find_int(options2, "ftpCacheSize", 5);
+    	persontop = 0.01 * option_find_int(options2, "persontop", 68);
 		srcID = option_find_str(options2, "srcID", "8");
 		softwareVersion = option_find_str(options2, "softwareVersion", "1.0.0");
 		softwareVersionCreateT = option_find_str(options2, "softwareVersionCreateT", "2017-11-11");

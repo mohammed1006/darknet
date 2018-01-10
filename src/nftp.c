@@ -26,7 +26,10 @@ int socket_connect(char *host, int port)
 
 	if ((s = socket(AF_INET, SOCK_STREAM, 0)) < 0 ||
 	        setsockopt(s, IPPROTO_IP, IP_TOS, &opvalue, slen) < 0)
+	{
+		printf("socket failed! s=%d\n",s);
 		return -1;
+	}
 
 	//设置接收和发送超时
 	struct timeval timeo = {15, 0};
@@ -38,12 +41,18 @@ int socket_connect(char *host, int port)
 
 	struct hostent* server = gethostbyname(host);
 	if (!server)
+	{
+		printf("gethostbyname failed!\n");
 		return -1;
+	}
 
 	memcpy(&address.sin_addr.s_addr, server->h_addr, server->h_length);
 
 	if (connect(s, (struct sockaddr*) &address, sizeof(address)) == -1)
+	{
+		printf("connect failed !\n");
 		return -1;
+	}
 
 	return s;
 }
@@ -69,7 +78,7 @@ int connect_server( char *host, int port )
 	if ( result != 220 )
 	{
 		close( ctrl_sock );
-		printf("connet_server recv failed\n");
+		printf("connet_server recv failed result=%d\n",result);
 		return -1;
 	}
 
@@ -519,7 +528,7 @@ int ftp_storefile_data(int c_sock, char *data, char* name, unsigned long long si
 	}
 	/*gettimeofday(&end, NULL);*/
 	/*printf("while (i < sum) end time : %ld&%ld\n", end.tv_sec, end.tv_usec);*/
-
+	//fdatasync( d_sock );
 	//开始向PASV通道写数据
 	close( d_sock );
 	

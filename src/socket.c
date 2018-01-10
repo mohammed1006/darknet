@@ -14,7 +14,6 @@
 #include "verifyutil.h"
 #include "list.h"
 #include "image.h"
-#include "rsa_test.c"
 int sockfd;
 int socket_sec = 0;
 int socket_usec = 10;
@@ -33,6 +32,7 @@ extern int ftpCacheSize;
 extern char* srcID;
 extern char* softwareVersion;
 extern char* softwareVersionCreateT;
+extern float persontop;
 pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 list* pictureList = NULL;
@@ -49,10 +49,7 @@ extern void modifyFtp(const char *ip, const char *name, const char *pwd, const c
 double time_begin;
 long time_begin_server;
 void sendData(char*, int, float);
-
-
 extern double get_wall_time();
-
 void setupSocketTimeOut(const char* timeChar, int len)
 {
 //	int i = 0;
@@ -107,8 +104,9 @@ void write_to_cfg()
 	char buf[MAXLINE];
 	int thresh = 100 * threshg;
 	FILE *pFile = fopen("robot.cfg", "w");
-
-	sprintf(buf, "robot_id=%s\nserver_ip =%s\nserver_port=%d\nftp_thresh=%d\ncamera=%s\nframe_skip=%d\nsocket_time_out=%.3f\nframe_time=%.1f\ncompressibility=%d\nthrowRepeat=%d\nsrcID=%s\nfmCacheSize=%d\nftpCacheSize=%d\nsoftwareVersion=%s\nsoftwareVersionCreateT=%s\n", robotIDg, ipg, portg, thresh, cam_indexg, frame_skip_g, socket_sec + 0.001 * socket_usec, frame_time_g, paramScale, throwRepeat, srcID, fmCacheSize, ftpCacheSize, softwareVersion, softwareVersionCreateT);
+	int top = 100 * persontop;
+	printf("# # # write persontop %f\n",top);
+	sprintf(buf, "robot_id=%s\nserver_ip =%s\nserver_port=%d\nftp_thresh=%d\ncamera=%s\nframe_skip=%d\nsocket_time_out=%.3f\nframe_time=%.1f\ncompressibility=%d\nthrowRepeat=%d\nsrcID=%s\nfmCacheSize=%d\nftpCacheSize=%d\nsoftwareVersion=%s\nsoftwareVersionCreateT=%s\npersontop=%d\n", robotIDg, ipg, portg, thresh, cam_indexg, frame_skip_g, socket_sec + 0.001 * socket_usec, frame_time_g, paramScale, throwRepeat, srcID, fmCacheSize, ftpCacheSize, softwareVersion, softwareVersionCreateT, top);
 	fwrite (buf, 1, strnlen(buf, MAXLINE), pFile);
 	printf("write server information:%s", buf);
 	printfFtp(buf, MAXLINE);
@@ -155,7 +153,7 @@ char *getParam(char *pMsg)
 		char *thrChar = pSubSub->valuestring;
 		if (NULL == thrChar)
 		{
-			printf("recv_en data thresh error");
+			printf("recv data thresh error");
 		}
 		else if ('0' == thrChar[0])
 		{
@@ -175,7 +173,7 @@ char *getParam(char *pMsg)
 		char *thrChar = pSubSub->valuestring;
 		if (NULL == thrChar)
 		{
-			printf("recv_en data thresh error");
+			printf("recv data thresh error");
 		}
 		else if ('0' == thrChar[0])
 		{
@@ -274,17 +272,17 @@ void reciveData()
 	//char *message[10];
 	do
 	{
-		rec_len = recv_en(sockfd, &buf[sum_len], MAXLINE, 0);
+		rec_len = recv(sockfd, &buf[sum_len], MAXLINE, 0);
 		if (rec_len <= 0)
 		{
-			printf("recv_en error");
+			printf("recv error");
 			printf("rec_len=%d,connect has bean close , reconnect... ...\n", rec_len);
 			printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
 			destroy();
 			setupSocket(ipg, portg, robotIDg, threshg);
 			return;
 		}
-		printf("recv_en data:%s\n,len:%d\n", &buf[sum_len], rec_len);
+		printf("recv data:%s\n,len:%d\n", &buf[sum_len], rec_len);
 		sum_len += rec_len;
 	}
 	while (rec_len == MAXLINE);
@@ -298,7 +296,7 @@ void reciveData()
 			match++;
 			if (1 == match)
 			{
-				printf("recv_enData:%s", &buf[rec_len]);
+				printf("recvData:%s", &buf[rec_len]);
 				char *ret = getParam(&buf[rec_len]);
 				if (NULL != ret)
 					free(ret);
@@ -349,12 +347,6 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 		destroy();
 		return;
 	}
-
-	//获取秘钥
-	
-
-
-
 	//struct timeval timeout = {0, 20};
 	//设置发送超时
 //setsockopt(sockfd，SOL_SOCKET,SO_SNDTIMEO，(char *)&timeout,sizeof(struct timeval));
@@ -369,7 +361,7 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 	sprintf(mess, "ContentLength:%d\r\n%s\r\nCRC32Verify:%ld\\", len, sendjson, crc);
 	// printf("sj finish\n");
 	printf("send message:%s,%d\n", mess, (int)strlen(mess));
-	int sendLen = send_en(sockfd, mess, strlen(mess), 0) ;
+	int sendLen = send(sockfd, mess, strlen(mess), 0) ;
 	if (  sendLen != (int)strlen(mess))
 	{
 		printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
@@ -490,7 +482,7 @@ void sendData(char *data, int size, float thresh)
 	sprintf(mess, "ContentLength:%d\r\n%s\r\nCRC32Verify:%ld\\", len, sj, crc);
 	if (NULL != sj)
 		free(sj);
-	if ( send_en(sockfd, mess, strlen(mess), MSG_NOSIGNAL) <= 0)
+	if ( send(sockfd, mess, strlen(mess), MSG_NOSIGNAL) <= 0)
 	{
 		printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
 		printf("begin again link to server(%s,%d,%s,%f)\n", ipg, portg, robotIDg, threshg);
@@ -518,12 +510,12 @@ void sendData(char *data, int size, float thresh)
 		printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
 		break;
 	case 0:
-		printf("select is not recv_en new message\n");
+		printf("select is not recv new message\n");
 		break;
 	default:
 		if (FD_ISSET(sockfd, &fdR))
 		{
-			printf("select is recv_en,selectRet=%d\n", selectRet);
+			printf("select is recv,selectRet=%d\n", selectRet);
 			reciveData();
 		}
 

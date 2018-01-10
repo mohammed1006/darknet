@@ -49,16 +49,9 @@ static float *avg;
 double demo_time;
 extern float frame_time_g;
 //extern static float socket_send_;
-int display_picture = 0;
-double get_wall_time()
-{
-	struct timeval time;
-	if (gettimeofday(&time, NULL))
-	{
-		return 0;
-	}
-	return (double)time.tv_sec + (double)time.tv_usec * .000001;
-}
+int display_picture = 0; 
+extern double get_wall_time();
+
 
 void *detect_in_thread(void *ptr)
 {
@@ -68,9 +61,14 @@ void *detect_in_thread(void *ptr)
 
 	//layer l = net.layers[net.n - 1];
  	layer l = net->layers[net->n-1];
+  double st1 = get_wall_time();
+  printf("@  detect_in_thread st1-st=%lf\n",st1-st);
 	float *X = buff_letter[(buff_index + 2) % 3].data;
+  double st2 = get_wall_time();
+  printf("@  detect_in_thread st2-st1=%lf\n",st2-st1);
 	float *prediction = network_predict(net, X);
-
+	double st3 = get_wall_time();
+	printf("@  detect_in_thread st3-st2=%lf\n",st3-st2);
 	memcpy(predictions[demo_index], prediction, l.outputs * sizeof(float));
 	mean_arrays(predictions, demo_frame, l.outputs, avg);
 	l.output = last_avg2;
@@ -88,8 +86,11 @@ void *detect_in_thread(void *ptr)
 	{
 		error("Last layer must produce detections\n");
 	}
+	double st4 = get_wall_time();	
+	printf("detect_in_thread st4-st3=%lf\n", st4-st3);
 	if (nms > 0) do_nms_obj(boxes, probs, l.w * l.h * l.n, l.classes, nms);
-
+	double st5 = get_wall_time();
+	printf("@  detect_in_thread st5-st4=%lf\n",st5-st4);
 	printf("\033[2J");
 	printf("\033[1;1H");
 	printf("\nFPS:%.1f\n", fps);
@@ -100,7 +101,7 @@ void *detect_in_thread(void *ptr)
 	demo_index = (demo_index + 1) % demo_frame;
 	running = 0;
 	double en = get_wall_time();
-	printf("detect finish:%lf\n", en - st);
+	printf("detect_inthread finish:%lf\n", en - st);
 	return 0;
 }
 

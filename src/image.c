@@ -15,6 +15,7 @@ extern int paramScale;
 extern float threshg;
 extern int fmCacheSize;
 extern int ftpCacheSize;
+extern float persontop;
 float colors[6][3] = { {1, 0, 1}, {0, 0, 1}, {0, 1, 1}, {0, 1, 0}, {1, 1, 0}, {1, 0, 0} };
 static float socket_send_ = 0;
 void sendData(char *, int, float);
@@ -243,6 +244,10 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 			printf("%s: %.0f%%,", names[class], prob * 100);
 			if (names[class][0] == 'p' && names[class][1] == 'e')
 			{
+				box b = boxes[i];
+				int top = (b.y - b.h / 2.) * im.h;
+        			printf("@ @ @ top : %d im.h*persontop : %.2f\n", top, im.h*persontop);
+				if ( top > im.h*persontop) continue;
 				// break;
 				if (prob > socket_send_)
 					socket_send_ = prob;
@@ -571,7 +576,7 @@ void show_image_cv(image p, const char *name, IplImage *disp)
 		char name2[100];
 		sprintf(name2, "thresh:%f.", socket_send_);
 		CvFont font;
-		cvInitFont(&font, CV_FONT_HERSHEY_COMPLEX, 0.5, 0.5, 1, 2, 8);
+		cvInitFont(&font, CV_FONT_HERSHEY_COMPLEX, 1.0, 1.0, 0, 1, 8);
 		cvPutText(disp, name2, cvPoint(150, 150), &font, CV_RGB(255, 0, 0));
 //		cvShowImage("file", disp);
 //		cvWaitKey(-1);
@@ -1142,6 +1147,7 @@ void composite_3d(char *f1, char *f2, char *out, int delta)
 
 void letterbox_image_into(image im, int w, int h, image boxed)
 {
+  double en1 = get_wall_time();
 	int new_w = im.w;
 	int new_h = im.h;
 	if (((float)w / im.w) < ((float)h / im.h))
@@ -1154,9 +1160,14 @@ void letterbox_image_into(image im, int w, int h, image boxed)
 		new_h = h;
 		new_w = (im.w * h) / im.h;
 	}
+  double en2 = get_wall_time();
 	image resized = resize_image(im, new_w, new_h);
+  double en3 = get_wall_time();
 	embed_image(resized, boxed, (w - new_w) / 2, (h - new_h) / 2);
+  double en4 = get_wall_time();
 	free_image(resized);
+  double en5 = get_wall_time();
+  printf("@@@ time1=%lf, time2=%lf, time3=%lf, time4=%lf\n", en2 - en1, en3 - en2, en4-en3, en5-en4);
 }
 
 image letterbox_image(image im, int w, int h)
@@ -1636,6 +1647,7 @@ image resize_image(image im, int w, int h)
 	int r, c, k;
 	float w_scale = (float)(im.w - 1) / (w - 1);
 	float h_scale = (float)(im.h - 1) / (h - 1);
+  double ri = get_wall_time();
 	for (k = 0; k < im.c; ++k)
 	{
 		for (r = 0; r < im.h; ++r)
@@ -1658,6 +1670,8 @@ image resize_image(image im, int w, int h)
 			}
 		}
 	}
+  double ri1 = get_wall_time();
+  printf("### im.c=%d im.h=%d w=%d ri1-ri=%lf\n",im.c,im.h,w,ri1-ri);
 	for (k = 0; k < im.c; ++k)
 	{
 		for (r = 0; r < h; ++r)
@@ -1678,7 +1692,8 @@ image resize_image(image im, int w, int h)
 			}
 		}
 	}
-
+  double ri2 = get_wall_time();
+  printf("### im.c=%d h=%d w=%d ri2-ri1=%lf\n",im.c,h,w,ri2-ri1);
 	free_image(part);
 	return resized;
 }

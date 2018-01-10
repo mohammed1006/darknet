@@ -30,6 +30,9 @@
 #include "parser.h"
 #include "data.h"
 
+extern double get_wall_time();
+
+
 load_args get_base_args(network *net)
 {
     load_args args = {0};
@@ -183,12 +186,15 @@ network *make_network(int n)
 
 void forward_network(network *netp)
 {
+    double fn = get_wall_time();
 #ifdef GPU
     if(netp->gpu_index >= 0){
         forward_network_gpu(netp);   
         return;
     }
 #endif
+    double fn1 = get_wall_time();
+    printf("@@@ forward_network fn1-fn=%lf\n",fn1-fn);
     network net = *netp;
     int i;
     for(i = 0; i < net.n; ++i){
@@ -203,7 +209,11 @@ void forward_network(network *netp)
             net.truth = l.output;
         }
     }
+    double fn2 = get_wall_time();
+    printf("@@@ forward_network fn2-fn1=%lf\n",fn2-fn1);
     calc_network_cost(netp);
+    double fn3 = get_wall_time();
+    printf("@@@ forward_network fn3-fn2=%lf\n",fn3-fn2);
 }
 
 void update_network(network *netp)
@@ -489,7 +499,9 @@ float *network_predict(network *net, float *input)
     net->truth = 0;
     net->train = 0;
     net->delta = 0;
+    double st = get_wall_time();
     forward_network(net);
+    printf("@@ network_predict forward_network :%lf\n", get_wall_time()-st);
     float *out = net->output;
     *net = orig;
     return out;
@@ -712,17 +724,18 @@ float *network_output(network *net)
 
 void forward_network_gpu(network *netp)
 {
+    double fg = get_wall_time();
     network net = *netp;
     cuda_set_device(net.gpu_index);
     cuda_push_array(net.input_gpu, net.input, net.inputs*net.batch);
     if(net.truth){
         cuda_push_array(net.truth_gpu, net.truth, net.truths*net.batch);
     }
-
+    double fg3 = get_wall_time();
     int i;
     for(i = 0; i < net.n; ++i){
         net.index = i;
-        layer l = net.layers[i];
+        layer l = net.layers[i]; 
         if(l.delta_gpu){
             fill_gpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
         }
@@ -736,6 +749,8 @@ void forward_network_gpu(network *netp)
     }
     pull_network_output(netp);
     calc_network_cost(netp);
+    double fg5 = get_wall_time();
+    printf("@@@ forward_network_gpu all %d fg5-fg=%lf\n",net.n,fg5-fg);
 }
 
 void backward_network_gpu(network *netp)

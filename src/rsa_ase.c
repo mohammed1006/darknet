@@ -18,7 +18,57 @@ char strPemFileName[1000];
 
 const char * base64char = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 const char padding_char = '=';
+int Base64Decode(char * input, int length,char* result)
+{
+	//tring result;
+	static char decode[1024] = {0};
+	if (NULL == input || length <= 0 || length >= 1024)
+	{
+	//	return result;
+		return -1;
+	}
+	int len = EVP_DecodeBlock((unsigned char*)decode, (const unsigned char*)input, length);
+	if (len >= 1024 || len <= 0)
+	{
+	//	return result;
+	return -1;
+	}
+	decode[len] = '\0';
 
+	//result.resize(len);
+	result[len]='\0';
+	for (int i = 0; i < len; i++)
+	{
+		result[i] = decode[i];
+	}
+	return len;
+}
+int Base64Encode(char * input, int length,char* result)
+{
+	static char encoded[1024] = {0};
+//	string result;
+	if (NULL == input || length <= 0 || length >= 1024)
+	{
+//		return result;
+		return -1;
+	}
+
+	int len = EVP_EncodeBlock((unsigned char*)encoded, (const unsigned char*)input, length);
+	if (len >= 1024 || len <= 0)
+	{
+//		return result;
+			return -1;
+	}
+	encoded[len] = '\0';
+	result[len]='\0';
+//	result = string(encoded);
+  for(int i=0;i<len;i++)
+	{
+					result[i]=encoded[i];
+	}
+//	return result;
+   return len;
+}
 /*编码代码
 * const unsigned char * sourcedata， 源数组
 * char * base64 ，码字保存
@@ -188,7 +238,7 @@ int DecodeRSAKeyFile( const char* strPemFileName, const char* strData, int strDa
 	if (PEM_read_RSAPrivateKey(hPriKeyFile, &pRSAPriKey, 0, 0) == NULL)
 	{
 		// assert(false);
-	//	return "";
+		//  return "";
 		printf("PEM_read_RSAPrivateKey faild \n");
 		return -1;
 	}
@@ -223,7 +273,7 @@ int EncodeAES( const char* password, int passwordLen, const char* data, int data
 	{
 		//assert(false);
 		//return "";
-		printf("AES_SET_Encrypt_key fail %s(%d)\n",password,strlen(password));
+		printf("AES_SET_Encrypt_key fail %s(%d)\n", password, strlen(password));
 		return -1;
 	}
 

@@ -12,38 +12,43 @@
 //#include <cstring>
 //#include <cassert>
 #include<string.h>
-
+#include<errno.h>
+#include<unistd.h>
+#include<sys/types.h>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include<arpa/inet.h>
 //using namespace std;
 char strPemFileName[1000];
 
 const char * base64char = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 const char padding_char = '=';
-int Base64Decode(char * input, int length,char* result)
+int Base64Decode(char * input, int length, char* result)
 {
 	//tring result;
 	static char decode[1024] = {0};
 	if (NULL == input || length <= 0 || length >= 1024)
 	{
-	//	return result;
+		//  return result;
 		return -1;
 	}
 	int len = EVP_DecodeBlock((unsigned char*)decode, (const unsigned char*)input, length);
 	if (len >= 1024 || len <= 0)
 	{
-	//	return result;
-	return -1;
+		//  return result;
+		return -1;
 	}
 	decode[len] = '\0';
 
 	//result.resize(len);
-	result[len]='\0';
+	result[len] = '\0';
 	for (int i = 0; i < len; i++)
 	{
 		result[i] = decode[i];
 	}
 	return len;
 }
-int Base64Encode(char * input, int length,char* result)
+int Base64Encode(char * input, int length, char* result)
 {
 	static char encoded[1024] = {0};
 //	string result;
@@ -57,17 +62,17 @@ int Base64Encode(char * input, int length,char* result)
 	if (len >= 1024 || len <= 0)
 	{
 //		return result;
-			return -1;
+		return -1;
 	}
 	encoded[len] = '\0';
-	result[len]='\0';
+	result[len] = '\0';
 //	result = string(encoded);
-  for(int i=0;i<len;i++)
+	for (int i = 0; i < len; i++)
 	{
-					result[i]=encoded[i];
+		result[i] = encoded[i];
 	}
 //	return result;
-   return len;
+	return len;
 }
 /*编码代码
 * const unsigned char * sourcedata， 源数组
@@ -127,7 +132,7 @@ int base64_encode(const unsigned char * sourcedata, char * base64)
 }
 //读取base64字符串转为Rsa公钥
 //bool strConvert2PublicKey( const std::string& strPublicKey, RSA* pRSAPublicKey )
-int strConvert2PublicKey( char* strPublicKey, int nPublicKeyLen, RSA* pRSAPublicKey )
+int strConvert2PublicKey( char* strPublicKey, int nPublicKeyLen, RSA** pRSAPublicKey )
 {
 	//int nPublicKeyLen = strPublicKey.size();      //strPublicKey为base64编码的公钥字符串
 
@@ -153,15 +158,14 @@ int strConvert2PublicKey( char* strPublicKey, int nPublicKeyLen, RSA* pRSAPublic
 	//strPublicKey.append("\n-----END PUBLIC KEY-----\n");
 	strcat(strPublicKeyB, "\n-----END PUBLIC KEY-----\n");
 	BIO *bio = NULL;
-	RSA *rsa = NULL;
 	char *chPublicKey = strPublicKeyB;//const_cast<char *>(strPublicKey.c_str());
 	if ((bio = BIO_new_mem_buf(chPublicKey, -1)) == NULL)       //从字符串读取RSA公钥
 	{
 		// cout<<"BIO_new_mem_buf failed!"<<endl;
 		printf("BIO_new_mem_buf failde!\n");
 	}
-	rsa = PEM_read_bio_RSA_PUBKEY(bio, NULL, NULL, NULL);   //从bio结构中得到rsa结构
-	if (!rsa)
+	*pRSAPublicKey = PEM_read_bio_RSA_PUBKEY(bio, NULL, NULL, NULL);   //从bio结构中得到rsa结构
+	if (!pRSAPublicKey)
 	{
 		ERR_load_crypto_strings();
 		char errBuf[512];
@@ -169,11 +173,40 @@ int strConvert2PublicKey( char* strPublicKey, int nPublicKeyLen, RSA* pRSAPublic
 		//cout<< "load public key failed["<<errBuf<<"]"<<endl;
 		printf("load public key failed[%s]\n", errBuf);
 		BIO_free_all(bio);
+		return -1;
 	}
 	return 1;
 }
 
+//利用 RSA公钥结构体  解密数据
+//std::string RSAPubKeyDncodeData(RSA *pRSAPubKey,std::string& strEncoded )
+int RSAPubKeyDncodeData(RSA* pRSAPubKey, char* strEncoded, int strELen, char* strRet)
+{
+	if (!pRSAPubKey || !strEncoded)
+	{
+		// assert(false);
+		printf("input data is empty\n");
+		return -1;
+	}
 
+	int nLen = RSA_size((const RSA *)pRSAPubKey);
+	char* pDecode = new char[nLen + 1];
+
+	//string strRet;
+	memset(strRet,0,1000);
+	//int ret = RSA_public_decrypt(strEncoded.length(), (const unsigned char*)strEncoded.c_str(), (unsigned char*)pDecode, pRSAPubKey, RSA_PKCS1_PADDING);
+	int ret = RSA_public_decrypt(strELen, (const unsigned char*)strEncoded, (unsigned char*)pDecode, pRSAPubKey, RSA_PKCS1_PADDING);
+	if (ret >= 0)
+	{
+	//	strRet = std::string((char*)pDecode, ret);
+	   memcpy(strRet,pDecode,ret);
+	}
+
+	delete [] pDecode;
+	CRYPTO_cleanup_all_ex_data();
+//	return strRet;
+		return ret;
+}
 //std::string EncodeRSAKeyFile( const std::string& strPemFileName, const std::string& strData )
 //加密
 int EncodeRSAKeyFile( const char* strPemFileName, const char* strData, int strDataLen, char* pEncode)
@@ -233,7 +266,6 @@ int DecodeRSAKeyFile( const char* strPemFileName, const char* strData, int strDa
 		return -1;
 	}
 	//std::string strRet;
-	char* strRet = NULL;
 	RSA* pRSAPriKey = RSA_new();
 	if (PEM_read_RSAPrivateKey(hPriKeyFile, &pRSAPriKey, 0, 0) == NULL)
 	{
@@ -259,7 +291,70 @@ int DecodeRSAKeyFile( const char* strPemFileName, const char* strData, int strDa
 //	return strRet;
 	return ret;
 }
+//利用 Private.pem文件 加密数据 
+//std::string RSAPriKeyEncodeData(std::string& strPemFileName,std::string& strData )  
+int RSAPriKeyEncodeData(char* strPemFileName,char* strData,int strLen,char* strRet);
+{  
+    if (strPemFileName.empty() || strData.empty())  
+    {  
+        assert(false);  
+        return "";  
+    }  
 
+    FILE* hPriKeyFile = fopen(strPemFileName.c_str(), "rb");  
+    if( hPriKeyFile == NULL )  
+    {  
+        assert(false);  
+        return "";   
+    }  
+    std::string strRet;  
+    RSA* pRSAPriKey = RSA_new();  
+    if(PEM_read_RSAPrivateKey(hPriKeyFile, &pRSAPriKey, 0, 0) == NULL)  
+    {  
+        assert(false);  
+        return "";  
+    }  
+  
+    int nLen = RSA_size(pRSAPriKey);  
+    char* pEncode = new char[nLen + 1];  
+    //私钥加密
+    int ret = RSA_private_encrypt(strData.length(), (const unsigned char*)strData.c_str(), (unsigned char*)pEncode, pRSAPriKey, RSA_PKCS1_PADDING);  
+    if (ret >= 0)  
+    {  
+        strRet = std::string(pEncode, ret);  
+    }  
+    delete[] pEncode;  
+    RSA_free(pRSAPriKey);  
+    fclose(hPriKeyFile);  
+    CRYPTO_cleanup_all_ex_data();   
+    return strRet;  
+}  
+
+
+ 
+//利用 RSA公钥结构体  解密数据 
+std::string RSAPubKeyDncodeData(RSA *pRSAPubKey,std::string& strEncoded )  
+{  
+    if (!pRSAPubKey || strEncoded.empty())  
+    {  
+        assert(false);  
+        return "";  
+    } 
+         
+    int nLen = RSA_size((const RSA *)pRSAPubKey);  
+    char* pDecode = new char[nLen+1];  
+    
+	string strRet;
+	int ret = RSA_public_decrypt(strEncoded.length(), (const unsigned char*)strEncoded.c_str(), (unsigned char*)pDecode, pRSAPubKey, RSA_PKCS1_PADDING);  
+    if(ret >= 0)  
+    {  
+        strRet = std::string((char*)pDecode, ret); 
+    }  
+
+    delete [] pDecode;    
+    CRYPTO_cleanup_all_ex_data();   
+    return strRet;  
+}  
 
 
 //AES_加std::string EncodeAES( const std::string& password, const std::string& data )密
@@ -273,7 +368,7 @@ int EncodeAES( const char* password, int passwordLen, const char* data, int data
 	{
 		//assert(false);
 		//return "";
-		printf("AES_SET_Encrypt_key fail %s(%d)\n", password, strlen(password));
+		printf("AES_SET_Encrypt_key fail %s(%d)\n", password, (int)strlen(password));
 		return -1;
 	}
 
@@ -333,10 +428,11 @@ int DecodeAES( const char* strPassword, int strPasswordLen, const char* strData,
 	}
 	//std::string strRet;
 	//for(unsigned int i = 0; i < strData.length()/AES_BLOCK_SIZE; i++)
-	for (unsigned int i = 0; i < strDataLen / AES_BLOCK_SIZE; i++)
+	for (int i = 0; i < strDataLen / AES_BLOCK_SIZE; i++)
 	{
 		//std::string str16 = strData.substr(i*AES_BLOCK_SIZE, AES_BLOCK_SIZE);
 		char* str16[1000];
+		memcpy(str16, &strData[i * AES_BLOCK_SIZE], AES_BLOCK_SIZE);
 		unsigned char out[AES_BLOCK_SIZE];
 		memset(out, 0, AES_BLOCK_SIZE);
 		AES_decrypt((const unsigned char*)str16, out, &aes_key);
@@ -360,7 +456,7 @@ char chk_xrl(const char *data, int length)
 int getASE(int fd)
 {
 	if (fd < 0)
-		return NULL;
+		return -1;
 	char rsa_public[9] = {0};
 	rsa_public[0] = 0x7E;
 	rsa_public[1] = 0x7E;
@@ -399,7 +495,7 @@ int getASE(int fd)
 int send_en(int fd, char* content, int len_char, int param)
 {
 	if (fd < 0)
-		return NULL;
+		return -1;
 	char send_content[1000];
 	send_content[0] = 0x7E;
 	send_content[1] = 0x7E;
@@ -414,14 +510,14 @@ int send_en(int fd, char* content, int len_char, int param)
 	memcpy(&send_content[7], en_cont, len);
 	send_content[len + 7] = (char)chk_xrl(&send_content[7], len);
 	send_content[len + 8] = 0x0D;
-	return send(fd, send_content, len + 9, 0);
+	return send(fd, send_content, len + 9, param);
 }
 int recv_en(int fd, char* content, int rec_content_maxlen, int param)
 {
 	if (fd < 0)
-		return NULL;
+		return -1;
 	char rec_content[1000];
-	int len = recv_en(fd, rec_content, 1000, param);
+	int len = recv_en(fd, rec_content,rec_content_maxlen,  param);
 	int len_c = 0;
 	len_c = rec_content[6];
 	len_c += rec_content[5] << 8;

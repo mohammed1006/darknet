@@ -217,6 +217,7 @@ int RSAPubKeyDncodeData(RSA* pRSAPubKey, char* strEncoded, int strELen, char* st
 //	return strRet;
 	return ret;
 }/*}}}*/
+
 //std::string EncodeRSAKeyFile( const std::string& strPemFileName, const std::string& strData )
 //加密
 int EncodeRSAKeyFile( const char* strPemFileName, const char* strData, int strDataLen, char* pEncode)
@@ -377,12 +378,61 @@ int PubKeyPemCvt2RSA(char* pubkeyFile, RSA** pRSAPublicKey)
 	return ret;//true;
 }
 
-/*{{{
+//利用 Private.pem文件 加密数据
+//std::string RSAPriKeyEncodeData(std::string& strPemFileName,std::string& strData )
+int RSAPriKeyEncodeData(char* strPemFileName, char* strData, int strLen, char* strRet)
+{
+	/*if (strPemFileName.empty() || strData.empty())
+	{
+	    assert(false);
+	    return "";
+	} */
+
+	//FILE* hPriKeyFile = fopen(strPemFileName.c_str(), "rb");
+	FILE* hPriKeyFile = fopen(strPemFileName, "rb");
+	if ( hPriKeyFile == NULL )
+	{
+		// assert(false);
+		return -1;//"";
+	}
+//	std::string strRet;
+	RSA* pRSAPriKey = RSA_new();
+	if (PEM_read_RSAPrivateKey(hPriKeyFile, &pRSAPriKey, 0, 0) == NULL)
+	{
+		// assert(false);
+		// return "";
+		return -1;
+	}
+
+	int nLen = RSA_size(pRSAPriKey);
+	char* pEncode = (char*)malloc(nLen + 1);
+	//char* pEncode = new char[nLen + 1];
+	//私钥加密
+	int ret = RSA_private_encrypt(strLen, strData, pEncode, pRSAPriKey, RSA_PKCS1_PADDING);
+	//int ret = RSA_private_encrypt(strData.length(), (const unsigned char*)strData.c_str(), (unsigned char*)pEncode, pRSAPriKey, RSA_PKCS1_PADDING);
+	if (ret >= 0)
+	{
+		//    strRet = std::string(pEncode, ret);
+		memcpy(strRet, pEncode, ret);
+	}
+//	delete[] pEncode;
+	free(pEncode);
+	RSA_free(pRSAPriKey);
+	fclose(hPriKeyFile);
+	CRYPTO_cleanup_all_ex_data();
+//	return strRet;
+	return ret;
+}
+
+
+/*
+>>>>>>> c0dd1c2ca3c1513c71f42d3800ae8fc03cfe1ec4
 //利用 RSA公钥结构体  解密数据
 //std::string RSAPubKeyDncodeData(RSA *pRSAPubKey, std::string& strEncoded )
 int RSAPubKeyDncodeData(RSA *pRSAPubKey, char* strEncoded, int StrEncodedLen, char* strRet)
 {
 
+<<<<<<< HEAD
 int nLen = RSA_size((const RSA *)pRSAPubKey);
 //char* pDecode = new char[nLen + 1];
 char* pDecode = (char*)malloc(nLen + 1);
@@ -400,6 +450,24 @@ CRYPTO_cleanup_all_ex_data();
 //  return strRet;
 return ret;
 }*//*}}}*/
+/*=======
+    int nLen = RSA_size((const RSA *)pRSAPubKey);
+    //char* pDecode = new char[nLen + 1];
+    char* pDecode = (char*)malloc(nLen + 1);
+//  string strRet;
+    //int ret = RSA_public_decrypt(strEncoded.length(), (const unsigned char*)strEncoded.c_str(), (unsigned char*)pDecode, pRSAPubKey, RSA_PKCS1_PADDING);
+    int ret = RSA_public_decrypt(StrEncodedLen, strEncoded, pDecode, pRSAPubKey, RSA_PKCS1_PADDING);
+    if (ret >= 0)
+    {
+//      strRet = std::string((char*)pDecode, ret);
+        memcpy(strRet, pDecode, ret);
+    }
+    free(pDecode);
+//  delete[] pDecode;
+    CRYPTO_cleanup_all_ex_data();
+//  return strRet;
+    return ret;
+}*/
 
 
 //AES_加std::string EncodeAES( const std::string& password, const std::string& data )密
@@ -649,6 +717,15 @@ int main()
 
 
 	printf("rsa:%d,%d,%d,%s", len, (int) strlen(three), ret, three);
+/*	
+	    char one[1000] = "1234567812345678";
+	    char one1[1000] = {0};
+	    int len = EncodeRSAKeyFile("public_rsa.pem", one, strlen(one), one1);
+	     printf("rrsa%d,%d,%s",len,strlen(one1),one1);
+
+	    char three[1000];
+	    len    = DecodeRSAKeyFile("private_rsa.pem", one1, strlen(one1), three);
+	    printf("rsa:%d,%d,%s",len,strlen(three),three);
 	/*   const string three = "1234567812345678"; //要加密的内容
 	   const string four = "@@wufsfadfyuan@"; //要加密的内容
 	string five = EncodeAES(three, four);
@@ -665,5 +742,14 @@ int main()
 	    len =    DecodeAES(three, 16, out, strlen(out), out2);
 	    printf("encode %d,%d,%s\n", len, strlen(out2), out2)   ;
 	*/
+/*	char three[1000] = "1234567812345678";
+	char four[1000] = "@@wufsfadfyuan@";
+	char out[1000] = {0};
+	char out2[1000] = {0};
+	int len = EncodeAES(three, 16, four, strlen(four), out);
+	printf("encode %d,%d,%s\n", len, strlen(out), out) ;
+	len =    DecodeAES(three, 16, out, strlen(out), out2);
+	printf("encode %d,%d,%s\n", len, strlen(out2), out2)   ;
+*/
 	return 0;
 }

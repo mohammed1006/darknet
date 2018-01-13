@@ -7,10 +7,6 @@
 #include <openssl/err.h>
 #include <openssl/pem.h>
 
-//#include <iostream>
-//#include <string>
-//#include <cstring>
-//#include <cassert>
 #include<string.h>
 #include<errno.h>
 #include<unistd.h>
@@ -18,7 +14,6 @@
 #include<sys/socket.h>
 #include<netinet/in.h>
 #include<arpa/inet.h>
-//using namespace std;
 char strPemFileName[1000];
 
 const char * base64char = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -140,24 +135,26 @@ RSA* strConvert2PublicKey(char* strPublicKey, int nPublicKeyLen)
 {
 
 	//int nPublicKeyLen = strPublicKey.size();      //strPublicKey为base64编码的公钥字符串
-	printf("ch%s\n", strPublicKey);
+//	printf("ch%s\n", strPublicKey);
+	int tempInt=0;
 	for (int i = 64; i < nPublicKeyLen; i += 64)
 	{
 		if (strPublicKey[i] != '\n')
 		{
 			//strPublicKey.insert(i, "\n");
 			char temp[1000] = {0};
-			for (int j = 0; j + i < nPublicKeyLen; j++)
+			for (int j = 0; j + i < nPublicKeyLen+tempInt; j++)
 			{
 				temp[j] = strPublicKey[i+j];
 			}
 			strPublicKey[i] = '\n';
+			tempInt++;
 			strPublicKey[i + 1] = 0;
 			strcat(strPublicKey, temp);
 		}
 		i++;
 	}
-	printf("ch%s\n", strPublicKey);
+	//printf("ch%s\n", strPublicKey);
 	//strPublicKey.insert(0, "-----BEGIN PUBLIC KEY-----\n");
 	char strPublicKeyB[1000] = "-----BEGIN PUBLIC KEY-----\n";
 	strcat(strPublicKeyB, strPublicKey);
@@ -165,7 +162,7 @@ RSA* strConvert2PublicKey(char* strPublicKey, int nPublicKeyLen)
 	strcat(strPublicKeyB, "\n-----END PUBLIC KEY-----\n");
 	BIO *bio = NULL;
 	char *chPublicKey = strPublicKeyB;//const_cast<char *>(strPublicKey.c_str());
-	printf("ch%s\n", chPublicKey);
+	//printf("ch%s,%ddd\n", chPublicKey,strlen(chPublicKey));
 	if ((bio = BIO_new_mem_buf(chPublicKey, -1)) == NULL)       //从字符串读取RSA公钥
 	{
 		// cout<<"BIO_new_mem_buf failed!"<<endl;
@@ -355,7 +352,7 @@ int RSAPriKeyEncodeData(char* strPemFileName, char* strData, int strLen, char* s
 //读取pubkey.pem文件 转为Rsa公钥结构体
 //bool PubKeyPemCvt2RSA(const std::string& pubkeyFile, RSA** pRSAPublicKey)
 int PubKeyPemCvt2RSA(char* pubkeyFile, RSA** pRSAPublicKey)
-{
+{/*{{{*/
 
 	//FILE* hpubKeyFile = fopen(pubkeyFile.c_str(),"rb");
 	FILE* hpubKeyFile = fopen(pubkeyFile, "rb");
@@ -376,99 +373,7 @@ int PubKeyPemCvt2RSA(char* pubkeyFile, RSA** pRSAPublicKey)
 	}
 	fclose(hpubKeyFile);
 	return ret;//true;
-}
-
-//利用 Private.pem文件 加密数据
-//std::string RSAPriKeyEncodeData(std::string& strPemFileName,std::string& strData )
-int RSAPriKeyEncodeData(char* strPemFileName, char* strData, int strLen, char* strRet)
-{
-	/*if (strPemFileName.empty() || strData.empty())
-	{
-	    assert(false);
-	    return "";
-	} */
-
-	//FILE* hPriKeyFile = fopen(strPemFileName.c_str(), "rb");
-	FILE* hPriKeyFile = fopen(strPemFileName, "rb");
-	if ( hPriKeyFile == NULL )
-	{
-		// assert(false);
-		return -1;//"";
-	}
-//	std::string strRet;
-	RSA* pRSAPriKey = RSA_new();
-	if (PEM_read_RSAPrivateKey(hPriKeyFile, &pRSAPriKey, 0, 0) == NULL)
-	{
-		// assert(false);
-		// return "";
-		return -1;
-	}
-
-	int nLen = RSA_size(pRSAPriKey);
-	char* pEncode = (char*)malloc(nLen + 1);
-	//char* pEncode = new char[nLen + 1];
-	//私钥加密
-	int ret = RSA_private_encrypt(strLen, strData, pEncode, pRSAPriKey, RSA_PKCS1_PADDING);
-	//int ret = RSA_private_encrypt(strData.length(), (const unsigned char*)strData.c_str(), (unsigned char*)pEncode, pRSAPriKey, RSA_PKCS1_PADDING);
-	if (ret >= 0)
-	{
-		//    strRet = std::string(pEncode, ret);
-		memcpy(strRet, pEncode, ret);
-	}
-//	delete[] pEncode;
-	free(pEncode);
-	RSA_free(pRSAPriKey);
-	fclose(hPriKeyFile);
-	CRYPTO_cleanup_all_ex_data();
-//	return strRet;
-	return ret;
-}
-
-
-/*
->>>>>>> c0dd1c2ca3c1513c71f42d3800ae8fc03cfe1ec4
-//利用 RSA公钥结构体  解密数据
-//std::string RSAPubKeyDncodeData(RSA *pRSAPubKey, std::string& strEncoded )
-int RSAPubKeyDncodeData(RSA *pRSAPubKey, char* strEncoded, int StrEncodedLen, char* strRet)
-{
-
-<<<<<<< HEAD
-int nLen = RSA_size((const RSA *)pRSAPubKey);
-//char* pDecode = new char[nLen + 1];
-char* pDecode = (char*)malloc(nLen + 1);
-//  string strRet;
-//int ret = RSA_public_decrypt(strEncoded.length(), (const unsigned char*)strEncoded.c_str(), (unsigned char*)pDecode, pRSAPubKey, RSA_PKCS1_PADDING);
-int ret = RSA_public_decrypt(StrEncodedLen, strEncoded, pDecode, pRSAPubKey, RSA_PKCS1_PADDING);
-if (ret >= 0)
-{
-//      strRet = std::string((char*)pDecode, ret);
-    memcpy(strRet, pDecode, ret);
-}
-free(pDecode);
-//  delete[] pDecode;
-CRYPTO_cleanup_all_ex_data();
-//  return strRet;
-return ret;
-}*//*}}}*/
-/*=======
-    int nLen = RSA_size((const RSA *)pRSAPubKey);
-    //char* pDecode = new char[nLen + 1];
-    char* pDecode = (char*)malloc(nLen + 1);
-//  string strRet;
-    //int ret = RSA_public_decrypt(strEncoded.length(), (const unsigned char*)strEncoded.c_str(), (unsigned char*)pDecode, pRSAPubKey, RSA_PKCS1_PADDING);
-    int ret = RSA_public_decrypt(StrEncodedLen, strEncoded, pDecode, pRSAPubKey, RSA_PKCS1_PADDING);
-    if (ret >= 0)
-    {
-//      strRet = std::string((char*)pDecode, ret);
-        memcpy(strRet, pDecode, ret);
-    }
-    free(pDecode);
-//  delete[] pDecode;
-    CRYPTO_cleanup_all_ex_data();
-//  return strRet;
-    return ret;
-}*/
-
+}/*}}}*/
 
 //AES_加std::string EncodeAES( const std::string& password, const std::string& data )密
 int EncodeAES( const char* password, int passwordLen, const char* data, int dataLen, char* strRet)
@@ -571,7 +476,7 @@ char chk_xrl(const char *data, int length)
 }/*}}}*/
 int getASE(int fd)
 {
-	/*{{{*/
+	
 	if (fd < 0)
 		return -1;
 	char rsa_public[9] = {0};
@@ -592,8 +497,8 @@ int getASE(int fd)
 	memcpy(public_RSA, &rsa_rec[7], len_en4);
 	char baseCh[1000];
 	base64_encode(public_RSA, baseCh);
-	RSA** rsa_p;
-	//strConvert2PublicKey(baseCh, len_en4, rsa_p);
+	RSA* rsa_p;
+	rsa_p=strConvert2PublicKey(baseCh, strlen(baseCh));
 	// std::string pRSAPublicKey;
 	char pRSAPublicKey[1000];
 	rsa_public[2] = 0x02;
@@ -604,14 +509,15 @@ int getASE(int fd)
 	len_en3 = (int)rsa_rec[5] * 16;
 	len_en4 = len_en1 + len_en2 + len_en3 + rsa_rec[6];
 	//std::string public_RSA_ASE(&rsa_rec[7],len_en4);
-	char* public_RSA_ASE[1000];
-	int ret = DecodeRSAKeyFile("", "", 0, public_RSA_ASE);
+//	char* public_RSA_ASE[1000];
+	int ret = RSAPubKeyDncodeData(rsa_p,rsa_rec, strlen(rsa_rec), strPemFileName);
+
 	return ret;
 
-}/*}}}*/
+}
 int send_en(int fd, char* content, int len_char, int param)
 {
-	/*{{{*/
+	
 	if (fd < 0)
 		return -1;
 	char send_content[1000];
@@ -629,10 +535,10 @@ int send_en(int fd, char* content, int len_char, int param)
 	send_content[len + 7] = (char)chk_xrl(&send_content[7], len);
 	send_content[len + 8] = 0x0D;
 	return send(fd, send_content, len + 9, param);
-}/*}}}*/
+}
 int recv_en(int fd, char* content, int rec_content_maxlen, int param)
 {
-	/*{{{*/
+	
 	if (fd < 0)
 		return -1;
 	char rec_content[1000];
@@ -653,29 +559,13 @@ int recv_en(int fd, char* content, int rec_content_maxlen, int param)
 	len = DecodeAES( strPemFileName, 0, &rec_content[7], 0, rec_cont);
 	memcpy(content, rec_cont, len);
 	return len;
-}/*}}}*/
+}
 
 int main()
 {
 
-	/*
-	//原文
-	//AES加密，块大小必须为128位（16字节），如果不是，则要补齐，密钥长度可以选择128位、192位、256位。
-	const string one = "1234567812345678";
-	cout << "one: " << one << endl;
-
-	//密文（二进制数据）
-	string two = EncodeRSAKeyFile("public.pem", one);
-	cout << "two: " << two << endl;
-
-	//顺利的话，解密后的文字和原文是一致的
-	string three = DecodeRSAKeyFile("privkey.pem", two);
-	cout << "three: " << three << endl;
-	*/
-
 	char one[1000] = "1234567812345678";
 	char one1[1000] = {0};
-//	int len = EncodeRSAKeyFile(/*"private_rsa.pem"*/"public_rsa.pem", one, strlen(one), one1);
 	int len = RSAPriKeyEncodeData("private_rsa.pem", one, strlen(one), one1);
 	printf("rrsa%d,%d,%s", len, (int)strlen(one1), one1);
 
@@ -691,57 +581,29 @@ int main()
 	int lenRead = 0;
 	while (!feof(fp))
 	{
-		//  memset(szTest, 0, sizeof(szTest));
 		char temp[1000] = {0};
 		fgets(temp, sizeof(temp) - 1, fp); // 包含了换行符
 		int tempL = strlen(temp);
 		memcpy(&szTest[lenRead], temp, tempL);
 		lenRead += tempL;
-		//  printf("%s", szTest);
 	}
 	fclose(fp);
-	printf("tttse:%s", szTest);
+	szTest[strlen(szTest)-1]=0;
+	printf("tt:%s,str(%d)\n", szTest,strlen(szTest));
 	char szBase64[1000] = {0};
-	Base64Encode(szTest, strlen(szTest), szBase64);
-	//base64_encode(szTest, szBase64);
-	printf("szbase:%s", szBase64);
+//	Base64Encode(szTest, strlen(szTest), szBase64);
+	base64_encode(szTest, szBase64);
+	printf("sz:%s\n", szBase64);
 	int ret = 1;
-//	int ret = strConvert2PublicKey(szBase64, strlen(szBase64), &rsap);
-	rsap = strConvert2PublicKey(szBase64, strlen(szBase64));
+	rsap = strConvert2PublicKey(szTest, strlen(szTest));
+//	PubKeyPemCvt2RSA("public_rsa.pem",&rsap);
 	if (!rsap)
 		printf("asdf\n");
 	char three[1000];
 	len = RSAPubKeyDncodeData(rsap, one1, strlen(one1), three);
 	RSA_free(rsap);
-//	len    = DecodeRSAKeyFile("private_rsa.pem", one1, strlen(one1), three);
+	printf("rs:%d,%d,%d,%s", len, (int) strlen(three), ret, three);
 
-
-	printf("rsa:%d,%d,%d,%s", len, (int) strlen(three), ret, three);
-/*	
-	    char one[1000] = "1234567812345678";
-	    char one1[1000] = {0};
-	    int len = EncodeRSAKeyFile("public_rsa.pem", one, strlen(one), one1);
-	     printf("rrsa%d,%d,%s",len,strlen(one1),one1);
-
-	    char three[1000];
-	    len    = DecodeRSAKeyFile("private_rsa.pem", one1, strlen(one1), three);
-	    printf("rsa:%d,%d,%s",len,strlen(three),three);
-	/*   const string three = "1234567812345678"; //要加密的内容
-	   const string four = "@@wufsfadfyuan@"; //要加密的内容
-	string five = EncodeAES(three, four);
-	   cout << "five: " << five << endl;
-
-	string six = DecodeAES(three, five);
-	   cout << "six: " << six << endl; */
-	/*  char three[1000] = "1234567812345678";
-	    char four[1000] = "@@wufsfadfyuan@";
-	    char out[1000] = {0};
-	    char out2[1000] = {0};
-	    int len = EncodeAES(three, 16, four, strlen(four), out);
-	    printf("encode %d,%d,%s\n", len, strlen(out), out) ;
-	    len =    DecodeAES(three, 16, out, strlen(out), out2);
-	    printf("encode %d,%d,%s\n", len, strlen(out2), out2)   ;
-	*/
 /*	char three[1000] = "1234567812345678";
 	char four[1000] = "@@wufsfadfyuan@";
 	char out[1000] = {0};

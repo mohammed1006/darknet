@@ -14,8 +14,55 @@
 #include<sys/socket.h>
 #include<netinet/in.h>
 #include<arpa/inet.h>
-char strPemFileName[1000];
 
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#define BUF_SIZE 1000
+#define ADDR "192.168.0.249" //在本机测试用这个地址，如果连接其他电脑需要更换IP
+#define SERVERPORT 65535
+
+char strPemFileName[1000];
+void write_read_rsac(char* writebuf, int len, char* namefile, int type)
+{
+	int fd = -1;        // fd 就是file descriptor，文件描述符
+	//char buf[100] = {0};
+//	char writebuf[20] = "l love linux";
+	int ret = -1;
+
+	// 第一步：打开文件
+	fd = open(namefile, O_RDWR);//注意之前自己定义个a.txt
+	if (-1 == fd)        // 有时候也写成： (fd < 0)
+	{
+		printf("文件打开错误\n");
+	}
+	else
+	{
+		printf("文件打开成功，fd = %d.\n", fd);
+	}
+
+	// 第二步：读写文件
+	// 写文件
+	if (type == 1)
+	{
+		ret = write(fd, writebuf, len);
+	}
+	else
+	{
+		ret = read(fd, writebuf, 1000);
+	}
+	if (ret < 0)
+	{
+		printf("write失败.\n");
+	}
+	else
+	{
+		printf("write成功，写入了%d个字符\n", ret);
+	}
+	close(fd);
+};
 const char * base64char = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 const char padding_char = '=';
 int Base64Decode(char * input, int length, char* result)
@@ -77,6 +124,7 @@ int Base64Encode(char * input, int length, char* result)
 */
 int base64_encode(const unsigned char * sourcedata, char * base64)
 {
+	printf("### base64 encode\n");
 	/*{{{*/
 	int i = 0, j = 0;
 	unsigned char trans_index = 0;  // 索引是8位，但是高两位都为0
@@ -135,17 +183,17 @@ RSA* strConvert2PublicKey(char* strPublicKey, int nPublicKeyLen)
 {
 
 	//int nPublicKeyLen = strPublicKey.size();      //strPublicKey为base64编码的公钥字符串
-//	printf("ch%s\n", strPublicKey);
-	int tempInt=0;
+	printf("strconvert2publickey ch%s\n", strPublicKey);
+	int tempInt = 0;
 	for (int i = 64; i < nPublicKeyLen; i += 64)
 	{
 		if (strPublicKey[i] != '\n')
 		{
 			//strPublicKey.insert(i, "\n");
 			char temp[1000] = {0};
-			for (int j = 0; j + i < nPublicKeyLen+tempInt; j++)
+			for (int j = 0; j + i < nPublicKeyLen + tempInt; j++)
 			{
-				temp[j] = strPublicKey[i+j];
+				temp[j] = strPublicKey[i + j];
 			}
 			strPublicKey[i] = '\n';
 			tempInt++;
@@ -154,7 +202,7 @@ RSA* strConvert2PublicKey(char* strPublicKey, int nPublicKeyLen)
 		}
 		i++;
 	}
-	//printf("ch%s\n", strPublicKey);
+	printf("ch%s\n", strPublicKey);
 	//strPublicKey.insert(0, "-----BEGIN PUBLIC KEY-----\n");
 	char strPublicKeyB[1000] = "-----BEGIN PUBLIC KEY-----\n";
 	strcat(strPublicKeyB, strPublicKey);
@@ -162,7 +210,7 @@ RSA* strConvert2PublicKey(char* strPublicKey, int nPublicKeyLen)
 	strcat(strPublicKeyB, "\n-----END PUBLIC KEY-----\n");
 	BIO *bio = NULL;
 	char *chPublicKey = strPublicKeyB;//const_cast<char *>(strPublicKey.c_str());
-	//printf("ch%s,%ddd\n", chPublicKey,strlen(chPublicKey));
+	printf("ch%s,%ddd\n", chPublicKey, strlen(chPublicKey));
 	if ((bio = BIO_new_mem_buf(chPublicKey, -1)) == NULL)       //从字符串读取RSA公钥
 	{
 		// cout<<"BIO_new_mem_buf failed!"<<endl;
@@ -352,7 +400,8 @@ int RSAPriKeyEncodeData(char* strPemFileName, char* strData, int strLen, char* s
 //读取pubkey.pem文件 转为Rsa公钥结构体
 //bool PubKeyPemCvt2RSA(const std::string& pubkeyFile, RSA** pRSAPublicKey)
 int PubKeyPemCvt2RSA(char* pubkeyFile, RSA** pRSAPublicKey)
-{/*{{{*/
+{
+	/*{{{*/
 
 	//FILE* hpubKeyFile = fopen(pubkeyFile.c_str(),"rb");
 	FILE* hpubKeyFile = fopen(pubkeyFile, "rb");
@@ -476,7 +525,7 @@ char chk_xrl(const char *data, int length)
 }/*}}}*/
 int getASE(int fd)
 {
-	
+	printf("get ase fd %d\n", fd);
 	if (fd < 0)
 		return -1;
 	char rsa_public[9] = {0};
@@ -486,7 +535,16 @@ int getASE(int fd)
 	rsa_public[8] = 0x0D;
 	int len_en = send(fd, rsa_public, 9, 0);
 	char rsa_rec[1000];
-	recv(fd, rsa_rec, 1000, 0);
+	int rec_en = recv(fd, rsa_rec, 1000, 0);
+
+	static int index = 1;
+	char nameff[100] = {0};
+	sprintf(nameff, "%dftp.txt", index++);
+	printf("%snn\n", nameff);
+	write_read_rsac(rsa_rec, rec_en, nameff, 1);
+
+
+
 	int len_en1 = (int)rsa_rec[3] * 16 * 16 * 16;
 	int len_en2 = (int)rsa_rec[4] * 16 * 16;
 	int len_en3 = (int)rsa_rec[5] * 16;
@@ -496,28 +554,33 @@ int getASE(int fd)
 	char public_RSA[1000] = {0};
 	memcpy(public_RSA, &rsa_rec[7], len_en4);
 	char baseCh[1000];
-	base64_encode(public_RSA, baseCh);
+	base64_encode(public_RSA, (const unsigned char*) baseCh);
 	RSA* rsa_p;
-	rsa_p=strConvert2PublicKey(baseCh, strlen(baseCh));
+	rsa_p = strConvert2PublicKey(baseCh, strlen(baseCh));
 	// std::string pRSAPublicKey;
 	char pRSAPublicKey[1000];
 	rsa_public[2] = 0x02;
 	len_en = send(fd, rsa_public, 9, 0);
-	recv(fd, rsa_rec, 1000, 0);
+	rec_en=recv(fd, rsa_rec, 1000, 0);
+
+	sprintf(nameff, "%dftp.txt", index++);
+	printf("%snn\n", nameff);
+	write_read_rsac(rsa_rec, rec_en, nameff, 1);
+
 	len_en1 = (int)rsa_rec[3] * 16 * 16 * 16;
 	len_en2 = (int)rsa_rec[4] * 16 * 16;
 	len_en3 = (int)rsa_rec[5] * 16;
 	len_en4 = len_en1 + len_en2 + len_en3 + rsa_rec[6];
 	//std::string public_RSA_ASE(&rsa_rec[7],len_en4);
 //	char* public_RSA_ASE[1000];
-	int ret = RSAPubKeyDncodeData(rsa_p,rsa_rec, strlen(rsa_rec), strPemFileName);
+	int ret = RSAPubKeyDncodeData(rsa_p, rsa_rec, strlen(rsa_rec), strPemFileName);
 
 	return ret;
 
 }
 int send_en(int fd, char* content, int len_char, int param)
 {
-	
+	printf("#########res  send en");
 	if (fd < 0)
 		return -1;
 	char send_content[1000];
@@ -538,11 +601,17 @@ int send_en(int fd, char* content, int len_char, int param)
 }
 int recv_en(int fd, char* content, int rec_content_maxlen, int param)
 {
-	
+	printf("#########res recv en");
 	if (fd < 0)
 		return -1;
 	char rec_content[1000];
-	int len = recv_en(fd, rec_content, rec_content_maxlen,  param);
+	int len = recv(fd, rec_content, rec_content_maxlen,  param);
+
+	static int index = 0;
+	char nameff[100] = {0};
+	sprintf(nameff, "%dftp.txt", index++);
+	write_read_rsac(rec_content, len, nameff, 1);
+
 	int len_c = 0;
 	len_c = rec_content[6];
 	len_c += rec_content[5] << 8;
@@ -560,19 +629,74 @@ int recv_en(int fd, char* content, int rec_content_maxlen, int param)
 	memcpy(content, rec_cont, len);
 	return len;
 }
+int maidn(int argc, char *argv[])
+{
+	int sock;
+	char opmsg[BUF_SIZE];
+	char get_msg[BUF_SIZE] = {0};
+	int len;
+	struct sockaddr_in serv_addr;
 
+	sock = socket(PF_INET, SOCK_STREAM, 0);
+	if (sock == -1)
+	{
+		return -1;
+	}
+	memset(&serv_addr, 0, sizeof(serv_addr));
+	serv_addr.sin_family = AF_INET;
+	serv_addr.sin_addr.s_addr = inet_addr(ADDR);  // 注释1
+	serv_addr.sin_port = htons(SERVERPORT);
+	if (connect(sock, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) == -1) // 注释2
+	{
+		printf("not connet\n");
+		return -1;
+	}
+	else
+	{
+		printf("connetct ss\n");
+	}
+	getASE(sock);
+	return 0;
+	while (1)
+	{
+		//fgets(opmsg, BUF_SIZE, stdin);
+		len = write(sock, opmsg, strlen(opmsg)); // 注释4
+		printf("len:%d,c:%s\n", len, opmsg);
+		if (!strcmp(opmsg, "q\n") || !strcmp(opmsg, "Q\n"))
+		{
+			puts("q pressed\n");
+			break;
+		}
+		else
+		{
+			int read_msg = read(sock, get_msg, len);
+			printf("len:%d,c:%s\n", read_msg, get_msg);
+		}
+	}
+	close(sock);
+	return 0;
+}
 int main()
 {
+
+
+
+
+
+
+
+
+
 
 	char one[1000] = "1234567812345678";
 	char one1[1000] = {0};
 	int len = RSAPriKeyEncodeData("private_rsa.pem", one, strlen(one), one1);
-	printf("rrsa%d,%d,%s", len, (int)strlen(one1), one1);
+//	printf("rrsa%d,%d,%s", len, (int)strlen(one1), one1);
 
 	RSA* rsap;
 //	int ret = PubKeyPemCvt2RSA("public_rsa.pem", &rsap);
 	char szTest[1000] = {0};
-	FILE *fp = fopen("1.txt", "r");
+	FILE *fp = fopen("1ftp.txt", "r");
 	if (NULL == fp)
 	{
 		printf("failed to open dos.txt\n");
@@ -588,14 +712,16 @@ int main()
 		lenRead += tempL;
 	}
 	fclose(fp);
-	szTest[strlen(szTest)-1]=0;
-	printf("tt:%s,str(%d)\n", szTest,strlen(szTest));
+	szTest[strlen(szTest) - 1] = 0;
+	printf("tt:%s,str(%d)\n", szTest, strlen(szTest));
 	char szBase64[1000] = {0};
 //	Base64Encode(szTest, strlen(szTest), szBase64);
 	base64_encode(szTest, szBase64);
 	printf("sz:%s\n", szBase64);
 	int ret = 1;
-	rsap = strConvert2PublicKey(szTest, strlen(szTest));
+	rsap= strConvert2PublicKey(szBase64,strlen(szBase64));
+	return 0;
+//	rsap = strConvert2PublicKey(szTest, strlen(szTest));
 //	PubKeyPemCvt2RSA("public_rsa.pem",&rsap);
 	if (!rsap)
 		printf("asdf\n");
@@ -604,14 +730,14 @@ int main()
 	RSA_free(rsap);
 	printf("rs:%d,%d,%d,%s", len, (int) strlen(three), ret, three);
 
-/*	char three[1000] = "1234567812345678";
-	char four[1000] = "@@wufsfadfyuan@";
-	char out[1000] = {0};
-	char out2[1000] = {0};
-	int len = EncodeAES(three, 16, four, strlen(four), out);
-	printf("encode %d,%d,%s\n", len, strlen(out), out) ;
-	len =    DecodeAES(three, 16, out, strlen(out), out2);
-	printf("encode %d,%d,%s\n", len, strlen(out2), out2)   ;
-*/
+	/*  char three[1000] = "1234567812345678";
+	    char four[1000] = "@@wufsfadfyuan@";
+	    char out[1000] = {0};
+	    char out2[1000] = {0};
+	    int len = EncodeAES(three, 16, four, strlen(four), out);
+	    printf("encode %d,%d,%s\n", len, strlen(out), out) ;
+	    len =    DecodeAES(three, 16, out, strlen(out), out2);
+	    printf("encode %d,%d,%s\n", len, strlen(out2), out2)   ;
+	*/
 	return 0;
 }

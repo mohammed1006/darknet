@@ -16,6 +16,7 @@
 #include<arpa/inet.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -561,7 +562,7 @@ int getASE(int fd)
 	char pRSAPublicKey[1000];
 	rsa_public[2] = 0x02;
 	len_en = send(fd, rsa_public, 9, 0);
-	rec_en=recv(fd, rsa_rec, 1000, 0);
+	rec_en = recv(fd, rsa_rec, 1000, 0);
 
 	sprintf(nameff, "%dftp.txt", index++);
 	printf("%snn\n", nameff);
@@ -696,7 +697,7 @@ int main()
 	RSA* rsap;
 //	int ret = PubKeyPemCvt2RSA("public_rsa.pem", &rsap);
 	char szTest[1000] = {0};
-	FILE *fp = fopen("1ftp.txt", "r");
+	FILE *fp = fopen("1ftp.txt", "rb");
 	if (NULL == fp)
 	{
 		printf("failed to open dos.txt\n");
@@ -706,20 +707,25 @@ int main()
 	while (!feof(fp))
 	{
 		char temp[1000] = {0};
-		fgets(temp, sizeof(temp) - 1, fp); // 包含了换行符
-		int tempL = strlen(temp);
-		memcpy(&szTest[lenRead], temp, tempL);
+		//int tempL=fgets(temp, sizeof(temp) - 1, fp); // 包含了换行符
+		//int tempL = strlen(temp);
+		int tempL=fread(&szTest[lenRead], sizeof(unsigned char), 1000, fp);
+		//gG    memcpy(&szTest[lenRead], temp, tempL);
 		lenRead += tempL;
 	}
 	fclose(fp);
 	szTest[strlen(szTest) - 1] = 0;
-	printf("tt:%s,str(%d)\n", szTest, strlen(szTest));
+	//printf("tt:%s,str(%d)\n", szTest, strlen(szTest));
+	for (int i = 0; i <lenRead; i++)
+	{
+		printf("%d ", (int)szTest[i]);
+	}
 	char szBase64[1000] = {0};
-//	Base64Encode(szTest, strlen(szTest), szBase64);
-	base64_encode(szTest, szBase64);
+	Base64Encode(szTest, lenRead, szBase64);
+//	base64_encode(szTest, szBase64);
 	printf("sz:%s\n", szBase64);
 	int ret = 1;
-	rsap= strConvert2PublicKey(szBase64,strlen(szBase64));
+	rsap = strConvert2PublicKey(szBase64, strlen(szBase64));
 	return 0;
 //	rsap = strConvert2PublicKey(szTest, strlen(szTest));
 //	PubKeyPemCvt2RSA("public_rsa.pem",&rsap);

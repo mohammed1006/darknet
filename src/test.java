@@ -1,5 +1,6 @@
 
 package test.rsa;
+
 import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
@@ -103,11 +104,39 @@ public class test {
 		channel.writeAndFlush(encryptMessage);
 	}
 */
+	KeyPair keyPair;
+	private void aesPrivateKey() 
+			throws Exception {
+		//	generate aes key
+		KeyGenerator aesGenerator = KeyGenerator.getInstance("AES");
+		aesGenerator.init(128);
+		byte[] aesKey = aesGenerator.generateKey().getEncoded();
+		System.out.print('\n');
+		System.out.print('\n');
+		for(int i=0;i<aesKey .length;i++){
+		System.out.print(aesKey[i]);
+		System.out.print(' ');
+		}
+		//	save aes key for decrypting message
+		
+		PrivateKey privateKey = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(keyPair.getPrivate().getEncoded()));
+		Cipher cipher = Cipher.getInstance("RSA");
+		cipher.init(Cipher.ENCRYPT_MODE, privateKey);
+		byte[] aseEncrypt = cipher.doFinal(aesKey);
+		System.out.print('\n');
+		 DataOutputStream out=new DataOutputStream(new BufferedOutputStream(new FileOutputStream("/home/lb/git/darknet/src/12ftp.txt")));
+			for(int i=0;i<aseEncrypt.length;i++){
+			System.out.print(aseEncrypt[i]);
+			out.writeByte(aseEncrypt[i]);
+			System.out.print(' ');
+			}
+	   		out.close();
+	}
 	private void rsaPublicKeyReqHandler()
 	{
-		KeyPair keyPair;
+		
 		try {
-			 DataOutputStream out=new DataOutputStream(new BufferedOutputStream(new FileOutputStream("output1")));
+			 DataOutputStream out=new DataOutputStream(new BufferedOutputStream(new FileOutputStream("/home/lb/git/darknet/src/1ftp.txt")));
 			keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
 			byte[] rsaPublic = keyPair.getPublic().getEncoded();
 			final Base64.Decoder decoder = Base64.getDecoder();
@@ -115,6 +144,7 @@ public class test {
 			final String encodedText = encoder.encodeToString(rsaPublic);
 			System.out.println(encodedText);
 			System.out.println(encodedText.length());
+			 System.out.println(/*"公钥："+*/new String(Base64.getEncoder().encode(rsaPublic))); 
 			for(int i=0;i<rsaPublic.length;i++){
 			System.out.print(rsaPublic[i]);
     		out.writeByte(rsaPublic[i]);
@@ -156,8 +186,13 @@ public class test {
 		// TODO Auto-generated method stub
 		test t=new test();
 		t.rsaPublicKeyReqHandler();
+		try {
+			t.aesPrivateKey();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
 	}
 
 }
-
 

@@ -50,8 +50,11 @@ double time_begin;
 long time_begin_server;
 void sendData(char*, int, float);
 extern double get_wall_time();
-int send_en(int fd,char* content,int len_char,int param);
-int recv_en(int fd,char* content,int len,int param);
+//int send_en(int fd,char* content,int len_char,int param);
+//int recv_en(int fd,char* content,int len,int param);
+//#define send_en send
+//#define recv_en recv
+
 int getASE(int fd);
 void setupSocketTimeOut(const char* timeChar, int len)
 {
@@ -315,6 +318,7 @@ void reciveData()
 void setupSocket(char *server, int port, char *robotID, float thresh)
 {
 	int static socketAgainCount = 0;
+	printf("####################setup socket\n");
 	printf("setupSocket %s,%d,%s,%.2f,%d\n", server, port, robotID, thresh, socketAgainCount);
 	if (socketAgainCount > 10)
 	{
@@ -350,11 +354,14 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 		destroy();
 		return;
 	}
+
 	//struct timeval timeout = {0, 20};
 	//设置发送超时
 //setsockopt(sockfd，SOL_SOCKET,SO_SNDTIMEO，(char *)&timeout,sizeof(struct timeval));
 //设置接收超时
 //setsockopt(sockfd，SOL_SOCKET,SO_RCVTIMEO，(char *)&timeout,sizeof(struct timeval));
+	printf("###### get ase\n");
+
 	getASE(sockfd);
 
 
@@ -368,10 +375,10 @@ void setupSocket(char *server, int port, char *robotID, float thresh)
 	// printf("sj finish\n");
 	printf("send message:%s,%d\n", mess, (int)strlen(mess));
 	int sendLen = send_en(sockfd, mess, strlen(mess), 0) ;
-	if (  sendLen != (int)strlen(mess))
+	/*if (  sendLen != (int)strlen(mess))
 	{
 		printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
-	}
+	}*/
 	if (NULL != sendjson)
 	{
 		free(sendjson);

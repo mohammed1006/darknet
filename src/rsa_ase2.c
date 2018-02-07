@@ -537,23 +537,30 @@ int getASE(int fd)
 	int len_en = send(fd, rsa_public, 9, 0);
 	char rsa_rec[1000];
 	int rec_en = recv(fd, rsa_rec, 1000, 0);
-
-	static int index = 1;
-	char nameff[100] = {0};
-	sprintf(nameff, "%dftp.txt", index++);
-	printf("%snn\n", nameff);
-	write_read_rsac(rsa_rec, rec_en, nameff, 1);
+	printf("get ase len1 %d\n", rec_en);
 
 
 
-	int len_en1 = (int)rsa_rec[3] * 16 * 16 * 16;
-	int len_en2 = (int)rsa_rec[4] * 16 * 16;
-	int len_en3 = (int)rsa_rec[5] * 16;
-	int len_en4 = len_en1 + len_en2 + len_en3 + rsa_rec[6];
+	int len_en1 = (((int)rsa_rec[3]+256)%256) * 16 * 16 * 16;
+	int len_en2 = (((int)rsa_rec[4]+256)%256) * 16 * 16;
+	int len_en3 = (((int)rsa_rec[5]+256)%256) * 16;
+	int len_en4 = len_en1 + len_en2 + len_en3 + (((int)rsa_rec[6]+256)%256);
 
 	//std::string public_RSA(&rsa_rec[7],len_en4);
 	char public_RSA[1000] = {0};
 	memcpy(public_RSA, &rsa_rec[7], len_en4);
+
+	printf("get ase len %d\n", len_en4);
+	static int index = 1;
+	char nameff[100] = {0};
+	sprintf(nameff, "%dftp.txt", index);
+	printf("%snn\n", nameff);
+	write_read_rsac(public_RSA, len_en4, nameff, 1);
+	index++;
+
+
+
+
 	char baseCh[1000];
 	base64_encode(public_RSA, len_en4, (const unsigned char*) baseCh);
 	RSA* rsa_p;
@@ -568,15 +575,18 @@ int getASE(int fd)
 	printf("%snn\n", nameff);
 	write_read_rsac(rsa_rec, rec_en, nameff, 1);
 
-	len_en1 = (int)rsa_rec[3] * 16 * 16 * 16;
-	len_en2 = (int)rsa_rec[4] * 16 * 16;
-	len_en3 = (int)rsa_rec[5] * 16;
-	len_en4 = len_en1 + len_en2 + len_en3 + rsa_rec[6];
+	len_en1 = (((int)rsa_rec[3]+256)%256) * 16 * 16 * 16;
+	len_en2 = (((int)rsa_rec[4]+256)%256) * 16 * 16;
+	len_en3 = (((int)rsa_rec[5]+256)%256) * 16;
+	len_en4 = len_en1 + len_en2 + len_en3 + (((int)rsa_rec[6]+256)%256);
 	//std::string public_RSA_ASE(&rsa_rec[7],len_en4);
 //	char* public_RSA_ASE[1000];
-	int ret = RSAPubKeyDncodeData(rsa_p, rsa_rec, strlen(rsa_rec), strPemFileName);
+	char public_ase[1000] = {0};
+	memcpy(public_ase, &rsa_rec[7], len_en4);
 
-	printf("get ase key:");
+	int ret = RSAPubKeyDncodeData(rsa_p, public_ase, strlen(public_ase), strPemFileName);
+
+	printf("get ase key(%d):",ret);
 	for (int i = 0; i < ret; i++)
 	{
 		printf("%d,", (int)strPemFileName[i]);
@@ -661,7 +671,7 @@ int recv_en(int fd, char* content, int rec_content_maxlen, int param)
 	printf("recv deco:%s\n", content);
 	return len;
 }
-int maidn(int argc, char *argv[])
+int main4(int argc, char *argv[])
 {
 	int sock;
 	char opmsg[BUF_SIZE];
@@ -708,7 +718,7 @@ int maidn(int argc, char *argv[])
 	close(sock);
 	return 0;
 }
-int main()
+int main3()
 {
 
 

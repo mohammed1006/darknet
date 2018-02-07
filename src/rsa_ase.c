@@ -26,6 +26,7 @@
 #define SERVERPORT 65535
 
 char strPemFileName[1000];
+int strPemFileLen=0;
 void write_read_rsac(char* writebuf, int len, char* namefile, int type)
 {
 	int fd = -1;        // fd 就是file descriptor，文件描述符
@@ -123,13 +124,13 @@ int Base64Encode(char * input, int length, char* result)
 * const unsigned char * sourcedata， 源数组
 * char * base64 ，码字保存
 */
-int base64_encode(const unsigned char * sourcedata, char * base64)
+int base64_encode(const unsigned char * sourcedata, const int datalength, char * base64)
 {
 	printf("### base64 encode\n");
 	/*{{{*/
 	int i = 0, j = 0;
 	unsigned char trans_index = 0;  // 索引是8位，但是高两位都为0
-	const int datalength = strlen((const char*)sourcedata);
+	//const int datalength = strlen((const char*)sourcedata);
 	for (; i < datalength; i += 3)
 	{
 		// 每三个一组，进行编码
@@ -537,25 +538,32 @@ int getASE(int fd)
 	int len_en = send(fd, rsa_public, 9, 0);
 	char rsa_rec[1000];
 	int rec_en = recv(fd, rsa_rec, 1000, 0);
-
-	static int index = 1;
-	char nameff[100] = {0};
-	sprintf(nameff, "%dftp.txt", index++);
-	printf("%snn\n", nameff);
-	write_read_rsac(rsa_rec, rec_en, nameff, 1);
+	printf("get ase len1 %d\n", rec_en);
 
 
 
-	int len_en1 = (int)rsa_rec[3] * 16 * 16 * 16;
-	int len_en2 = (int)rsa_rec[4] * 16 * 16;
-	int len_en3 = (int)rsa_rec[5] * 16;
-	int len_en4 = len_en1 + len_en2 + len_en3 + rsa_rec[6];
+	int len_en1 = (((int)rsa_rec[3]+256)%256) * 16 * 16 * 16;
+	int len_en2 = (((int)rsa_rec[4]+256)%256) * 16 * 16;
+	int len_en3 = (((int)rsa_rec[5]+256)%256) * 16;
+	int len_en4 = len_en1 + len_en2 + len_en3 + (((int)rsa_rec[6]+256)%256);
 
 	//std::string public_RSA(&rsa_rec[7],len_en4);
 	char public_RSA[1000] = {0};
 	memcpy(public_RSA, &rsa_rec[7], len_en4);
+
+	printf("get ase len %d\n", len_en4);
+	static int index = 1;
+	char nameff[100] = {0};
+	sprintf(nameff, "%dftp.txt", index);
+	printf("%snn\n", nameff);
+	write_read_rsac(public_RSA, len_en4, nameff, 1);
+	index++;
+
+
+
+
 	char baseCh[1000];
-	base64_encode(public_RSA, (const unsigned char*) baseCh);
+	base64_encode(public_RSA, len_en4, (const unsigned char*) baseCh);
 	RSA* rsa_p;
 	rsa_p = strConvert2PublicKey(baseCh, strlen(baseCh));
 	// std::string pRSAPublicKey;
@@ -568,20 +576,33 @@ int getASE(int fd)
 	printf("%snn\n", nameff);
 	write_read_rsac(rsa_rec, rec_en, nameff, 1);
 
-	len_en1 = (int)rsa_rec[3] * 16 * 16 * 16;
-	len_en2 = (int)rsa_rec[4] * 16 * 16;
-	len_en3 = (int)rsa_rec[5] * 16;
-	len_en4 = len_en1 + len_en2 + len_en3 + rsa_rec[6];
+	len_en1 = (((int)rsa_rec[3]+256)%256) * 16 * 16 * 16;
+	len_en2 = (((int)rsa_rec[4]+256)%256) * 16 * 16;
+	len_en3 = (((int)rsa_rec[5]+256)%256) * 16;
+	len_en4 = len_en1 + len_en2 + len_en3 + (((int)rsa_rec[6]+256)%256);
 	//std::string public_RSA_ASE(&rsa_rec[7],len_en4);
 //	char* public_RSA_ASE[1000];
-	int ret = RSAPubKeyDncodeData(rsa_p, rsa_rec, strlen(rsa_rec), strPemFileName);
+	char public_ase[1000] = {0};
+	memcpy(public_ase, &rsa_rec[7], len_en4);
+
+	int ret = RSAPubKeyDncodeData(rsa_p, public_ase, len_en4, strPemFileName);
+
+
+	strPemFileLen=ret;
+
+	printf("get ase key(%d):",ret);
+	for (int i = 0; i < ret; i++)
+	{
+		printf("%d,", (int)strPemFileName[i]);
+	}
+
 
 	return ret;
 
 }
 int send_en(int fd, char* content, int len_char, int param)
 {
-	printf("#########res  send en");
+	printf("#########res  send content(%d):%s", strlen(content),content);
 	if (fd < 0)
 		return -1;
 	char send_content[1000];
@@ -590,47 +611,84 @@ int send_en(int fd, char* content, int len_char, int param)
 	send_content[2] = 0x03;
 
 	char en_cont[1000];
-	int len = EncodeAES(strPemFileName, 0, content, 0, en_cont);
-	send_content[3 + 0]  = len >> 24;
+	int len = EncodeAES(strPemFileName, strPemFileLen, content, strlen(content), en_cont);
+	/*send_content[3 + 0]  = len >> 24;
 	send_content[3 + 1] = len >> 16;
 	send_content[3 + 2] = len >> 8;
-	send_content[3 + 3] = len;
+	send_content[3 + 3] = len;*/
+	
+       	int temp1=(int)(len / (256*256*256));
+        send_content[3 + 0]  = (unsigned char)temp1;
+	int temp2=(int)((len-temp1*256*256*256) / (256*256));
+	send_content[3 + 1] =(unsigned char) temp2;
+	int temp3=(int)((len-temp1*256*256*256-temp2*256*256) / (256));
+	send_content[3 + 2] = (unsigned char)temp3;
+	int temp4=(int)(len-temp1*256*256*256-temp2*256*256-temp3*256);
+	send_content[3 + 3] = (unsigned char)temp4;
+
+
+
+
 	memcpy(&send_content[7], en_cont, len);
 	send_content[len + 7] = (char)chk_xrl(&send_content[7], len);
 	send_content[len + 8] = 0x0D;
+
+
+  printf("send len:%d,(%d,%d,%d,%d),c32:%d\n",len,(int)send_content[6],(int)send_content[5],(int)send_content[4],(int)send_content[3],(int)send_content[len+7]);
+
+
+	printf("send enco:");
+	for (int i = 0; i < len + 9; i++)
+	{
+		printf("%d,", (int)send_content[i]);
+	}
+
+
 	return send(fd, send_content, len + 9, param);
 }
 int recv_en(int fd, char* content, int rec_content_maxlen, int param)
 {
-	printf("#########res recv en");
+  printf("####recv a message from server\n");
 	if (fd < 0)
 		return -1;
 	char rec_content[1000];
 	int len = recv(fd, rec_content, rec_content_maxlen,  param);
-
+//-----------------debug----------//
 	static int index = 0;
 	char nameff[100] = {0};
 	sprintf(nameff, "%dftp.txt", index++);
 	write_read_rsac(rec_content, len, nameff, 1);
 
+	printf("recv len(3-6):%d,%d,%d,%d.\n", (int)rec_content[3], (int)rec_content[4], (int)rec_content[5], (int)rec_content[6]);
+//------------end----------------//
+
 	int len_c = 0;
-	len_c = rec_content[6];
-	len_c += rec_content[5] << 8;
-	len_c += rec_content[4] << 16;
-	len_c += rec_content[3] << 24;
+	int len_en1 = (((int)rec_content[3]+256)%256) * 16 * 16 * 16;
+	int len_en2 = (((int)rec_content[4]+256)%256) * 16 * 16;
+	int len_en3 = (((int)rec_content[5]+256)%256) * 16;
+	len_c = len_en1 + len_en2 + len_en3 + (((int)rec_content[6]+256)%256);
 	//std::string cont_str(&rec_content[7],len_c);
 	char chk = (char)chk_xrl(&rec_content[7], len_c);
-	if (rec_content[len + 7] != chk)
+
+  printf("recv len:%d,c32:%d\n",len_c,(int)chk);
+
+  for(int i=0;i<len_c;i++)
+	{
+					printf("%x ",rec_content[7+i]);
+	}
+
+	if (rec_content[len_c + 7] != chk)
 	{
 		printf("recevie data sum fail\n");
 		return -1;
 	}
 	char rec_cont[1000];
-	len = DecodeAES( strPemFileName, 0, &rec_content[7], 0, rec_cont);
+	len = DecodeAES( strPemFileName, strPemFileLen, &rec_content[7], len_c, rec_cont);
 	memcpy(content, rec_cont, len);
+	printf("recv deco:%s\n", content);
 	return len;
 }
-int maidn(int argc, char *argv[])
+int main4(int argc, char *argv[])
 {
 	int sock;
 	char opmsg[BUF_SIZE];
@@ -677,7 +735,7 @@ int maidn(int argc, char *argv[])
 	close(sock);
 	return 0;
 }
-int main()
+int main3()
 {
 
 
@@ -697,7 +755,7 @@ int main()
 	RSA* rsap;
 //	int ret = PubKeyPemCvt2RSA("public_rsa.pem", &rsap);
 	char szTest[1000] = {0};
-	FILE *fp = fopen("11ftp.txt", "rb");
+	FILE *fp = fopen("1ftp.txt", "rb");
 	if (NULL == fp)
 	{
 		printf("failed to open dos.txt\n");
@@ -707,33 +765,54 @@ int main()
 	while (!feof(fp))
 	{
 		char temp[1000] = {0};
-		int tempL=fread(&szTest[lenRead], sizeof(unsigned char), 1000, fp);
+		int tempL = fread(&szTest[lenRead], sizeof(char), 1000, fp);
 		lenRead += tempL;
 	}
 	fclose(fp);
-	szTest[strlen(szTest) - 1] = 0;
+	printf("\n");
 	//printf("tt:%s,str(%d)\n", szTest, strlen(szTest));
-	for (int i = 0; i <lenRead; i++)
+	/*for (int i = 0; i <lenRead; i++)
 	{
-		printf("%d ", (int)szTest[i]);
-	}
+	    printf("%d ", (int)szTest[i]);
+	}*/
 	char szBase64[1000] = {0};
-//	Base64Encode(szTest, lenRead, szBase64);
-//	base64_encode(szTest, szBase64);
+
+	base64_encode(szTest, lenRead, szBase64);
 	printf("sz:%s\n", szBase64);
 	int ret = 1;
-	rsap = strConvert2PublicKey(szTest, strlen(szTest));
-//	rsap = strConvert2PublicKey(szBase64, strlen(szBase64));
-	return 0;
+	rsap = strConvert2PublicKey(szBase64, strlen(szBase64));
+
 //	rsap = strConvert2PublicKey(szTest, strlen(szTest));
 //	PubKeyPemCvt2RSA("public_rsa.pem",&rsap);
 	if (!rsap)
 		printf("asdf\n");
+
+
+	FILE *fp2 = fopen("12ftp.txt", "rb");
+	if (NULL == fp2)
+	{
+		printf("failed to open dos.txt\n");
+		return 1;
+	}
+	int lenRead2 = 0;
+	char szTest2[1000] = {0};
+	while (!feof(fp2))
+	{
+
+		int tempL = fread(&szTest2[lenRead2], sizeof(char), 1000, fp2);
+		lenRead2 += tempL;
+	}
+	fclose(fp2);
+
+
 	char three[1000];
-	len = RSAPubKeyDncodeData(rsap, one1, strlen(one1), three);
+	len = RSAPubKeyDncodeData(rsap, /*one1*/szTest2, lenRead2/*strlen(one1)*/, three);
 	RSA_free(rsap);
 	printf("rs:%d,%d,%d,%s", len, (int) strlen(three), ret, three);
-
+	for (int i = 0; i < len; i++)
+	{
+		printf("%d ", (int)three[i]);
+	}
 	/*  char three[1000] = "1234567812345678";
 	    char four[1000] = "@@wufsfadfyuan@";
 	    char out[1000] = {0};

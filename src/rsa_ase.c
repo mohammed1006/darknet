@@ -30,10 +30,7 @@ int strPemFileLen = 0;
 void write_read_rsac(char* writebuf, int len, char* namefile, int type)
 {
 	int fd = -1;        // fd 就是file descriptor，文件描述符
-	//char buf[100] = {0};
-//	char writebuf[20] = "l love linux";
 	int ret = -1;
-
 	// 第一步：打开文件
 	fd = open(namefile, O_RDWR);//注意之前自己定义个a.txt
 	if (-1 == fd)        // 有时候也写成： (fd < 0)
@@ -69,7 +66,7 @@ const char * base64char = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0
 const char padding_char = '=';
 int Base64Decode(char * input, int length, char* result)
 {
-	/*{{{*/
+	
 	//tring result;
 	static char decode[1024] = {0};
 	if (NULL == input || length <= 0 || length >= 1024)
@@ -92,10 +89,10 @@ int Base64Decode(char * input, int length, char* result)
 		result[i] = decode[i];
 	}
 	return len;
-}/*}}}*/
+}
 int Base64Encode(char * input, int length, char* result)
 {
-	/*{{{*/
+	
 	static char encoded[1024] = {0};
 //	string result;
 	if (NULL == input || length <= 0 || length >= 1024)
@@ -119,7 +116,7 @@ int Base64Encode(char * input, int length, char* result)
 	}
 //	return result;
 	return len;
-}/*}}}*/
+}
 /*编码代码
 * const unsigned char * sourcedata， 源数组
 * char * base64 ，码字保存
@@ -127,7 +124,7 @@ int Base64Encode(char * input, int length, char* result)
 int base64_encode(const unsigned char * sourcedata, const int datalength, char * base64)
 {
 	printf("### base64 encode\n");
-	/*{{{*/
+	
 	int i = 0, j = 0;
 	unsigned char trans_index = 0;  // 索引是8位，但是高两位都为0
 	//const int datalength = strlen((const char*)sourcedata);
@@ -177,7 +174,7 @@ int base64_encode(const unsigned char * sourcedata, const int datalength, char *
 	base64[j] = '\0';
 
 	return 0;
-}/*}}}*/
+}
 //读取base64字符串转为Rsa公钥
 //bool strConvert2PublicKey( const std::string& strPublicKey, RSA* pRSAPublicKey )
 //int strConvert2PublicKey( char* strPublicKey, int nPublicKeyLen, RSA** pRSAPublicKey )
@@ -212,7 +209,7 @@ RSA* strConvert2PublicKey(char* strPublicKey, int nPublicKeyLen)
 	strcat(strPublicKeyB, "\n-----END PUBLIC KEY-----\n");
 	BIO *bio = NULL;
 	char *chPublicKey = strPublicKeyB;//const_cast<char *>(strPublicKey.c_str());
-	printf("ch%s,%ddd\n", chPublicKey, strlen(chPublicKey));
+	//printf("%s,%ddd\n", chPublicKey,(int) strlen(chPublicKey));
 	if ((bio = BIO_new_mem_buf(chPublicKey, -1)) == NULL)       //从字符串读取RSA公钥
 	{
 		// cout<<"BIO_new_mem_buf failed!"<<endl;
@@ -238,7 +235,7 @@ RSA* strConvert2PublicKey(char* strPublicKey, int nPublicKeyLen)
 //std::string RSAPubKeyDncodeData(RSA *pRSAPubKey,std::string& strEncoded )
 int RSAPubKeyDncodeData(RSA* pRSAPubKey, char* strEncoded, int strELen, char* strRet)
 {
-	/*{{{*/
+	
 	if (!pRSAPubKey || !strEncoded)
 	{
 		// assert(false);
@@ -263,173 +260,11 @@ int RSAPubKeyDncodeData(RSA* pRSAPubKey, char* strEncoded, int strELen, char* st
 	CRYPTO_cleanup_all_ex_data();
 //	return strRet;
 	return ret;
-}/*}}}*/
-
-//std::string EncodeRSAKeyFile( const std::string& strPemFileName, const std::string& strData )
-//加密
-int EncodeRSAKeyFile( const char* strPemFileName, const char* strData, int strDataLen, char* pEncode)
-{
-	/*{{{*/
-	/* if (strPemFileName.empty() || strData.empty())
-	 {
-	     assert(false);
-	     return "";
-	 }  */
-	FILE* hPubKeyFile = fopen(strPemFileName, "rb");
-	if ( hPubKeyFile == NULL )
-	{
-		//assert(false);
-		printf("fopen failed,check %s\n", strPemFileName);
-		return -1;
-	}
-	//std::string strRet;
-	RSA* pRSAPublicKey = RSA_new();
-	if (PEM_read_RSA_PUBKEY(hPubKeyFile, &pRSAPublicKey, 0, 0) == NULL)
-	{
-		// assert(false);
-		//  return "";
-		printf("read_RSA_pubkey failed!\n");
-		return -1;
-	}
-
-	int nLen = RSA_size(pRSAPublicKey);
-	//char* pEncode = new char[nLen + 1];
-	pEncode[nLen] = 0;
-	int ret = RSA_public_encrypt(strDataLen, strData, pEncode, pRSAPublicKey, RSA_PKCS1_PADDING);
-	/* if (ret >= 0)
-	 {
-	    // strRet = std::string(pEncode, ret);
-	 }  */
-	//delete[] pEncode;
-	RSA_free(pRSAPublicKey);
-	fclose(hPubKeyFile);
-	CRYPTO_cleanup_all_ex_data();
-	//  return strRet;
-	return ret;
-}/*}}}*/
-// std::string DecodeRSAKeyFile( const std::string& strPemFileName, const std::string& strData )
-//解密
-int DecodeRSAKeyFile( const char* strPemFileName, const char* strData, int strDataLen, char* pDecode )
-{
-	/*{{{*/
-
-	/* if (strPemFileName.empty() || strData.empty())
-	 {
-	     assert(false);
-	     return "";
-	 }  */
-	//  FILE* hPriKeyFile = fopen(strPemFileName.c_str(),"rb");
-	FILE* hPriKeyFile = fopen(strPemFileName, "rb");
-	if ( hPriKeyFile == NULL )
-	{
-		//  assert(false);
-		//  return "";
-		printf("fopen failed,check %s\n", strPemFileName);
-		return -1;
-	}
-	//std::string strRet;
-	RSA* pRSAPriKey = RSA_new();
-	if (PEM_read_RSAPrivateKey(hPriKeyFile, &pRSAPriKey, 0, 0) == NULL)
-	{
-		// assert(false);
-		//  return "";
-		printf("PEM_read_RSAPrivateKey faild \n");
-		return -1;
-	}
-	int nLen = RSA_size(pRSAPriKey);
-	//char* pDecode = new char[nLen+1];
-	pDecode[nLen] = 0;
-//   int ret = RSA_private_decrypt(strData.length(), (const unsigned char*)strData.c_str(), (unsigned char*)pDecode, pRSAPriKey, RSA_PKCS1_PADDING);
-	int ret = RSA_private_decrypt(strDataLen, (const unsigned char*)strData, (unsigned char*)pDecode, pRSAPriKey, RSA_PKCS1_PADDING);
-	/* if(ret >= 0)
-	 {
-	    // strRet = std::string((char*)pDecode, ret);
-
-	 }  */
-	//delete [] pDecode;
-	RSA_free(pRSAPriKey);
-	fclose(hPriKeyFile);
-	CRYPTO_cleanup_all_ex_data();
-//	return strRet;
-	return ret;
-}/*}}}*/
-//利用 Private.pem文件 加密数据
-//std::string RSAPriKeyEncodeData(std::string& strPemFileName,std::string& strData )
-int RSAPriKeyEncodeData(char* strPemFileName, char* strData, int strLen, char* strRet)
-{
-	/*{{{*/
-	/*if (strPemFileName.empty() || strData.empty())
-	{
-	    assert(false);
-	    return "";
-	} */
-
-	//FILE* hPriKeyFile = fopen(strPemFileName.c_str(), "rb");
-	FILE* hPriKeyFile = fopen(strPemFileName, "rb");
-	if ( hPriKeyFile == NULL )
-	{
-		// assert(false);
-		return -1;//"";
-	}
-//	std::string strRet;
-	RSA* pRSAPriKey = RSA_new();
-	if (PEM_read_RSAPrivateKey(hPriKeyFile, &pRSAPriKey, 0, 0) == NULL)
-	{
-		// assert(false);
-		// return "";
-		return -1;
-	}
-
-	int nLen = RSA_size(pRSAPriKey);
-	char* pEncode = (char*)malloc(nLen + 1);
-	//char* pEncode = new char[nLen + 1];
-	//私钥加密
-	int ret = RSA_private_encrypt(strLen, strData, pEncode, pRSAPriKey, RSA_PKCS1_PADDING);
-	//int ret = RSA_private_encrypt(strData.length(), (const unsigned char*)strData.c_str(), (unsigned char*)pEncode, pRSAPriKey, RSA_PKCS1_PADDING);
-	if (ret >= 0)
-	{
-		//    strRet = std::string(pEncode, ret);
-		memcpy(strRet, pEncode, ret);
-	}
-//	delete[] pEncode;
-	free(pEncode);
-	RSA_free(pRSAPriKey);
-	fclose(hPriKeyFile);
-	CRYPTO_cleanup_all_ex_data();
-//	return strRet;
-	return ret;
-}/*}}}*/
-//读取pubkey.pem文件 转为Rsa公钥结构体
-//bool PubKeyPemCvt2RSA(const std::string& pubkeyFile, RSA** pRSAPublicKey)
-int PubKeyPemCvt2RSA(char* pubkeyFile, RSA** pRSAPublicKey)
-{
-	/*{{{*/
-
-	//FILE* hpubKeyFile = fopen(pubkeyFile.c_str(),"rb");
-	FILE* hpubKeyFile = fopen(pubkeyFile, "rb");
-	int ret = 1;
-	if ( hpubKeyFile == NULL )
-	{
-		// assert(false);
-		//  return false;
-		ret = -1;
-	}
-	//std::string strRet;
-	if (PEM_read_RSA_PUBKEY(hpubKeyFile, pRSAPublicKey, 0, 0) == NULL)
-	{
-		//assert(false);
-		//return  false;
-		printf("read_RSA_Publickey failed!\n");
-		ret = -1;
-	}
-	fclose(hpubKeyFile);
-	return ret;//true;
-}/*}}}*/
-
+}
 //AES_加std::string EncodeAES( const std::string& password, const std::string& data )密
 int EncodeAES( const char* password, int passwordLen, const char* data, int dataLen, char* strRet)
 {
-	/*{{{*/
+	
 	memset(strRet, 0, 1000);
 	AES_KEY aes_key;
 	//cout << "password_length " << password.length() <<endl;
@@ -463,12 +298,12 @@ int EncodeAES( const char* password, int passwordLen, const char* data, int data
 		data_temp++;
 		padding--;
 	}
-    int indexret=0;
+	int indexret = 0;
 	for (unsigned int i = 0; i < data_length / AES_BLOCK_SIZE; i++)
 	{
 		//std::string str16 = data_bak.substr(i*AES_BLOCK_SIZE, AES_BLOCK_SIZE);
 		char str16[1000] = {0};
-		printf("data_bak:%d\n", i * AES_BLOCK_SIZE);
+//		printf("data_bak:%d\n", i * AES_BLOCK_SIZE);
 		//strcpy(str16,&data_bak[i*AES_BLOCK_SIZE],AES_BLOCK_SIZE);
 		for (int j = 0; j < AES_BLOCK_SIZE; j++)
 		{
@@ -485,17 +320,17 @@ int EncodeAES( const char* password, int passwordLen, const char* data, int data
 			indexret++;
 		}
 
-		printf("strRet:%d\n",indexret);
+//		printf("strRet:%d\n", indexret);
 	}
 	// return strRet;
 	return indexret;/*strlen(strRet);*/
-}/*}}}*/
+}
 
 
 //AES解密
 int DecodeAES( const char* strPassword, int strPasswordLen, const char* strData, int strDataLen, char* strRet)
 {
-	/*{{{*/
+	
 	memset(strRet, 0, 1000);
 	AES_KEY aes_key;
 	if (AES_set_decrypt_key((const unsigned char*)strPassword, strPasswordLen * 8, &aes_key) < 0)
@@ -507,7 +342,7 @@ int DecodeAES( const char* strPassword, int strPasswordLen, const char* strData,
 	}
 	//std::string strRet;
 	//for(unsigned int i = 0; i < strData.length()/AES_BLOCK_SIZE; i++)
-	int indexret=0;
+	int indexret = 0;
 	for (int i = 0; i < strDataLen / AES_BLOCK_SIZE; i++)
 	{
 		//std::string str16 = strData.substr(i*AES_BLOCK_SIZE, AES_BLOCK_SIZE);
@@ -525,10 +360,10 @@ int DecodeAES( const char* strPassword, int strPasswordLen, const char* strData,
 		}
 	}
 	return strlen(strRet);
-}/*}}}*/
+}
 char chk_xrl(const char *data, int length)
 {
-	/*{{{*/
+	
 	const char *buf = data;
 	char retval = 0;
 
@@ -538,7 +373,7 @@ char chk_xrl(const char *data, int length)
 		--length;
 	}
 	return retval;
-}/*}}}*/
+}
 int getASE(int fd)
 {
 	printf("get ase fd %d\n", fd);
@@ -552,27 +387,32 @@ int getASE(int fd)
 	int len_en = send(fd, rsa_public, 9, 0);
 	char rsa_rec[1000];
 	int rec_en = recv(fd, rsa_rec, 1000, 0);
-	printf("get ase len1 %d\n", rec_en);
+	printf("get rsa len1 %d\n", rec_en);
 
 
 
-	int len_en1 = (((int)rsa_rec[3] + 256) % 256) * 16 * 16 * 16;
+	/*int len_en1 = (((int)rsa_rec[3] + 256) % 256) * 16 * 16 * 16;
 	int len_en2 = (((int)rsa_rec[4] + 256) % 256) * 16 * 16;
-	int len_en3 = (((int)rsa_rec[5] + 256) % 256) * 16;
+	int len_en3 = (((int)rsa_rec[5] + 256) % 256) * 16;*/
+	int len_en1 = (((int)rsa_rec[3] + 256) % 256) * 256 * 256 * 256;
+	int len_en2 = (((int)rsa_rec[4] + 256) % 256) * 256 * 256;
+	int len_en3 = (((int)rsa_rec[5] + 256) % 256) * 256;
+
+
 	int len_en4 = len_en1 + len_en2 + len_en3 + (((int)rsa_rec[6] + 256) % 256);
 
 	//std::string public_RSA(&rsa_rec[7],len_en4);
 	char public_RSA[1000] = {0};
 	memcpy(public_RSA, &rsa_rec[7], len_en4);
 
-	printf("get ase len %d\n", len_en4);
-	static int index = 1;
-	char nameff[100] = {0};
-	sprintf(nameff, "%dftp.txt", index);
-	printf("%snn\n", nameff);
-	write_read_rsac(public_RSA, len_en4, nameff, 1);
-	index++;
-
+	/*  printf("get ase len %d\n", len_en4);
+	    static int index = 1;
+	    char nameff[100] = {0};
+	    sprintf(nameff, "%dftp.txt", index);
+	    printf("%snn\n", nameff);
+	    write_read_rsac(public_RSA, len_en4, nameff, 1);
+	    index++;
+	*/
 
 
 
@@ -585,14 +425,17 @@ int getASE(int fd)
 	rsa_public[2] = 0x02;
 	len_en = send(fd, rsa_public, 9, 0);
 	rec_en = recv(fd, rsa_rec, 1000, 0);
-
-	sprintf(nameff, "%dftp.txt", index++);
-	printf("%snn\n", nameff);
-	write_read_rsac(rsa_rec, rec_en, nameff, 1);
-
-	len_en1 = (((int)rsa_rec[3] + 256) % 256) * 16 * 16 * 16;
+	/*
+	    sprintf(nameff, "%dftp.txt", index++);
+	    printf("%snn\n", nameff);
+	    write_read_rsac(rsa_rec, rec_en, nameff, 1);
+	*/
+	/*len_en1 = (((int)rsa_rec[3] + 256) % 256) * 16 * 16 * 16;
 	len_en2 = (((int)rsa_rec[4] + 256) % 256) * 16 * 16;
-	len_en3 = (((int)rsa_rec[5] + 256) % 256) * 16;
+	len_en3 = (((int)rsa_rec[5] + 256) % 256) * 16;*/
+	len_en1 = (((int)rsa_rec[3] + 256) % 256) * 256 * 256 * 256 ;
+	len_en2 = (((int)rsa_rec[4] + 256) % 256) * 256 * 256 ;
+	len_en3 = (((int)rsa_rec[5] + 256) % 256) * 256 ;
 	len_en4 = len_en1 + len_en2 + len_en3 + (((int)rsa_rec[6] + 256) % 256);
 	//std::string public_RSA_ASE(&rsa_rec[7],len_en4);
 //	char* public_RSA_ASE[1000];
@@ -616,7 +459,7 @@ int getASE(int fd)
 }
 int send_en(int fd, char* content, int len_char, int param)
 {
-	
+
 	if (fd < 0)
 		return -1;
 	char send_content[1000];
@@ -625,9 +468,9 @@ int send_en(int fd, char* content, int len_char, int param)
 	send_content[2] = 0x03;
 
 	char en_cont[1000];
-printf("ase key(%d):%s",strPemFileLen,strPemFileName);
-printf("#########res  send content(%d):%s", strlen(content), content);
-	int len = EncodeAES(strPemFileName, strPemFileLen, content, strlen(content)-1, en_cont);
+	//printf("ase key(%d):%s", strPemFileLen, strPemFileName);
+	printf("#########res  send content(%d):%s", (int)strlen(content), content);
+	int len = EncodeAES(strPemFileName, strPemFileLen, content, strlen(content) - 1, en_cont);
 	/*send_content[3 + 0]  = len >> 24;
 	send_content[3 + 1] = len >> 16;
 	send_content[3 + 2] = len >> 8;
@@ -656,7 +499,7 @@ printf("#########res  send content(%d):%s", strlen(content), content);
 	printf("send enco:");
 	/*for (int i = 0; i < len + 9; i++)
 	{
-		printf("%d:%d,",i, (int)send_content[i]);
+	    printf("%d:%d,",i, (int)send_content[i]);
 	}*/
 
 	//write_read_rsac(&send_content[7], len, "testencode.txt", 1);
@@ -671,18 +514,21 @@ int recv_en(int fd, char* content, int rec_content_maxlen, int param)
 	char rec_content[1000];
 	int len = recv(fd, rec_content, rec_content_maxlen,  param);
 //-----------------debug----------//
-/*	static int index = 0;
-	char nameff[100] = {0};
-	sprintf(nameff, "%dftp.txt", index++);
-	write_read_rsac(rec_content, len, nameff, 1);
+	/*  static int index = 0;
+	    char nameff[100] = {0};
+	    sprintf(nameff, "%dftp.txt", index++);
+	    write_read_rsac(rec_content, len, nameff, 1);
 
-	printf("recv len(3-6):%d,%d,%d,%d.\n", (int)rec_content[3], (int)rec_content[4], (int)rec_content[5], (int)rec_content[6]);
-//------------end----------------//
-*/
+	    printf("recv len(3-6):%d,%d,%d,%d.\n", (int)rec_content[3], (int)rec_content[4], (int)rec_content[5], (int)rec_content[6]);
+	//------------end----------------//
+	*/
 	int len_c = 0;
-	int len_en1 = (((int)rec_content[3] + 256) % 256) * 16 * 16 * 16;
+	/*int len_en1 = (((int)rec_content[3] + 256) % 256) * 16 * 16 * 16;
 	int len_en2 = (((int)rec_content[4] + 256) % 256) * 16 * 16;
-	int len_en3 = (((int)rec_content[5] + 256) % 256) * 16;
+	int len_en3 = (((int)rec_content[5] + 256) % 256) * 16;*/
+	int len_en1 = (((int)rec_content[3] + 256) % 256) * 256 * 256 * 256 ;
+	int len_en2 = (((int)rec_content[4] + 256) % 256) * 256 * 256 ;
+	int len_en3 = (((int)rec_content[5] + 256) % 256) * 256 ;
 	len_c = len_en1 + len_en2 + len_en3 + (((int)rec_content[6] + 256) % 256);
 	//std::string cont_str(&rec_content[7],len_c);
 	char chk = (char)chk_xrl(&rec_content[7], len_c);
@@ -691,7 +537,7 @@ int recv_en(int fd, char* content, int rec_content_maxlen, int param)
 
 	/*for (int i = 0; i < len_c; i++)
 	{
-		printf("%x ", rec_content[7 + i]);
+	    printf("%x ", rec_content[7 + i]);
 	}*/
 
 	if (rec_content[len_c + 7] != chk)
@@ -831,18 +677,18 @@ int maina()
 		printf("%d ", (int)strPemFileName[i]);
 	}
 	// char three[1000] = "1234567812345678";
-	    char four[1000] = "@@wufsfadfyuan@12345";
-	    char out[1000] = {0};
-	    char out2[1000] = {0};
-	 send_en(0,four,strlen(four),0);
+	char four[1000] = "@@wufsfadfyuan@12345";
+	char out[1000] = {0};
+	char out2[1000] = {0};
+	send_en(0, four, strlen(four), 0);
 	len = EncodeAES(strPemFileName, strPemFileLen, four, strlen(four), out);
-      len =    DecodeAES(strPemFileName, strPemFileLen, out, len, out2);
+	len =    DecodeAES(strPemFileName, strPemFileLen, out, len, out2);
 	printf("dncode %d,%d,%s\n", len, strlen(out2), out2);
-	     //len = EncodeAES(three, 16, four, strlen(four), out);
-	    // write_read_rsac(out, len, "testencode.txt",1);
-	   // printf("encode %d,%d,%s\n", len, strlen(out), out) ;
-	   // len =    DecodeAES(three, 16, out, strlen(out), out2);
-	   // printf("encode %d,%d,%s\n", len, strlen(out2), out2)   ;
-	
+	//len = EncodeAES(three, 16, four, strlen(four), out);
+	// write_read_rsac(out, len, "testencode.txt",1);
+	// printf("encode %d,%d,%s\n", len, strlen(out), out) ;
+	// len =    DecodeAES(three, 16, out, strlen(out), out2);
+	// printf("encode %d,%d,%s\n", len, strlen(out2), out2)   ;
+
 	return 0;
 }

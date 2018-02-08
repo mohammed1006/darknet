@@ -66,7 +66,7 @@ const char * base64char = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0
 const char padding_char = '=';
 int Base64Decode(char * input, int length, char* result)
 {
-	
+
 	//tring result;
 	static char decode[1024] = {0};
 	if (NULL == input || length <= 0 || length >= 1024)
@@ -92,7 +92,7 @@ int Base64Decode(char * input, int length, char* result)
 }
 int Base64Encode(char * input, int length, char* result)
 {
-	
+
 	static char encoded[1024] = {0};
 //	string result;
 	if (NULL == input || length <= 0 || length >= 1024)
@@ -124,7 +124,7 @@ int Base64Encode(char * input, int length, char* result)
 int base64_encode(const unsigned char * sourcedata, const int datalength, char * base64)
 {
 	printf("### base64 encode\n");
-	
+
 	int i = 0, j = 0;
 	unsigned char trans_index = 0;  // 索引是8位，但是高两位都为0
 	//const int datalength = strlen((const char*)sourcedata);
@@ -235,7 +235,7 @@ RSA* strConvert2PublicKey(char* strPublicKey, int nPublicKeyLen)
 //std::string RSAPubKeyDncodeData(RSA *pRSAPubKey,std::string& strEncoded )
 int RSAPubKeyDncodeData(RSA* pRSAPubKey, char* strEncoded, int strELen, char* strRet)
 {
-	
+
 	if (!pRSAPubKey || !strEncoded)
 	{
 		// assert(false);
@@ -264,7 +264,7 @@ int RSAPubKeyDncodeData(RSA* pRSAPubKey, char* strEncoded, int strELen, char* st
 //AES_加std::string EncodeAES( const std::string& password, const std::string& data )密
 int EncodeAES( const char* password, int passwordLen, const char* data, int dataLen, char* strRet)
 {
-	
+
 	memset(strRet, 0, 1000);
 	AES_KEY aes_key;
 	//cout << "password_length " << password.length() <<endl;
@@ -330,7 +330,7 @@ int EncodeAES( const char* password, int passwordLen, const char* data, int data
 //AES解密
 int DecodeAES( const char* strPassword, int strPasswordLen, const char* strData, int strDataLen, char* strRet)
 {
-	
+
 	memset(strRet, 0, 1000);
 	AES_KEY aes_key;
 	if (AES_set_decrypt_key((const unsigned char*)strPassword, strPasswordLen * 8, &aes_key) < 0)
@@ -363,7 +363,7 @@ int DecodeAES( const char* strPassword, int strPasswordLen, const char* strData,
 }
 char chk_xrl(const char *data, int length)
 {
-	
+
 	const char *buf = data;
 	char retval = 0;
 
@@ -612,7 +612,7 @@ int maina()
 
 	char one[1000] = "1234567812345678";
 	char one1[1000] = {0};
-	int len = RSAPriKeyEncodeData("private_rsa.pem", one, strlen(one), one1);
+//	int len = RSAPriKeyEncodeData("private_rsa.pem", one, strlen(one), one1);
 //	printf("rrsa%d,%d,%s", len, (int)strlen(one1), one1);
 
 	RSA* rsap;
@@ -681,7 +681,7 @@ int maina()
 	char out[1000] = {0};
 	char out2[1000] = {0};
 	send_en(0, four, strlen(four), 0);
-	len = EncodeAES(strPemFileName, strPemFileLen, four, strlen(four), out);
+	int len = EncodeAES(strPemFileName, strPemFileLen, four, strlen(four), out);
 	len =    DecodeAES(strPemFileName, strPemFileLen, out, len, out2);
 	printf("dncode %d,%d,%s\n", len, strlen(out2), out2);
 	//len = EncodeAES(three, 16, four, strlen(four), out);

@@ -1,0 +1,5 @@
+classes= 2
+train = /root/wmj-docker/droneUSC/train2dataset.txt
+valid = /root/wmj-docker/droneUSC/valid.txt
+names = drone.names
+backup = backup/

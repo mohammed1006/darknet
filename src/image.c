@@ -444,16 +444,25 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 
 	for (i = 0; i < num; ++i) {
 		char labelstr[4096] = { 0 };
+		char probabilitystr[4] = { 0 };
+
 		int class_id = -1;
 		for (j = 0; j < classes; ++j) {
 			if (dets[i].prob[j] > thresh) {
 				if (class_id < 0) {
 					strcat(labelstr, names[j]);
+
+					sprintf(probabilitystr, " %.0f%%", dets[i].prob[j] * 100);
+					strcat(labelstr, probabilitystr);
+
 					class_id = j;
 				}
 				else {
 					strcat(labelstr, ", ");
 					strcat(labelstr, names[j]);
+
+					sprintf(probabilitystr, " %.0f%%", dets[i].prob[j] * 100);
+					strcat(labelstr, probabilitystr);
 				}
 				printf("%s: %.0f%%\n", names[j], dets[i].prob[j] * 100);
 			}

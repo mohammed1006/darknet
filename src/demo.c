@@ -10,6 +10,7 @@
 #ifdef WIN32
 #include <time.h>
 #include <winsock.h>
+#include <stdlib.h>
 #include "gettimeofday.h"
 #else
 #include <sys/time.h>
@@ -100,8 +101,13 @@ void *detect_in_thread(void *ptr)
 	detection *dets = get_network_boxes(&net, det_s.w, det_s.h, demo_thresh, demo_thresh, 0, 1, &nboxes, letter);
 	if (nms) do_nms_obj(dets, nboxes, l.classes, nms);
 
-    printf("\033[2J");
-    printf("\033[1;1H");
+	#ifdef WIN32
+		system("cls");
+	#else
+		printf("\033[2J");
+		printf("\033[1;1H");
+	#endif
+
     printf("\nFPS:%.1f\n",fps);
     printf("Objects:\n\n");
 

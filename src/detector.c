@@ -447,6 +447,7 @@ void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile, fl
 	layer l = net.layers[net.n - 1];
 
 	int m = plist->size;
+	int i = 0;
 
 	float thresh = .001; // threshold on objectness, while prob_thresh if threshold on prob for object best class
 	float iou_thresh = .5;
@@ -464,7 +465,7 @@ void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile, fl
 	float proposals_avg_iou = 0;       // sum of IOU by proposals fit with best fitting label
 	float proposals_avg_iou_class = 0; // sum of IOU by proposals fit with best fitting label with correct class
 
-	for (int i = 0; i < m; ++i) {
+	for (i = 0; i < m; ++i) {
 		char *path = paths[i];
 		image orig = load_image_color(path, 0, 0);
 		image sized = resize_image(orig, net.w, net.h);
@@ -488,14 +489,16 @@ void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile, fl
 
 		int num_labels = 0;
 		box_label *truth = read_boxes(labelpath, &num_labels);
-		for (int k = 0; k < selected_detections_num; ++k) {
+		int k = 0;
+		for (k = 0; k < selected_detections_num; ++k) {
 			const detection* det_k = &(selected_detections[k].det);
 			int* best_class_k = &(selected_detections[k].best_class);
 			if (det_k->objectness > thresh) {
 				++proposals;
 				// fill best_class for dets
 				*best_class_k = -1;
-				for (int j = 0; j < det_k->classes; ++j) {
+				int j = 0;
+				for (j = 0; j < det_k->classes; ++j) {
 					if ((det_k->prob[j] > prob_thresh) && (*best_class_k < 0 || det_k->prob[*best_class_k] < det_k->prob[j])) {
 						*best_class_k = j;
 					}
@@ -505,7 +508,7 @@ void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile, fl
 
 				float best_iou = 0;
 				float best_iou_class = 0;
-				for (int j = 0; j < num_labels; ++j) {
+				for (j = 0; j < num_labels; ++j) {
 					box t = { truth[j].x, truth[j].y, truth[j].w, truth[j].h };
 					float iou = box_iou(det_k->bbox, t);
 					if (det_k->objectness > thresh && iou > best_iou) {
@@ -526,12 +529,14 @@ void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile, fl
 
 			}
 		}
-		for (int j = 0; j < num_labels; ++j) {
+		int j = 0;
+		for (j = 0; j < num_labels; ++j) {
 			++total;
 			box t = { truth[j].x, truth[j].y, truth[j].w, truth[j].h };
 			float best_iou = 0;
 			float best_iou_class = 0;
-			for (int k = 0; k < selected_detections_num; ++k) {
+			int k = 0;
+			for (k = 0; k < selected_detections_num; ++k) {
 				const detection* det_k = &(selected_detections[k].det);
 				int* best_class_k = &(selected_detections[k].best_class);
 				float iou = box_iou(det_k->bbox, t);

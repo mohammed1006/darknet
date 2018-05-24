@@ -23,6 +23,13 @@
 #include "http_stream.h"
 #endif
 
+// specific to jWrite.c and jWrite.h
+//#define _CRT_SECURE_NO_WARNINGS			// stop complaining about deprecated functions
+//#include "jWrite.h"
+// END specific to jWrite.c and jWrite.h
+
+//int global_video_frame_number = 0;
+
 int windows = 0;
 
 float colors[6][3] = { {1,0,1}, {0,0,1},{0,1,1},{0,1,0},{1,1,0},{1,0,0} };
@@ -437,10 +444,28 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 
 #ifdef OPENCV
 
-void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes)
+void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, char *out_json_filename)
 {
 	int i, j;
+	printf("Here in draw_detections_cv_v3\n");
+
+	if (out_json_filename) {
+		printf("writing to output file: %s\n", out_json_filename);
+	}
+
 	if (!show_img) return;
+
+
+
+	//char buffer[1024];
+	//if (out_json_filename) {
+		printf("writing to output file");
+		//unsigned int buflen = 1024;
+		//struct jWriteControl jwc;
+		// open a jWrite object to write json output & start root object
+		/*jwOpen(buffer, buflen, JW_OBJECT, JW_PRETTY);
+		jwObj_array("predictions");*/
+	//}
 
 	for (i = 0; i < num; ++i) {
 		char labelstr[4096] = { 0 };
@@ -456,6 +481,12 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 					strcat(labelstr, names[j]);
 				}
 				printf("%s: %.0f%%\n", names[j], dets[i].prob[j] * 100);
+
+				//if (out_json_filename) {
+				//	jwArr_object(); // object in array "predictions"
+				//	jwObj_string("class", names[j]); // add object class: predicted class
+				//	jwObj_double("probability", dets[i].prob[j] * 100); // prob: probability
+				//}
 			}
 		}
 		if (class_id >= 0) {
@@ -493,6 +524,14 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 			if (top < 0) top = 0;
 			if (bot > show_img->height - 1) bot = show_img->height - 1;
 
+			//if (out_json_filename) {
+			//	jwObj_int("left", left);
+			//	jwObj_int("top", top);
+			//	jwObj_int("right", right);
+			//	jwObj_int("bot", bot);
+			//	jwEnd();
+			//}
+
 			//int b_x_center = (left + right) / 2;
 			//int b_y_center = (top + bot) / 2;
 			//int b_width = right - left;
@@ -527,6 +566,15 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 			cvPutText(show_img, labelstr, pt_text, &font, black_color);
 		}
 	}
+
+	//if (out_json_filename) {
+	//	FILE *f = fopen(out_json_filename, "w");
+	//	jwEnd(); // end the array
+	//	jwClose(); // close jWrite object
+	//	fprintf(f, "%s\n", buffer);
+	//	fclose(f);
+	//	//printf("FILE CLOSE\n");
+	//}
 }
 
 void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes)

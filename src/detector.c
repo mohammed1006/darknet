@@ -1146,7 +1146,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 void run_detector(int argc, char **argv)
 {
 	int dont_show = find_arg(argc, argv, "-dont_show");
-	int output_json = find_arg(argc, argv, "-output_json");
+	char *out_json_filename = find_char_arg(argc, argv, "-out_json_filename", 0);
 	int show = find_arg(argc, argv, "-show");
 	int http_stream_port = find_int_arg(argc, argv, "-http_port", -1);
 	char *out_filename = find_char_arg(argc, argv, "-out_filename", 0);
@@ -1213,7 +1213,7 @@ void run_detector(int argc, char **argv)
 			if(strlen(filename) > 0)
 				if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
         demo(cfg, weights, thresh, hier_thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename,
-			http_stream_port, dont_show, output_json);
+			http_stream_port, dont_show, out_json_filename);
     }
 	else printf(" There isn't such command: %s", argv[2]);
 }

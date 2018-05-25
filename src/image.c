@@ -1,23 +1,3 @@
-Skip to content
- 
-Search or jump to…
-
-Pull requests
-Issues
-Marketplace
-Explore
- @salbatron
-Sign out
-0
-0 3,955 salbatron/darknet
-forked from AlexeyAB/darknet
- Code  Pull requests 0  Projects 0  Wiki  Insights  Settings
-darknet/src/image.c
-efa199d  20 minutes ago
-@salbatron salbatron automate anotation
-@pjreddie @AlexeyAB @IlyaOvodov @HotChick91 @salbatron
-     
-1981 lines (1776 sloc)  53.4 KB
 #include "image.h"
 #include "utils.h"
 #include "blas.h"
@@ -1998,16 +1978,3 @@ void free_image(image m)
         free(m.data);
     }
 }
-© 2018 GitHub, Inc.
-Terms
-Privacy
-Security
-Status
-Help
-Contact GitHub
-API
-Training
-Shop
-Blog
-About
-Press h to open a hovercard with more details.

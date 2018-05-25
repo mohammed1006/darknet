@@ -252,11 +252,7 @@ void validate_yolo_recall(char *cfgfile, char *weightfile)
         if (nms) do_nms(boxes, probs, side*side*l.n, 1, nms);
 
         char labelpath[4096];
-        find_replace(path, "images", "labels", labelpath);
-        find_replace(labelpath, "JPEGImages", "labels", labelpath);
-        find_replace(labelpath, ".jpg", ".txt", labelpath);
-        find_replace(labelpath, ".JPEG", ".txt", labelpath);
-		find_replace(labelpath, ".ppm", ".txt", labelpath);
+		replace_image_to_label(path, labelpath);
 
         int num_labels = 0;
         box_label *truth = read_boxes(labelpath, &num_labels);
@@ -350,6 +346,7 @@ void run_yolo(int argc, char **argv)
 	float hier_thresh = find_float_arg(argc, argv, "-hier", .5);
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int frame_skip = find_int_arg(argc, argv, "-s", 0);
+	int ext_output = find_arg(argc, argv, "-ext_output");
     if(argc < 4){
         fprintf(stderr, "usage: %s %s [train/test/valid] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;

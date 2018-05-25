@@ -46,6 +46,7 @@ static CvCapture * cap;
 static int cpp_video_capture = 0;
 static float fps = 0;
 static float demo_thresh = 0;
+static int demo_ext_output = 0;
 
 static float *predictions[FRAMES];
 static int demo_index = 0;
@@ -104,7 +105,9 @@ void *detect_in_thread(void *ptr)
 	int letter = 0;
 	int nboxes = 0;
 	detection *dets = get_network_boxes(&net, det_s.w, det_s.h, demo_thresh, demo_thresh, 0, 1, &nboxes, letter);
-	if (nms) do_nms_obj(dets, nboxes, l.classes, nms);
+	//if (nms) do_nms_obj(dets, nboxes, l.classes, nms);	// bad results
+	if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+	
 
     printf("\033[2J");
     printf("\033[1;1H");
@@ -145,6 +148,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     demo_alphabet = alphabet;
     demo_classes = classes;
     demo_thresh = thresh;
+	demo_ext_output = ext_output;
     printf("Demo\n");
     net = parse_network_cfg_custom(cfgfile, 1);	// set batch=1
     if(weightfile){
@@ -174,7 +178,12 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 //#endif
     }
 
-    if(!cap) error("Couldn't connect to webcam.\n");
+	if (!cap) {
+#ifdef WIN32
+		printf("Check that you have copied file opencv_ffmpeg340_64.dll to the same directory where is darknet.exe \n");
+#endif
+		error("Couldn't connect to webcam.\n");
+	}
 
     layer l = net.layers[net.n-1];
     int j;
@@ -252,7 +261,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 				}
             }else{
                 char buff[256];
-                sprintf(buff, "%s_%08d", prefix, count);
+                sprintf(buff, "%s_%08d.jpg", prefix, count);
+				cvSaveImage(buff, show_img, 0);
                 //save_image(disp, buff);
             }
 
@@ -311,6 +321,33 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 		cvReleaseVideoWriter(&output_video_writer);
 		printf("output_video_writer closed. \n");
 	}
+
+	// free memory
+	cvReleaseImage(&show_img);
+	cvReleaseImage(&in_img);
+	free_image(in_s);
+
+	free(avg);
+	for (j = 0; j < FRAMES; ++j) free(predictions[j]);
+	for (j = 0; j < FRAMES; ++j) free_image(images[j]);
+
+	for (j = 0; j < l.w*l.h*l.n; ++j) free(probs[j]);
+	free(boxes);
+	free(probs);
+
+	free_ptrs(names, net.layers[net.n - 1].classes);
+
+	int i;
+	const int nsize = 8;
+	for (j = 0; j < nsize; ++j) {
+		for (i = 32; i < 127; ++i) {
+			free_image(alphabet[j][i]);
+		}
+		free(alphabet[j]);
+	}
+	free(alphabet);
+
+	free_network(net);
 }
 #else
 void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,

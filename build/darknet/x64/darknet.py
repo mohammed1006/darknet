@@ -78,13 +78,14 @@ class METADATA(Structure):
 #lib = CDLL("darknet.so", RTLD_GLOBAL)
 hasGPU = True
 if os.name == "nt":
-    winGPUdll = "yolo_cpp_dll.dll"
-    winNoGPUdll = "yolo_cpp_dll_nogpu.dll"
+    cwd = os.path.dirname(__file__)
+    os.environ['PATH'] = cwd + ';' + os.environ['PATH']
+    winGPUdll = os.path.join(cwd, "yolo_cpp_dll.dll")
+    winNoGPUdll = os.path.join(cwd, "yolo_cpp_dll_nogpu.dll")
     envKeys = list()
     for k, v in os.environ.items():
         envKeys.append(k)
     try:
-        tmp = os.environ["CUDA_HOME"]
         try:
             tmp = os.environ["FORCE_CPU"].lower()
             if tmp in ["1", "true", "yes", "on"]:
@@ -222,9 +223,11 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
     """
     #pylint: disable= C0321
     im = load_image(image, 0, 0)
+    #import cv2
+    #custom_image = cv2.imread(image) # use: detect(,,imagePath,)
     #import scipy.misc
-    #sci_image = scipy.misc.imread(image)
-    #im, arr = array_to_image(sci_image)		# you should comment line below: free_image(im)
+    #custom_image = scipy.misc.imread(image)
+    #im, arr = array_to_image(custom_image)		# you should comment line below: free_image(im)
     if debug: print("Loaded image")
     num = c_int(0)
     if debug: print("Assigned num")

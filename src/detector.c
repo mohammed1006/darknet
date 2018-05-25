@@ -1178,6 +1178,69 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 	free_network(net);
 }
 
+void save_annotations(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh)
+{
+    list *options = read_data_cfg(datacfg);
+    char *name_list = option_find_str(options, "names", "data/names.list");
+    char **names = get_labels(name_list);
+
+    image **alphabet = load_alphabet();
+    network net = parse_network_cfg_custom(cfgfile, 1);
+    if(weightfile){
+        load_weights(&net, weightfile);
+    }
+    set_batch_network(&net, 1);
+    srand(2222222);
+    clock_t time;
+    char buff[256];
+    char *input = buff;
+	//output for detected boxes
+	char *output;
+    int j;
+    float nms=.4;
+
+	list *plist = get_paths(filename);
+	char **paths = (char **)list_to_array(plist);
+	int m = plist->size;
+	free_list(plist);
+	int i;
+
+	for (i = 0; i < m; ++i) {
+        input = paths[i];
+        image im = load_image_color(input,0,0);
+        image sized = resize_image(im, net.w, net.h);
+        layer l = net.layers[net.n-1];
+
+        box *boxes = calloc(l.w*l.h*l.n, sizeof(box));
+        float **probs = calloc(l.w*l.h*l.n, sizeof(float *));
+        for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
+
+        float *X = sized.data;
+        time=clock();
+		int a = strlen(input);
+		output = input;
+		output[a - 3] = 't';
+		output[a - 2] = 'x';
+		output[a - 1] = 't';
+        network_predict(net, X);
+        printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
+        get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0);
+        if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+        draw_detections_and_save_out(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes, output);
+		
+        //save_image(im, "predictions");
+        //show_image(im, "predictions");
+        free_image(im);
+        free_image(sized);
+        free(boxes);
+        free_ptrs((void **)probs, l.w*l.h*l.n);
+#ifdef OPENCV
+        //cvWaitKey(0);
+        //cvDestroyAllWindows();
+#endif
+    }
+}
+
 void run_detector(int argc, char **argv)
 {
 	int dont_show = find_arg(argc, argv, "-dont_show");
@@ -1239,6 +1302,7 @@ void run_detector(int argc, char **argv)
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);
 	else if(0==strcmp(argv[2], "map")) validate_detector_map(datacfg, cfg, weights, thresh);
 	else if(0==strcmp(argv[2], "calc_anchors")) calc_anchors(datacfg, num_of_clusters, width, height, show);
+	else if (0 == strcmp(argv[2], "annotate")) save_annotations(datacfg, cfg, weights, filename, thresh);
     else if(0==strcmp(argv[2], "demo")) {
         list *options = read_data_cfg(datacfg);
         int classes = option_find_int(options, "classes", 20);

@@ -25,6 +25,12 @@
 #include "opencv2/videoio/videoio_c.h"
 #endif
 #include "http_stream.h"
+
+// specific to jWrite.c and jWrite.h
+#define _CRT_SECURE_NO_WARNINGS			// stop complaining about deprecated functions
+#include "jWrite.h"
+// END specific to jWrite.c and jWrite.h
+
 image get_image_from_stream(CvCapture *cap);
 
 static char **demo_names;
@@ -48,14 +54,14 @@ static IplImage* ipl_images[FRAMES];
 static float *avg;
 
 void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes);
-void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes);
+void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, char* json_out_filename_prefix);
 void show_image_cv_ipl(IplImage *disp, const char *name);
 image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_img, int cpp_video_capture);
 IplImage* in_img;
 IplImage* det_img;
 IplImage* show_img;
-
 static int flag_exit;
+char *json_out_filename_prefix[128];
 
 void *fetch_in_thread(void *ptr)
 {
@@ -112,7 +118,8 @@ void *detect_in_thread(void *ptr)
     demo_index = (demo_index + 1)%FRAMES;
 	    
 	//draw_detections(det, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
-	draw_detections_cv_v3(det_img, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes);
+	draw_detections_cv_v3(det_img, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, json_out_filename_prefix);
+	global_video_frame_number = global_video_frame_number + 1;
 	//draw_detections_cv(det_img, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
 	free_detections(dets, nboxes);
 
@@ -129,7 +136,7 @@ double get_wall_time()
 }
 
 void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,
-	int frame_skip, char *prefix, char *out_filename, int http_stream_port, int dont_show)
+	int frame_skip, char *prefix, char *out_filename, int http_stream_port, int dont_show, char *out_json_filename_prefix)
 {
     //skip = frame_skip;
     image **alphabet = load_alphabet();
@@ -147,8 +154,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 	fuse_conv_batchnorm(net);
     srand(2222222);
 
-    if(filename){
-        printf("video file: %s\n", filename);
+	strcpy(json_out_filename_prefix, out_json_filename_prefix);
+	printf("json_out_filename_prefix: %s\n", json_out_filename_prefix);
+
+	if(filename){
 //#ifdef CV_VERSION_EPOCH	// OpenCV 2.x
 //		cap = cvCaptureFromFile(filename);
 //#else					// OpenCV 3.x
@@ -305,7 +314,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 }
 #else
 void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,
-	int frame_skip, char *prefix, char *out_filename, int http_stream_port, int dont_show)
+	int frame_skip, char *prefix, char *out_filename, int http_stream_port, int dont_show, char *out_json_filename)
 {
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }

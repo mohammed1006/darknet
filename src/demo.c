@@ -25,6 +25,12 @@
 #include "opencv2/videoio/videoio_c.h"
 #endif
 #include "http_stream.h"
+
+// specific to jWrite.c and jWrite.h
+#define _CRT_SECURE_NO_WARNINGS			// stop complaining about deprecated functions
+#include "jWrite.h"
+// END specific to jWrite.c and jWrite.h
+
 image get_image_from_stream(CvCapture *cap);
 
 static char **demo_names;
@@ -55,7 +61,7 @@ IplImage* in_img;
 IplImage* det_img;
 IplImage* show_img;
 static int flag_exit;
-char *out_json_filename[100];
+char *out_json_filename[256];
 
 void *fetch_in_thread(void *ptr)
 {
@@ -113,6 +119,7 @@ void *detect_in_thread(void *ptr)
 	    
 	//draw_detections(det, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
 	draw_detections_cv_v3(det_img, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, out_json_filename);
+	global_video_frame_number = global_video_frame_number + 1;
 	//draw_detections_cv(det_img, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
 	free_detections(dets, nboxes);
 
@@ -147,15 +154,20 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 	fuse_conv_batchnorm(net);
     srand(2222222);
 
-    if(filename){
+	char buffer[10000];
+	unsigned int buflen = 10000;
+	struct jWriteControl jwc;
+	jwOpen(buffer, buflen, JW_OBJECT, JW_PRETTY);
+
+	if(filename){
         printf("video file: %s\n", filename);
-		printf("dont show: %d\n", dont_show);
 		printf("output_json: %d\n", output_json);
 		if (output_json)
 		{
 			strcpy(out_json_filename, filename);
 			strcat(out_json_filename, ".json");
 			printf("json output file: %s\n", out_json_filename);
+			jwObj_string("filename", filename);
 		}
 
 
@@ -311,6 +323,20 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 	if (output_video_writer) {
 		cvReleaseVideoWriter(&output_video_writer);
 		printf("output_video_writer closed. \n");
+	}
+		
+	if (output_json)
+	{
+		printf("closing json output. \n");
+		//unsigned int buflen = 1024;
+		FILE *f = fopen(out_json_filename, "w");
+		//char buffer[1024];
+		//struct jWriteControl jwc;
+		//jwOpen(buffer, buflen, JW_OBJECT, JW_PRETTY);
+		jwEnd(); // end the array
+		jwClose(); // close jWrite object
+		fprintf(f, "%s\n", buffer);
+		fclose(f);
 	}
 }
 #else

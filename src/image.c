@@ -444,11 +444,12 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 
 #ifdef OPENCV
 
-void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, char *out_json_filename_prefix)
+void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output, char *out_json_filename_prefix)
 {
 	int i, j;
 
 	int flag_detected = 0;
+	int flag_writeJSON = 0;
 	if (!show_img) return;
 	static int frame_id = 0;
 	frame_id++;
@@ -456,7 +457,9 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 	char buffer[32768];
 	unsigned int buflen = 32768;
 	char frameNumber[128];
-	if (out_json_filename_prefix) {
+
+	if (strcmp(out_json_filename_prefix, "")) {
+		flag_writeJSON = 1;
 		struct jWriteControl jwc;
 		jwOpen(buffer, buflen, JW_OBJECT, JW_PRETTY);
 		snprintf(frameNumber, 128, "%0d", global_video_frame_number);
@@ -480,7 +483,7 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 				}
 				printf("%s: %.0f%%\n", names[j], dets[i].prob[j] * 100);
 
-				if (out_json_filename_prefix) {
+				if (flag_writeJSON) {
 					flag_detected = 1;
 					jwArr_object();
 					jwObj_string("class", names[j]); // add object class: predicted class
@@ -521,7 +524,7 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 			if (top < 0) top = 0;
 			if (bot > show_img->height - 1) bot = show_img->height - 1;
 
-			if (out_json_filename_prefix) {
+			if (flag_writeJSON) {
 				jwObj_object("boundingbox");
 					jwObj_int("left", left);
 					jwObj_int("top", top);
@@ -587,24 +590,21 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 		}
 	}
 
-	if (out_json_filename_prefix) {
+	if (flag_writeJSON && flag_detected) {
 		// Only save json file output when object detected
-		if (flag_detected)
-		{
-			char *json_frame_fileout[128];
-			strcpy(json_frame_fileout, out_json_filename_prefix);
-			strcat(json_frame_fileout, "_frame_");
-			strcat(json_frame_fileout, frameNumber);
-			strcat(json_frame_fileout, ".json");
+		char *json_frame_fileout[128];
+		strcpy(json_frame_fileout, out_json_filename_prefix);
+		strcat(json_frame_fileout, "_frame_");
+		strcat(json_frame_fileout, frameNumber);
+		strcat(json_frame_fileout, ".json");
 
-			printf("output_json: %s\n", json_frame_fileout);
-			jwEnd(); // end the object
-			jwEnd(); // end the array
-			jwClose(); // close jWrite object
-			FILE *f = fopen(json_frame_fileout, "w");
-			fprintf(f, "%s\n", buffer);
-			fclose(f);
-		}
+		printf("output_json: %s\n", json_frame_fileout);
+		jwEnd(); // end the object
+		jwEnd(); // end the array
+		jwClose(); // close jWrite object
+		FILE *f = fopen(json_frame_fileout, "w");
+		fprintf(f, "%s\n", buffer);
+		fclose(f);
 	}
 }
 

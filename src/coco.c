@@ -388,5 +388,5 @@ void run_coco(int argc, char **argv)
     else if(0==strcmp(argv[2], "valid")) validate_coco(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_coco_recall(cfg, weights);
     else if(0==strcmp(argv[2], "demo")) demo(cfg, weights, thresh, hier_thresh, cam_index, filename, coco_classes, 80, frame_skip,
-		prefix, out_filename, http_stream_port, dont_show, out_json_filename_prefix);
+		prefix, out_filename, http_stream_port, dont_show, ext_output, out_json_filename_prefix);
 }

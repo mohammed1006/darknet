@@ -1248,7 +1248,7 @@ void run_detector(int argc, char **argv)
 		if(filename)
 			if(strlen(filename) > 0)
 				if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
-		demo(cfg, weights, thresh, hier_thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename, http_stream_port, dont_show, json_out_filename_prefix);
+		demo(cfg, weights, thresh, hier_thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename, http_stream_port, dont_show, ext_output, json_out_filename_prefix);
 
 		free_list_contents_kvp(options);
 		free_list(options);

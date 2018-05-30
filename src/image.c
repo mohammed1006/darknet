@@ -28,8 +28,6 @@
 #include "jWrite.h"
 // END specific to jWrite.c and jWrite.h
 
-int global_video_frame_number = 0;
-
 int windows = 0;
 
 float colors[6][3] = { {1,0,1}, {0,0,1},{0,1,1},{0,1,0},{1,1,0},{1,0,0} };
@@ -282,8 +280,18 @@ int compare_by_probs(const void *a_ptr, const void *b_ptr) {
 	return delta < 0 ? -1 : delta > 0 ? 1 : 0;
 }
 
-void draw_detections_v3(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output)
+void draw_detections_v3(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output, int save_json_output, char *output_prefix)
 {
+	int flag_detected = 0;
+	char buffer[32768];
+	unsigned int buflen = 32768;
+
+	if (save_json_output) {
+		struct jWriteControl jwc;
+		jwOpen(buffer, buflen, JW_OBJECT, JW_PRETTY);
+		jwObj_array("detected");
+	}
+
 	int selected_detections_num;
 	detection_with_class* selected_detections = get_actual_detections(dets, num, thresh, &selected_detections_num);
 
@@ -295,11 +303,33 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
 		printf("%s: %.0f%%", names[best_class], selected_detections[i].det.prob[best_class] * 100);
 		if (ext_output)
 			printf("\t(left: %4.0f   top: %4.0f   w: %4.0f   h: %4.0f)\n",
-				(selected_detections[i].det.bbox.x - selected_detections[i].det.bbox.w / 2)*im.w,
+			(selected_detections[i].det.bbox.x - selected_detections[i].det.bbox.w / 2)*im.w,
 				(selected_detections[i].det.bbox.y - selected_detections[i].det.bbox.h / 2)*im.h,
 				selected_detections[i].det.bbox.w*im.w, selected_detections[i].det.bbox.h*im.h);
 		else
 			printf("\n");
+
+		if (save_json_output) {
+			flag_detected = 1;
+			jwArr_object();
+			jwObj_string("class", names[best_class]); // add object class: predicted class
+			jwObj_double("probability", selected_detections[i].det.prob[best_class] * 100); // prob: probability
+
+			box bjson = selected_detections[i].det.bbox;
+			int leftjson = (bjson.x - bjson.w / 2.)*im.w;
+			int rightjson = (bjson.x + bjson.w / 2.)*im.w;
+			int topjson = (bjson.y - bjson.h / 2.)*im.h;
+			int botjson = (bjson.y + bjson.h / 2.)*im.h;
+
+			jwObj_object("boundingbox");
+			jwObj_int("left", leftjson);
+			jwObj_int("top", topjson);
+			jwObj_int("right", rightjson);
+			jwObj_int("bot", botjson);
+			jwEnd();
+			jwEnd();
+		}
+
 		int j;
 		for (j = 0; j < classes; ++j) {
 			if (selected_detections[i].det.prob[j] > thresh && j != best_class) {
@@ -379,6 +409,18 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
 		}
 	}
 	free(selected_detections);
+
+	if (save_json_output && flag_detected) {
+		char *fileout[256];
+		snprintf(fileout, 256, "%s.json", output_prefix);
+		printf("output_json: %s\n", fileout);
+		jwEnd(); // end the object
+		jwEnd(); // end the array
+		jwClose(); // close jWrite object
+		FILE *f = fopen(fileout, "w");
+		fprintf(f, "%s\n", buffer);
+		fclose(f);
+	}
 }
 
 void draw_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes)
@@ -444,28 +486,27 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 
 #ifdef OPENCV
 
-void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output, char *out_json_filename_prefix)
+void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output, int save_json_output, int save_image_output, char *output_prefix)
 {
 	int i, j;
 
-	int flag_detected = 0;
-	int flag_writeJSON = 0;
 	if (!show_img) return;
 	static int frame_id = 0;
 	frame_id++;
 
+	int flag_detected = 0;
 	char buffer[32768];
 	unsigned int buflen = 32768;
-	char frameNumber[128];
+	char frameNumber[256];
 
-	if (strcmp(out_json_filename_prefix, "")) {
-		flag_writeJSON = 1;
-		struct jWriteControl jwc;
-		jwOpen(buffer, buflen, JW_OBJECT, JW_PRETTY);
-		snprintf(frameNumber, 128, "%0d", global_video_frame_number);
-		printf("Frame number: %s\n", frameNumber);
-		jwObj_int("frame", global_video_frame_number);
-		jwObj_array("detected");
+	if (save_json_output || save_image_output) {
+		snprintf(frameNumber, 256, "%0d", frame_id);
+		if (save_json_output) {
+			struct jWriteControl jwc;
+			jwOpen(buffer, buflen, JW_OBJECT, JW_PRETTY);
+			jwObj_int("frame", frame_id);
+			jwObj_array("detected");
+		}
 	}
 
 	for (i = 0; i < num; ++i) {
@@ -483,11 +524,13 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 				}
 				printf("%s: %.0f%%\n", names[j], dets[i].prob[j] * 100);
 
-				if (flag_writeJSON) {
+				if (save_json_output || save_image_output) {
 					flag_detected = 1;
-					jwArr_object();
-					jwObj_string("class", names[j]); // add object class: predicted class
-					jwObj_double("probability", dets[i].prob[j] * 100); // prob: probability
+					if (save_json_output) {
+						jwArr_object();
+						jwObj_string("class", names[j]); // add object class: predicted class
+						jwObj_double("probability", dets[i].prob[j] * 100); // prob: probability
+					}
 				}
 			}
 		}
@@ -524,12 +567,12 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 			if (top < 0) top = 0;
 			if (bot > show_img->height - 1) bot = show_img->height - 1;
 
-			if (flag_writeJSON) {
+			if (save_json_output) {
 				jwObj_object("boundingbox");
-					jwObj_int("left", left);
-					jwObj_int("top", top);
-					jwObj_int("right", right);
-					jwObj_int("bot", bot);
+				jwObj_int("left", left);
+				jwObj_int("top", top);
+				jwObj_int("right", right);
+				jwObj_int("bot", bot);
 				jwEnd();
 				jwEnd();
 			}
@@ -576,8 +619,8 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 
 			cvRectangle(show_img, pt1, pt2, color, width, 8, 0);
 			if (ext_output)
-				printf("  (left: %4.0f   top: %4.0f   w: %4.0f   h: %4.0f)\n", 
-					(float)left, (float)right, b.w*show_img->width, b.h*show_img->height);
+				printf("  (left: %4.0f   top: %4.0f   w: %4.0f   h: %4.0f)\n",
+				(float)left, (float)right, b.w*show_img->width, b.h*show_img->height);
 			else
 				printf("\n");
 			cvRectangle(show_img, pt_text_bg1, pt_text_bg2, color, width, 8, 0);
@@ -590,14 +633,9 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 		}
 	}
 
-	if (flag_writeJSON && flag_detected) {
-		// Only save json file output when object detected
-		char *json_frame_fileout[128];
-		strcpy(json_frame_fileout, out_json_filename_prefix);
-		strcat(json_frame_fileout, "_frame_");
-		strcat(json_frame_fileout, frameNumber);
-		strcat(json_frame_fileout, ".json");
-
+	if (save_json_output && flag_detected) {
+		char *json_frame_fileout[256];
+		snprintf(json_frame_fileout, 256, "%s_frame_%s.json", output_prefix, frameNumber);
 		printf("output_json: %s\n", json_frame_fileout);
 		jwEnd(); // end the object
 		jwEnd(); // end the array
@@ -605,6 +643,13 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 		FILE *f = fopen(json_frame_fileout, "w");
 		fprintf(f, "%s\n", buffer);
 		fclose(f);
+	}
+
+	if (save_image_output && flag_detected) {
+		char *jpg_frame_fileout[256];
+		snprintf(jpg_frame_fileout, 256, "%s_frame_%s.jpg", output_prefix, frameNumber);
+		cvSaveImage(jpg_frame_fileout, show_img, 0);
+		printf("output_jpg: %s\n", jpg_frame_fileout);
 	}
 }
 
@@ -1080,7 +1125,8 @@ image get_image_from_stream_resize(CvCapture *cap, int w, int h, IplImage** in_i
 				if (!src) return make_empty_image(0, 0, 0);
 			} while (src->width < 1 || src->height < 1 || src->nChannels < 1);
 			printf("Video stream: %d x %d \n", src->width, src->height);
-		} else
+		}
+		else
 			src = get_webcam_frame(cap);
 	}
 	else src = cvQueryFrame(cap);

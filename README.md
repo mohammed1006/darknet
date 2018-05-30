@@ -88,10 +88,12 @@ On Linux use `./darknet` instead of `darknet.exe`, like this:`./darknet detector
 * **Yolo v3** COCO - image: `darknet.exe detector test data/coco.data cfg/yolov3.cfg yolov3.weights -i 0 -thresh 0.25`
 * Alternative method Yolo v3 COCO - image: `darknet.exe detect cfg/yolov3.cfg yolov3.weights -i 0 -thresh 0.25`
 * Output coordinates of objects: `darknet.exe detector test data/coco.data yolov3.cfg yolov3.weights -thresh 0.25 dog.jpg -ext_output`
+* Output json file of objects & coordinates: `darknet.exe detector test data/coco.data yolov3.cfg yolov3.weights -thresh 0.25 dog.jpg -ext_output -dont_show -save_json_output -output_prefix outputdir/dog`
 * 194 MB VOC-model - image: `darknet.exe detector test data/voc.data yolo-voc.cfg yolo-voc.weights -i 0`
 * 194 MB VOC-model - video: `darknet.exe detector demo data/voc.data yolo-voc.cfg yolo-voc.weights test.mp4 -i 0`
 * 194 MB VOC-model - **save result to the file res.avi**: `darknet.exe detector demo data/voc.data yolo-voc.cfg yolo-voc.weights test.mp4 -i 0 -out_filename res.avi`
-* Output json file (file per frame of objects): `darknet.exe detector demo data/coco.data yolov3.cfg yolov3.weights -thresh 0.25 test.mp4 -dont_show -out_json_prefix testmp4`
+* Output json file of objects & cordinates per frame: `darknet.exe detector demo data/coco.data yolov3.cfg yolov3.weights -thresh 0.25 test.mp4 -dont_show -save_json_output -output_prefix testmp4`
+* Output jpg file of objects & bounding boxes (per frame): `darknet.exe detector demo data/coco.data yolov3.cfg yolov3.weights -thresh 0.25 test.mp4 -dont_show -save_image_output-output_prefix outputdir/testmp4`
 * Alternative method 194 MB VOC-model - video: `darknet.exe yolo demo yolo-voc.cfg yolo-voc.weights test.mp4 -i 0`
 * 43 MB VOC-model for video: `darknet.exe detector demo data/coco.data cfg/yolov2-tiny.cfg yolov2-tiny.weights test.mp4 -i 0`
 * **Yolo v3** 236 MB COCO for net-videocam - Smart WebCam: `darknet.exe detector demo data/coco.data cfg/yolov3.cfg yolov3.weights http://192.168.0.80:8080/video?dummy=param.mjpg -i 0`

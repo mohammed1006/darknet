@@ -13,7 +13,7 @@
 #endif
 
 extern void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top);
-extern void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, int ext_output);
+extern void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, int ext_output, int save_json_output, char *output_prefix);
 extern void run_voxel(int argc, char **argv);
 extern void run_yolo(int argc, char **argv);
 extern void run_detector(int argc, char **argv);
@@ -387,8 +387,10 @@ int main(int argc, char **argv)
     } else if (0 == strcmp(argv[1], "detect")){
         float thresh = find_float_arg(argc, argv, "-thresh", .24);
 		int ext_output = find_arg(argc, argv, "-ext_output");
+		int save_json_output = find_arg(argc, argv, "-save_json_output");
+		char *output_prefix = find_char_arg(argc, argv, "-output_prefix", 0);
         char *filename = (argc > 4) ? argv[4]: 0;
-        test_detector("cfg/coco.data", argv[2], argv[3], filename, thresh, ext_output);
+        test_detector("cfg/coco.data", argv[2], argv[3], filename, thresh, ext_output, save_json_output, output_prefix);
     } else if (0 == strcmp(argv[1], "cifar")){
         run_cifar(argc, argv);
     } else if (0 == strcmp(argv[1], "go")){

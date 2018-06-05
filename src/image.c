@@ -524,17 +524,7 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 					strcat(labelstr, names[j]);
 				}
 				prob = dets[i].prob[j] * 100;
-
-				printf("%s: %.0f%%\n", labelstr, prob);
-
-				//if (save_json_output || save_image_output) {
-				//	flag_detected = 1;
-				//	if (save_json_output) {
-				//		jwArr_object();
-				//		jwObj_string("class", names[j]); // add object class: predicted class
-				//		jwObj_double("probability", dets[i].prob[j] * 100); // prob: probability
-				//	}
-				//}
+				printf("%s: %.0f%%\n", names[class_id], prob);
 			}
 		}
 		if (class_id >= 0) {
@@ -573,7 +563,7 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
 			if (save_json_output) {
 				flag_detected = 1;
 				jwArr_object();
-				jwObj_string("class", labelstr); // add object class: predicted class
+				jwObj_string("class", names[class_id]); // add object class: predicted class
 				jwObj_double("probability", prob); // prob: probability
 
 				jwObj_object("boundingbox");

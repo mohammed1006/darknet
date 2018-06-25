@@ -13,6 +13,8 @@ CvCapture* get_capture_video_stream(char *path);
 IplImage* get_webcam_frame(CvCapture *cap);
 int get_stream_fps_cpp(CvCapture *cap);
 
+YOLODLL_API image ipl_to_image(IplImage* src);
+
 image image_data_augmentation(IplImage* ipl, int w, int h,
 	int pleft, int ptop, int swidth, int sheight, int flip,
 	float jitter, float dhue, float dsat, float dexp);

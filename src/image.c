@@ -966,10 +966,15 @@ image load_image_cv(char *filename, int channels)
 
     if( (src = cvLoadImage(filename, flag)) == 0 )
     {
-        fprintf(stderr, "Cannot load image \"%s\"\n", filename);
-        char buff[256];
-        sprintf(buff, "echo %s >> bad.list", filename);
-        system(buff);
+		char shrinked_filename[1024];
+		if (strlen(filename) >= 1024) sprintf(shrinked_filename, "name is too long");
+		else sprintf(shrinked_filename, "%s", filename);
+		fprintf(stderr, "Cannot load image \"%s\"\n", shrinked_filename);
+		FILE* fw = fopen("bad.list", "a");
+		fwrite(shrinked_filename, sizeof(char), strlen(shrinked_filename), fw);
+		char *new_line = "\n";
+		fwrite(new_line, sizeof(char), strlen(new_line), fw);
+		fclose(fw);
         return make_image(10,10,3);
         //exit(EXIT_FAILURE);
     }
@@ -1011,6 +1016,26 @@ image get_image_from_stream_cpp(CvCapture *cap)
 	return im;
 }
 
+int wait_for_stream(CvCapture *cap, IplImage* src, int dont_close) {
+	if (!src) {
+		if (dont_close) src = cvCreateImage(cvSize(416, 416), IPL_DEPTH_8U, 3);
+		else return 0;
+	}
+	if (src->width < 1 || src->height < 1 || src->nChannels < 1) {
+		if (dont_close) {
+			cvReleaseImage(&src);
+			int z = 0;
+			for (z = 0; z < 20; ++z) {
+				get_webcam_frame(cap);
+				cvReleaseImage(&src);
+			}
+			src = cvCreateImage(cvSize(416, 416), IPL_DEPTH_8U, 3);
+		}
+		else return 0;
+	}
+	return 1;
+}
+
 image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture, int dont_close)
 {
 	c = c ? c : 3;
@@ -1029,22 +1054,8 @@ image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage
 	}
 	else src = cvQueryFrame(cap);
 
-	if (!src) { 
-		if (dont_close) src = cvCreateImage(cvSize(416, 416), IPL_DEPTH_8U, c);
-		else return make_empty_image(0, 0, 0); 
-	}
-	if (src->width < 1 || src->height < 1 || src->nChannels < 1) {
-		if (cpp_video_capture) {
-			cvReleaseImage(&src);
-			int z = 0;
-			for (z = 0; z < 10; ++z) {
-				get_webcam_frame(cap);
-				cvReleaseImage(&src);
-			}
-		}
-		if (dont_close) src = cvCreateImage(cvSize(416, 416), IPL_DEPTH_8U, c);
-		else return make_empty_image(0, 0, 0);
-	}
+	if (cpp_video_capture) 
+		if(!wait_for_stream(cap, src, dont_close)) return make_empty_image(0, 0, 0);
 	IplImage* new_img = cvCreateImage(cvSize(w, h), IPL_DEPTH_8U, c);
 	*in_img = cvCreateImage(cvSize(src->width, src->height), IPL_DEPTH_8U, c);
 	cvResize(src, *in_img, CV_INTER_LINEAR);
@@ -1055,6 +1066,18 @@ image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage
 	if (c>1)
 		rgbgr_image(im);
 	return im;
+}
+
+int get_stream_fps(CvCapture *cap, int cpp_video_capture)
+{
+	int fps = 25;
+	if (cpp_video_capture) {
+		fps = get_stream_fps_cpp(cap);
+	}
+	else {
+		fps = cvGetCaptureProperty(cap, CV_CAP_PROP_FPS);
+	}
+	return fps;
 }
 
 void save_image_jpg(image p, const char *name)
@@ -1758,10 +1781,15 @@ image load_image_stb(char *filename, int channels)
     int w, h, c;
     unsigned char *data = stbi_load(filename, &w, &h, &c, channels);
     if (!data) {
-        fprintf(stderr, "Cannot load image \"%s\"\nSTB Reason: %s\n", filename, stbi_failure_reason());
-		char buff[256];
-		sprintf(buff, "echo %s >> bad.list", filename);
-		system(buff);
+		char shrinked_filename[1024];
+		if (strlen(filename) >= 1024) sprintf(shrinked_filename, "name is too long");
+		else sprintf(shrinked_filename, "%s", filename);
+		fprintf(stderr, "Cannot load image \"%s\"\nSTB Reason: %s\n", shrinked_filename, stbi_failure_reason());
+		FILE* fw = fopen("bad.list", "a");
+		fwrite(shrinked_filename, sizeof(char), strlen(shrinked_filename), fw);
+		char *new_line = "\n";
+		fwrite(new_line, sizeof(char), strlen(new_line), fw);
+		fclose(fw);
 		return make_image(10, 10, 3);
         //exit(EXIT_FAILURE);
     }

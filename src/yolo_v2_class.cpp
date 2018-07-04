@@ -283,6 +283,7 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool
 			bbox.obj_id = obj_id;
 			bbox.prob = prob;
 			bbox.track_id = 0;
+			bbox.frames_counter = 0;
 
 			bbox_vec.push_back(bbox);
 		}

@@ -250,14 +250,15 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool
 #endif
     //std::cout << "net.gpu_index = " << net.gpu_index << std::endl;
 
-    //float nms = .4;
-
     image im;
     im.c = img.c;
     im.data = img.data;
     im.h = img.h;
     im.w = img.w;
 
+    unsigned int offset_x = 0;
+    unsigned int offset_y = 0;
+    float scale = 1.0f;
     image sized;
     
     if (net.w == im.w && net.h == im.h) {
@@ -265,7 +266,17 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool
         memcpy(sized.data, im.data, im.w*im.h*im.c * sizeof(float));
     }
     else
-        sized = resize_image(im, net.w, net.h);
+    {
+        sized = letterbox_image(im, net.w, net.h);
+
+        ///calculate offset for detections if any
+        scale = ((float)net.w / im.w) < ((float)net.h / im.h) ?
+                                         (float)img.w / net.w :
+                                         (float)img.h / net.h;
+        offset_x = (net.w * scale - im.w) / 2;
+        offset_y = (net.h * scale - im.h) / 2;
+    }
+
 
     layer l = net.layers[net.n - 1];
 
@@ -285,7 +296,7 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool
     int nboxes = 0;
     int letterbox = 0;
     float hier_thresh = 0.5;
-    detection *dets = get_network_boxes(&net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes, letterbox);
+    detection *dets = get_network_boxes(&net, net.w, net.h, thresh, hier_thresh, 0, 1, &nboxes, letterbox);
     if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
 
     std::vector<bbox_t> bbox_vec;
@@ -298,10 +309,10 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool
         if (prob > thresh) 
         {
             bbox_t bbox;
-            bbox.x = std::max((double)0, (b.x - b.w / 2.)*im.w);
-            bbox.y = std::max((double)0, (b.y - b.h / 2.)*im.h);
-            bbox.w = b.w*im.w;
-            bbox.h = b.h*im.h;
+            bbox.x = std::max((double)0, (b.x - b.w / 2.) * scale) - offset_x;
+            bbox.y = std::max((double)0, (b.y - b.h / 2.) * scale) - offset_y;
+            bbox.w = b.w * scale;
+            bbox.h = b.h * scale;
             bbox.obj_id = obj_id;
             bbox.prob = prob;
             bbox.track_id = 0;

@@ -74,37 +74,13 @@ public:
     YOLODLL_API std::vector<bbox_t> tracking_id(std::vector<bbox_t> cur_bbox_vec, bool const change_history = true,
                                                 int const frames_story = 10, int const max_dist = 150);
 
-    std::vector<bbox_t> detect_resized(image_t img, int init_w, int init_h, float thresh = 0.2, bool use_mean = false)
-    {
-        if (img.data == NULL)
-            throw std::runtime_error("Image is empty");
-        auto detection_boxes = detect(img, thresh, use_mean);
-        float wk = (float)init_w / img.w, hk = (float)init_h / img.h;
-        for (auto &i : detection_boxes) i.x *= wk, i.w *= wk, i.y *= hk, i.h *= hk;
-        return detection_boxes;
-    }
-
 #ifdef OPENCV
     std::vector<bbox_t> detect(cv::Mat mat, float thresh = 0.2, bool use_mean = false)
     {
         if(mat.data == NULL)
             throw std::runtime_error("Image is empty");
-        auto image_ptr = mat_to_image_resize(mat);
-        return detect_resized(*image_ptr, mat.cols, mat.rows, thresh, use_mean);
-    }
-
-    std::shared_ptr<image_t> mat_to_image_resize(cv::Mat mat) const
-    {
-        if (mat.data == NULL) return std::shared_ptr<image_t>(NULL);
-
-        cv::Size network_size = cv::Size(get_net_width(), get_net_height());
-        cv::Mat det_mat;
-        if (mat.size() != network_size)
-            cv::resize(mat, det_mat, network_size);
-        else
-            det_mat = mat;  // only reference is copied
-
-        return mat_to_image(det_mat);
+        auto image_ptr = mat_to_image(mat);
+        return detect(*image_ptr, thresh, use_mean);
     }
 
     static std::shared_ptr<image_t> mat_to_image(cv::Mat img_src)

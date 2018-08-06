@@ -310,7 +310,7 @@ int main(int argc, char *argv[])
                     if(consumed)
                     {
                         std::unique_lock<std::mutex> lock(mtx);
-                        det_image = detector.mat_to_image_resize(cur_frame);
+                        det_image = detector.mat_to_image(cur_frame);
                         auto old_result_vec = detector.tracking_id(result_vec);
                         auto detected_result_vec = thread_result_vec;
                         result_vec = detected_result_vec;
@@ -366,8 +366,7 @@ int main(int argc, char *argv[])
                             auto current_image = det_image;
                             consumed = true;
                             while (current_image.use_count() > 0 && !exit_flag) {
-                                auto result = detector.detect_resized(*current_image, frame_size.width, frame_size.height, 
-                                    thresh, false);    // true
+                                auto result = detector.detect(*current_image, thresh, false);    // true
                                 ++fps_det_counter;
                                 std::unique_lock<std::mutex> lock(mtx);
                                 thread_result_vec = result;

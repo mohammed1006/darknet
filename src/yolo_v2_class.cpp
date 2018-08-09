@@ -309,10 +309,10 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool
         if (prob > thresh) 
         {
             bbox_t bbox;
-            bbox.x = std::max((double)0, (b.x - b.w / 2.) * scale) - offset_x;
-            bbox.y = std::max((double)0, (b.y - b.h / 2.) * scale) - offset_y;
-            bbox.w = b.w * scale;
-            bbox.h = b.h * scale;
+            bbox.x = std::max((double)0, (b.x - b.w / 2.) * net.w * scale) - offset_x;
+            bbox.y = std::max((double)0, (b.y - b.h / 2.) * net.h * scale) - offset_y;
+            bbox.w = b.w * net.w * scale;
+            bbox.h = b.h * net.h * scale;
             bbox.obj_id = obj_id;
             bbox.prob = prob;
             bbox.track_id = 0;

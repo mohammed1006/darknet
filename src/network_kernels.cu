@@ -80,22 +80,33 @@ void backward_network_gpu(network net, network_state state)
 {
     state.workspace = net.workspace;
     int i;
+	int counter = 0;
     float * original_input = state.input;
     float * original_delta = state.delta;
-    for(i = net.n-1; i >= 0; --i){
-        state.index = i;
-        layer l = net.layers[i];
-        if (l.stopbackward) break;
-        if(i == 0){
-            state.input = original_input;
-            state.delta = original_delta;
-        }else{
-            layer prev = net.layers[i-1];
-            state.input = prev.output_gpu;
-            state.delta = prev.delta_gpu;
-        }
-        l.backward_gpu(l, state);
-    }
+	for (i = net.n - 1; i >= 0; --i) {
+		state.index = i;
+		layer l = net.layers[i];
+		if (l.stopbackward && i <= 74) break;
+		if (l.stopbackward && i > 74) {
+			counter++;
+			if (counter == 1) i = 94+1;
+			if (counter == 2)  i = 82+1;
+			if (counter == 3) break;
+
+		}
+		else {
+			if (i == 0) {
+				state.input = original_input;
+				state.delta = original_delta;
+			}
+			else {
+				layer prev = net.layers[i - 1];
+				state.input = prev.output_gpu;
+				state.delta = prev.delta_gpu;
+			}
+			l.backward_gpu(l, state);
+		}
+	}
 }
 
 void update_network_gpu(network net)

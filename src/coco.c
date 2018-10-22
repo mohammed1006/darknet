@@ -354,6 +354,7 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
         show_image(im, "predictions");
         free_image(im);
         free_image(sized);
+        free_alphabet(alphabet);
 #ifdef OPENCV
         cvWaitKey(0);
         cvDestroyAllWindows();

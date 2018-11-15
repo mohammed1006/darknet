@@ -25,6 +25,11 @@
 #define CV_RGB(r, g, b) cvScalar( (b), (g), (r), 0 )
 #endif
 
+// specific to jWrite.c and jWrite.h
+#define _CRT_SECURE_NO_WARNINGS         // stop complaining about deprecated functions
+#include "jWrite.h"
+// END specific to jWrite.c and jWrite.h
+
 extern int check_mistakes;
 int windows = 0;
 
@@ -413,6 +418,59 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
             }
     }
     free(selected_detections);
+}
+
+void single_json(image im, detection *dets, int num, float thresh, char **names, int classes, char *input, FILE *output)
+{
+            struct jWriteControl pic;
+            char buffer[4096];
+
+            jwOpen(&pic, buffer, 4096, JW_OBJECT, JW_COMPACT);
+            jwObj_string(&pic, "fileName", input);
+            jwObj_array(&pic, "predictions");
+            fwrite(buffer, strlen(buffer), 1, output);
+            int selected_detections_num;
+            detection_with_class* selected_detections = get_actual_detections(dets, num, thresh, &selected_detections_num);
+
+            int first = 1;
+            qsort(selected_detections, selected_detections_num, sizeof(*selected_detections), compare_by_lefts);
+            int i;
+            for (i = 0; i < selected_detections_num; ++i) {
+                    if(first == 0){
+                           fprintf(output, ",");
+                    }
+                    struct jWriteControl prd;
+                    char predbuffer[4096];
+                    jwOpen(&prd, predbuffer, 4096, JW_OBJECT, JW_COMPACT); //open predictions object
+                    box bjson = selected_detections[i].det.bbox;
+                    int leftxjson = (bjson.x - bjson.w / 2.)*im.w;
+                    int widthjson = bjson.w*im.w;
+                    int topyjson = (bjson.y - bjson.h / 2.)*im.h;
+                    int heighthjson = bjson.h*im.h;
+                    jwObj_int(&prd, "left_x", leftxjson);
+                    jwObj_int(&prd, "top_y", topyjson);
+                    jwObj_int(&prd, "width", widthjson);
+                    jwObj_int(&prd, "height", heighthjson);
+                    //labels
+                    jwObj_array(&prd, "labels"); //labels array placeholder
+
+                    int j;
+                    for (j = 0; j < classes; ++j) {
+                        if (selected_detections[i].det.prob[j] > thresh) {
+                            jwArr_object(&prd);
+                            jwObj_string(&prd, "label", names[j]); // add object class: predicted class
+                            jwObj_double(&prd, "score", selected_detections[i].det.prob[j] * 100); // prob: probability
+                            jwEnd(&prd); //end label object
+                        }
+                    }
+                    jwEnd(&prd); //end labels array
+                    jwClose(&prd); //end prediction object
+                    fwrite(predbuffer, strlen(predbuffer), 1, output);
+                    first = 0;
+            }
+            fprintf(output, "]");
+            fprintf(output, "}");
+            free(selected_detections);
 }
 
 void draw_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes)

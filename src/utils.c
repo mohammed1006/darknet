@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <float.h>
 #include <limits.h>
+#include <arpa/inet.h>
 #ifdef WIN32
 #include "unistd.h"
 #include "gettimeofday.h"
@@ -15,6 +16,16 @@
 #include "utils.h"
 
 #pragma warning(disable: 4996)
+
+static int ip_version(const char *src) {
+    char buf[16];
+    if (inet_pton(AF_INET, src, buf)) {
+        return 4;
+    } else if (inet_pton(AF_INET6, src, buf)) {
+        return 6;
+    }
+    return -1;
+}
 
 double what_time_is_it_now()
 {

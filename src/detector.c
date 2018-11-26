@@ -1234,6 +1234,9 @@ void run_detector(int argc, char **argv)
     char *out_filename = find_char_arg(argc, argv, "-out_filename", 0);
     char *outfile = find_char_arg(argc, argv, "-out", 0);
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
+    char *to_ip = find_char_arg(argc, argv, "-to_ip", 0);
+    char *prot = find_char_arg(argc, argv, "-protocol", 0);
+    int to_port = find_int_arg(argc, argv, "-to_port", -1);
     float thresh = find_float_arg(argc, argv, "-thresh", .25);    // 0.24
     float hier_thresh = find_float_arg(argc, argv, "-hier", .5);
     int cam_index = find_int_arg(argc, argv, "-c", 0);
@@ -1248,6 +1251,10 @@ void run_detector(int argc, char **argv)
     if(argc < 4){
         fprintf(stderr, "usage: %s %s [train/test/valid/demo/map] [data] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;
+    }
+    if (ip_version(to_ip) < 0){
+        printf("Invalid IP adress.");
+        to_ip = 0;
     }
     char *gpu_list = find_char_arg(argc, argv, "-gpus", 0);
     int *gpus = 0;
@@ -1296,7 +1303,7 @@ void run_detector(int argc, char **argv)
             if(strlen(filename) > 0)
                 if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
         demo(cfg, weights, thresh, hier_thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename,
-            http_stream_port, dont_show, ext_output);
+            http_stream_port, dont_show, ext_output, to_ip, to_port, prot);
 
         free_list_contents_kvp(options);
         free_list(options);

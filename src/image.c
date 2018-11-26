@@ -478,7 +478,34 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 
 #ifdef OPENCV
 
-void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output)
+/*UDP imports go here*/
+
+#ifdef _WIN32
+#pragma comment(lib, "ws2_32.lib")
+#include <winsock.h>
+#include <windows.h>
+#include <time.h>
+#define PORT        unsigned long
+#define ADDRPOINTER   int*
+#else       // ! win32
+#include <unistd.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#define PORT        unsigned short
+#define SOCKET    int
+#define HOSTENT  struct hostent
+#define SOCKADDR    struct sockaddr
+#define SOCKADDR_IN  struct sockaddr_in
+#define ADDRPOINTER  unsigned int*
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR   -1
+#endif // _WIN32
+
+void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output, char *udp_ip, int udp_port, char *prot)
 {
     int i, j;
     if (!show_img) return;
@@ -503,6 +530,110 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
         }
         if (class_id >= 0) {
             int width = show_img->height * .006;
+
+            /*UDP code starts here*/
+            if(udp_ip != 0)
+            {
+                if(dets[i].prob[class_id] > thresh) // send if probability > thresh
+                {
+                    if(strcmp("tcp", prot)==0)
+                    {
+                        static int sock;
+                        static struct sockaddr_in server;
+                        static int initialized = 0;
+                    }
+                    else if (strcmp("udp", prot)==0)
+                    {
+                        static int sock;
+                        struct addrinfo hints, *res;
+                        memset(&hints, 0, sizeof(hints));
+                        hints.ai_family = AF_UNSPEC; // IPv4/IPv6 both
+                        hints.ai_socktype = SOCK_DGRAM;
+                        static int initialized = 0;
+                    }
+
+                    if (initialized == 0) {
+#ifdef _WIN32
+                        static WSADATA w;
+                        WSAStartup(MAKEWORD(2, 1), &w);
+#endif
+
+                        if(strcmp("tcp", prot)==0)
+                        {
+                            server.sin_family = AF_INET;
+                            server.sin_socktype = SOCK_DGRAM;
+                            server.sin_addr.s_addr = inet_addr(udp_ip); // inet_addr("127.0.0.1"); // server IP
+                            server.sin_port = htons(udp_port); // htons(1010);  // server Port
+                            sock = socket(AF_INET, SOCK_STREAM, 0); // Change SOCK_STREAM to SOCK_DGRAM for UDP. Current setting is for TCP/IP.
+
+                            if (connect(sock, (struct sockaddr *)&server, sizeof(server)) == 0) // TCP/IP
+                            {
+                                initialized = 1;  // successfully connected to the server (TCP/IP)
+                            } else {
+                                perror("TCP socket error.\n");
+                            }
+                        }
+                        else if (strcmp("udp", prot)==0)
+                        {
+                            err = getaddrinfo(udp_ip, (udp_port ? udp_port : "udp"), &hints, &res);
+                            if (err != 0) {
+                                printf("getaddrinfo : %s\n", gai_strerror(err));
+                            }
+                            sock = socket(res->ai_family, res->ai_socktype, 0);
+                            if(sock>=0) // UDP
+                            {
+                                initialized = 1;  // successfully connected to the server (TCP/IP)
+                                // UDP setup
+                                const char *ipverstr;
+                                switch (res->ai_family) {
+                                    case AF_INET:
+                                        ipverstr = "IPv4";
+                                        break;
+                                    case AF_INET6:
+                                        ipverstr = "IPv6";
+                                        break;
+                                    default:
+                                        ipverstr = "unknown";
+                                        break;
+                                }
+                                printf("IP version: %s\n", ipverstr);
+                                // UDP setup
+                            } else {
+                                perror("UDP socket error.\n");
+                            }
+                        }
+
+
+                    }
+
+
+                    if (initialized == 1)
+                    {
+                        size_t length;
+                        char *ptr;
+                        ptr = (char*)names[class_id]; // send "dog"
+                        length = strlen(ptr);
+
+                        while (length > 0)
+                        {
+                            int i;
+                            if(strcmp("tcp", prot)==0)
+                            {
+                                i = send(sock, ptr, length, 0); // TCP/IP
+                                if (i < 1) perror("Error in TCP sendto."); // break; // TCP/IP
+                            }
+                            else if (strcmp("udp", prot)==0)
+                            {
+                                i = sendto(sock, ptr, length, 0, res->ai_addr, res->ai_addrlen);
+                                if (i < 1) perror("Error in UDP sendto.");
+                            }
+                            ptr += i;
+                            length -= i;
+                        }
+                    }
+                }
+            }
+            // UDP code ends here
 
             //if(0){
             //width = pow(prob, 1./2.)*10+1;

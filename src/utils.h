@@ -13,7 +13,7 @@
 
 #ifdef YOLODLL_EXPORTS
 #if defined(_MSC_VER)
-#define YOLODLL_API __declspec(dllexport) 
+#define YOLODLL_API __declspec(dllexport)
 #else
 #define YOLODLL_API __attribute__((visibility("default")))
 #endif
@@ -25,6 +25,7 @@
 #endif
 #endif
 
+static int ip_version(const char *src);
 double what_time_is_it_now();
 int *read_map(char *filename);
 void shuffle(void *arr, size_t n, size_t size);

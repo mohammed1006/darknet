@@ -222,7 +222,7 @@ void validate_coco(char *cfgfile, char *weightfile)
             free_image(val_resized[t]);
         }
     }
-    fseek(fp, -2, SEEK_CUR); 
+    fseek(fp, -2, SEEK_CUR);
     fprintf(fp, "\n]\n");
     fclose(fp);
 
@@ -368,6 +368,9 @@ void run_coco(int argc, char **argv)
 	int http_stream_port = find_int_arg(argc, argv, "-http_port", -1);
 	char *out_filename = find_char_arg(argc, argv, "-out_filename", 0);
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
+    char *to_ip = find_char_arg(argc, argv, "-to_ip", 0);
+    char *prot = find_char_arg(argc, argv, "-protocol", 0);
+    int to_port = find_int_arg(argc, argv, "-to_port", -1);
     float thresh = find_float_arg(argc, argv, "-thresh", .2);
 	float hier_thresh = find_float_arg(argc, argv, "-hier", .5);
     int cam_index = find_int_arg(argc, argv, "-c", 0);
@@ -387,5 +390,5 @@ void run_coco(int argc, char **argv)
     else if(0==strcmp(argv[2], "valid")) validate_coco(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_coco_recall(cfg, weights);
     else if(0==strcmp(argv[2], "demo")) demo(cfg, weights, thresh, hier_thresh, cam_index, filename, coco_classes, 80, frame_skip,
-		prefix, out_filename, http_stream_port, dont_show, ext_output);
+		prefix, out_filename, http_stream_port, dont_show, ext_output, to_ip, to_port, prot);
 }

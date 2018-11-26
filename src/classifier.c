@@ -73,8 +73,9 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     list *options = read_data_cfg(datacfg);
 
-    char *backup_directory = option_find_str(options, "backup", "/backup/");
-    char *label_list = option_find_str(options, "labels", "data/labels.list");
+    char *backup_directory = option_find_str(options, "backup", "/backup/");    
+    char *label_list = option_find_str(options, "labels", 0);
+    if(!label_list) label_list = option_find_str(options, "names", 0);
     char *train_list = option_find_str(options, "train", "data/train.list");
     int classes = option_find_int(options, "classes", 2);
 
@@ -156,7 +157,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
             draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches);
 #endif  // OPENCV
 
-        if (i >= (iter_save + 100)) {
+        if (i >= (iter_save + 1000)) {
             iter_save = i;
 #ifdef GPU
             if (ngpus != 1) sync_nets(nets, ngpus, 0);

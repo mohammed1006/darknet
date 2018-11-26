@@ -17,10 +17,14 @@
 
 char *voc_names[] = {"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"};
 
-void train_yolo(char *cfgfile, char *weightfile)
+void train_yolo(char *datacfg, char *cfgfile, char *weightfile)
 {
-    char *train_images = "/data/voc/train.txt";
-    char *backup_directory = "/home/pjreddie/backup/";
+    //char *train_images = "/data/voc/train.txt";
+    //char *backup_directory = "/home/pjreddie/backup/";
+    list *options = read_data_cfg(datacfg);
+    char *train_images = option_find_str(options, "train", "data/train.list");
+    char *backup_directory = option_find_str(options, "backup", "/backup/");
+
     srand(time(0));
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
@@ -80,7 +84,7 @@ void train_yolo(char *cfgfile, char *weightfile)
         avg_loss = avg_loss*.9 + loss*.1;
 
         printf("%d: %f, %f avg, %f rate, %lf seconds, %d images\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
-        if(i%1000==0 || (i < 1000 && i%100 == 0)){
+        if(i%100==0 || (i < 1000 && i%100 == 0)){
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
             save_weights(net, buff);
@@ -351,11 +355,12 @@ void run_yolo(int argc, char **argv)
         return;
     }
 
-    char *cfg = argv[3];
-    char *weights = (argc > 4) ? argv[4] : 0;
-    char *filename = (argc > 5) ? argv[5]: 0;
+    char *datacfg = argv[3];
+    char *cfg = argv[4];
+    char *weights = (argc > 5) ? argv[5] : 0;
+    char *filename = (argc > 6) ? argv[6]: 0;
     if(0==strcmp(argv[2], "test")) test_yolo(cfg, weights, filename, thresh);
-    else if(0==strcmp(argv[2], "train")) train_yolo(cfg, weights);
+    else if(0==strcmp(argv[2], "train")) train_yolo(datacfg, cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_yolo(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_yolo_recall(cfg, weights);
     else if(0==strcmp(argv[2], "demo")) demo(cfg, weights, thresh, hier_thresh, cam_index, filename, voc_names, 20, frame_skip,

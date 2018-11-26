@@ -39,6 +39,7 @@ static image det_s;
 static CvCapture * cap;
 static int cpp_video_capture = 0;
 static float fps = 0;
+static float inference_time = 0;
 static float demo_thresh = 0;
 static int demo_ext_output = 0;
 
@@ -48,8 +49,12 @@ static image images[FRAMES];
 static IplImage* ipl_images[FRAMES];
 static float *avg;
 
+static char *udp_ip;
+static char *t_prot;
+static int udp_port;
+
 void draw_detections_cv(IplImage* show_img, int num, float thresh, box *boxes, float **probs, char **names, image **alphabet, int classes);
-void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output);
+void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output, char *udp_ip, int udp_port, char *prot);
 void show_image_cv_ipl(IplImage *disp, const char *name);
 image get_image_from_stream_resize(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture, int dont_close);
 image get_image_from_stream_letterbox(CvCapture *cap, int w, int h, int c, IplImage** in_img, int cpp_video_capture, int dont_close);
@@ -107,13 +112,14 @@ void *detect_in_thread(void *ptr)
     printf("\033[2J");
     printf("\033[1;1H");
     printf("\nFPS:%.1f\n",fps);
-    printf("Objects:\n\n");
+    printf("Inference:%.1f[ms]\n",1000*inference_time);
+    printf("\nObjects:\n\n");
 
     ipl_images[demo_index] = det_img;
     det_img = ipl_images[(demo_index + FRAMES / 2 + 1) % FRAMES];
     demo_index = (demo_index + 1)%FRAMES;
 
-    draw_detections_cv_v3(det_img, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
+    draw_detections_cv_v3(det_img, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output, udp_ip, udp_port, t_prot);
     free_detections(dets, nboxes);
 
     return 0;
@@ -129,7 +135,7 @@ double get_wall_time()
 }
 
 void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,
-    int frame_skip, char *prefix, char *out_filename, int http_stream_port, int dont_show, int ext_output)
+    int frame_skip, char *prefix, char *out_filename, int http_stream_port, int dont_show, int ext_output, char *to_ip, int to_port, char *prot)
 {
     //skip = frame_skip;
     image **alphabet = load_alphabet();
@@ -139,6 +145,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     demo_classes = classes;
     demo_thresh = thresh;
     demo_ext_output = ext_output;
+
+    udp_ip = to_ip;
+    udp_port = to_port;
+    t_prot = prot;
+
     printf("Demo\n");
     net = parse_network_cfg_custom(cfgfile, 1);    // set batch=1
     if(weightfile){
@@ -313,7 +324,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             delay = frame_skip;
 
             double after = get_wall_time();
-            float curr = 1./(after - before);
+            inference_time = (after - before);
+            float curr = 1./inference_time;
             fps = curr;
             before = after;
         }
@@ -353,7 +365,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 }
 #else
 void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,
-    int frame_skip, char *prefix, char *out_filename, int http_stream_port, int dont_show, int ext_output)
+    int frame_skip, char *prefix, char *out_filename, int http_stream_port, int dont_show, int ext_output, char *to_ip, int to_port, char *prot)
 {
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }

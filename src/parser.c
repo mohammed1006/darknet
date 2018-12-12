@@ -165,7 +165,7 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     int xnor = option_find_int_quiet(options, "xnor", 0);
     int use_bin_output = option_find_int_quiet(options, "bin_output", 0);
 
-    convolutional_layer layer = make_convolutional_layer(batch,h,w,c,n,size,stride,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output);
+    convolutional_layer layer = make_convolutional_layer(batch,h,w,c,n,size,stride,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index);
     layer.flipped = option_find_int_quiet(options, "flipped", 0);
     layer.dot = option_find_float_quiet(options, "dot", 0);
 
@@ -655,7 +655,8 @@ void parse_net_options(list *options, network *net)
     net->policy = get_policy(policy_s);
     net->burn_in = option_find_int_quiet(options, "burn_in", 0);
 #ifdef CUDNN_HALF
-    net->burn_in = 0;
+    //net->burn_in = 0;
+    net->cudnn_half = 1;
 #endif
     if(net->policy == STEP){
         net->step = option_find_int(options, "step", 1);
@@ -731,6 +732,8 @@ network parse_network_cfg_custom(char *filename, int batch)
 
     float bflops = 0;
     size_t workspace_size = 0;
+    size_t max_inputs = 0;
+    size_t max_outputs = 0;
     n = n->next;
     int count = 0;
     free_section(s);
@@ -805,6 +808,8 @@ network parse_network_cfg_custom(char *filename, int batch)
         option_unused(options);
         net.layers[count] = l;
         if (l.workspace_size > workspace_size) workspace_size = l.workspace_size;
+        if (l.inputs > max_inputs) max_inputs = l.inputs;
+        if (l.outputs > max_outputs) max_outputs = l.outputs;
         free_section(s);
         n = n->next;
         ++count;
@@ -827,6 +832,14 @@ network parse_network_cfg_custom(char *filename, int batch)
             net.workspace = cuda_make_array(0, workspace_size/sizeof(float) + 1);
             int size = get_network_input_size(net) * net.batch;
             net.input_state_gpu = cuda_make_array(0, size);
+
+            // pre-allocate memory for inference on Tensor Cores (fp16)
+            if (net.cudnn_half) {
+                *net.max_input16_size = max_inputs;
+                check_error(cudaMalloc((void **)net.input16_gpu, *net.max_input16_size * sizeof(short))); //sizeof(half)
+                *net.max_output16_size = max_outputs;
+                check_error(cudaMalloc((void **)net.output16_gpu, *net.max_output16_size * sizeof(short))); //sizeof(half)
+            }
         }else {
             net.workspace = calloc(1, workspace_size);
         }

@@ -1220,7 +1220,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 //#endif // OPENCV
 
 void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh,
-    float hier_thresh, int dont_show, int ext_output, int save_labels)
+    float hier_thresh, int dont_show, int ext_output, int save_labels, FILE *infp, FILE *outfp)
 {
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
@@ -1246,13 +1246,19 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     char *input = buff;
     int j;
     float nms = .45;    // 0.4F
+
+    int has_detection = -1;
     while (1) {
-        if (filename) {
+        if(infp){
+            // input file containing image paths takes precedence
+            input = fgets(buff, sizeof(buff), infp);
+            if(!input) return;
+            strtok(input, "\n");
+        } else if(filename){
             strncpy(input, filename, 256);
-            if (strlen(input) > 0)
+            if(strlen(input) > 0)
                 if (input[strlen(input) - 1] == 0x0d) input[strlen(input) - 1] = 0;
-        }
-        else {
+        } else {
             printf("Enter Image Path: ");
             fflush(stdout);
             input = fgets(input, 256, stdin);
@@ -1277,6 +1283,16 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         //network_predict_image(&net, im); letterbox = 1;
         printf("%s: Predicted in %lf milli-seconds.\n", input, ((double)get_time_point() - time) / 1000);
         //printf("%s: Predicted in %f seconds.\n", input, (what_time_is_it_now()-time));
+
+        // JSON output for each image
+        if(outfp) {
+            if (has_detection > 0) fprintf(outfp, ",");
+            else has_detection = 1;
+            fprintf(outfp, "{");
+            fprintf(outfp, "\"mediaName\":\"%s\",", input);
+            fprintf(outfp, "\"predictedInMilliseconds\":%lf,", ((double)get_time_point() - time) / 1000);
+            fprintf(outfp, "\"detectedObjects\":[");
+        }
 
         int nboxes = 0;
         detection *dets = get_network_boxes(&net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes, letterbox);
@@ -1313,6 +1329,29 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
             fclose(fw);
         }
 
+        // JSON output for all detected objects within the image
+        if(outfp) {
+            int selected_detections_num;
+            detection_with_class* selected_detections = get_actual_detections(dets, nboxes, thresh, &selected_detections_num, names);
+            int i;
+            for (i = 0; i < selected_detections_num; ++i) {
+                const int best_class = selected_detections[i].best_class;
+
+                if (i > 0) fprintf(outfp, ",");
+
+                // JSON output for each detected object
+                fprintf(outfp, "{");
+                fprintf(outfp, "\"category\":\"%s\",", names[best_class]);
+                fprintf(outfp, "\"confidence\":\"%.0f%%\",", selected_detections[i].det.prob[best_class] * 100);
+                fprintf(outfp, "\"leftX\":\"%.0f\",", (selected_detections[i].det.bbox.x - selected_detections[i].det.bbox.w / 2)*im.w);
+                fprintf(outfp, "\"topY\":\"%.0f\",", (selected_detections[i].det.bbox.y - selected_detections[i].det.bbox.h / 2)*im.h);
+                fprintf(outfp, "\"width\":\"%.0f\",", selected_detections[i].det.bbox.w*im.w);
+                fprintf(outfp, "\"height\":\"%.0f\"", selected_detections[i].det.bbox.h*im.h);
+                fprintf(outfp, "}");
+            }
+            fprintf(outfp, "]"); // end of 'JSON output for all detected objects within the image'
+            free(selected_detections);
+        }
         free_detections(dets, nboxes);
         free_image(im);
         free_image(sized);
@@ -1324,6 +1363,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
             cvDestroyAllWindows();
         }
 #endif
+        if (outfp) fprintf(outfp, "}"); // end of 'JSON output for each image'
         if (filename) break;
     }
 
@@ -1353,6 +1393,7 @@ void run_detector(int argc, char **argv)
     check_mistakes = find_arg(argc, argv, "-check_mistakes");
     int http_stream_port = find_int_arg(argc, argv, "-http_port", -1);
     char *out_filename = find_char_arg(argc, argv, "-out_filename", 0);
+    char *infile = find_char_arg(argc, argv, "-in", 0);
     char *outfile = find_char_arg(argc, argv, "-out", 0);
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
     float thresh = find_float_arg(argc, argv, "-thresh", .25);    // 0.24
@@ -1404,7 +1445,22 @@ void run_detector(int argc, char **argv)
         if (strlen(weights) > 0)
             if (weights[strlen(weights) - 1] == 0x0d) weights[strlen(weights) - 1] = 0;
     char *filename = (argc > 6) ? argv[6] : 0;
-    if (0 == strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, dont_show, ext_output, save_labels);
+    if (0 == strcmp(argv[2], "test")) {
+        // open input and output files if provided
+        FILE *infp = (infile && strcmp(infile, "-") != 0) ? fopen(infile, "r") : NULL;
+        FILE *outfp = (outfile && strcmp(outfile, "-") != 0) ? fopen(outfile, "w") : NULL;
+
+        // start writing to output file
+        if(outfp) fprintf(outfp, "[");
+
+        test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, dont_show, ext_output, save_labels, infp, outfp);
+
+        // end writing to output file
+        if(outfp) {
+            fprintf(outfp, "]");
+            fclose(outfp);
+        }
+    }
     else if (0 == strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear, dont_show, calc_map);
     else if (0 == strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if (0 == strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);

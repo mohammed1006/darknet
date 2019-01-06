@@ -96,6 +96,22 @@ Others: https://www.youtube.com/channel/UC7ev3hNVkx4DzZ3LO19oebg
 * fixed code for use Web-cam on OpenCV 3.x
 * run-time tips and warnings if you use incorrect cfg-file or dataset
 * many other fixes of code...
+* added options -in and -out to the `darknet detector test` command to accept an input file consisting of multiple image paths and produce JSON output respectively. See example command below
+* ```
+    darknet/darknet detector test data/obj.data yolo-obj.cfg yolo-obj_20000.weights -dont_show -ext_output -in images.txt -out result.json
+  ```
+  Example of images.txt input file content -
+  ```
+    /home/ubuntu/data_test/eagle.jpg
+    /home/ubuntu/data_test/giraffe.jpg
+    /home/ubuntu/data_test/kite.jpg
+    /home/ubuntu/data_test/horses.jpg
+    /home/ubuntu/data_test/VTisisflag-5.jpg
+  ```
+  Example of result.json output file -
+  ```
+    [{"mediaName":"/home/ubuntu/data_test/eagle.jpg","predictedInMilliseconds":0.000000,"detectedObjects":[{"category":"isis_flag","confidence":"75%","leftX":"206","topY":"181","width":"253","height":"139"}]},{"mediaName":"/home/ubuntu/data_test/giraffe.jpg","predictedInMilliseconds":0.000000,"detectedObjects":[]},{"mediaName":"/home/ubuntu/data_test/kite.jpg","predictedInMilliseconds":0.000000,"detectedObjects":[]},{"mediaName":"/home/ubuntu/data_test/horses.jpg","predictedInMilliseconds":0.000000,"detectedObjects":[]},{"mediaName":"/home/ubuntu/data_test/VTisisflag-5.jpg","predictedInMilliseconds":0.000000,"detectedObjects":[{"category":"isis_flag","confidence":"100%","leftX":"240","topY":"4","width":"80","height":"94"},{"category":"isis_flag","confidence":"100%","leftX":"78","topY":"-2","width":"94","height":"136"},{"category":"isis_flag","confidence":"100%","leftX":"369","topY":"1","width":"91","height":"119"},{"category":"isis_flag","confidence":"100%","leftX":"427","topY":"-1","width":"106","height":"129"},{"category":"isis_flag","confidence":"99%","leftX":"159","topY":"7","width":"74","height":"96"}]}]
+  ```
 
 And added manual - [How to train Yolo v3/v2 (to detect your custom objects)](#how-to-train-to-detect-your-custom-objects)
 

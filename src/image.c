@@ -274,7 +274,7 @@ image **load_alphabet()
 
 
 // Creates array of detections with prob > thresh and fills best_class for them
-detection_with_class* get_actual_detections(detection *dets, int dets_num, float thresh, int* selected_detections_num)
+detection_with_class* get_actual_detections(detection *dets, int dets_num, float thresh, int* selected_detections_num, char **names)
 {
     int selected_num = 0;
     detection_with_class* result_arr = calloc(dets_num, sizeof(detection_with_class));
@@ -284,7 +284,8 @@ detection_with_class* get_actual_detections(detection *dets, int dets_num, float
         float best_class_prob = thresh;
         int j;
         for (j = 0; j < dets[i].classes; ++j) {
-            if (dets[i].prob[j] > best_class_prob ) {
+            int show = strncmp(names[j], "dont_show", 9);
+            if (dets[i].prob[j] > best_class_prob && show) {
                 best_class = j;
                 best_class_prob = dets[i].prob[j];
             }
@@ -319,7 +320,7 @@ int compare_by_probs(const void *a_ptr, const void *b_ptr) {
 void draw_detections_v3(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output)
 {
     int selected_detections_num;
-    detection_with_class* selected_detections = get_actual_detections(dets, num, thresh, &selected_detections_num);
+    detection_with_class* selected_detections = get_actual_detections(dets, num, thresh, &selected_detections_num, names);
 
     // text output
     qsort(selected_detections, selected_detections_num, sizeof(*selected_detections), compare_by_lefts);
@@ -430,7 +431,7 @@ void single_json(image im, detection *dets, int num, float thresh, char **names,
             jwObj_array(&pic, "predictions");
             fwrite(buffer, strlen(buffer), 1, output);
             int selected_detections_num;
-            detection_with_class* selected_detections = get_actual_detections(dets, num, thresh, &selected_detections_num);
+            detection_with_class* selected_detections = get_actual_detections(dets, num, thresh, &selected_detections_num, names);
 
             int first = 1;
             qsort(selected_detections, selected_detections_num, sizeof(*selected_detections), compare_by_lefts);
@@ -547,7 +548,8 @@ void draw_detections_cv_v3(IplImage* show_img, detection *dets, int num, float t
         char labelstr[4096] = { 0 };
         int class_id = -1;
         for (j = 0; j < classes; ++j) {
-            if (dets[i].prob[j] > thresh) {
+            int show = strncmp(names[j], "dont_show", 9);
+            if (dets[i].prob[j] > thresh && show) {
                 if (class_id < 0) {
                     strcat(labelstr, names[j]);
                     class_id = j;
@@ -768,7 +770,7 @@ IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_li
     char max_batches_buff[100];
     sprintf(max_batches_buff, "in cfg max_batches=%d", max_batches);
     cvPutText(img, max_batches_buff, cvPoint(draw_size - 195, img_size - 10), &font, CV_RGB(0, 0, 0));
-    cvPutText(img, "Press 's' to save: chart.jpg", cvPoint(5, img_size - 10), &font, CV_RGB(0, 0, 0));
+    cvPutText(img, "Press 's' to save: chart.png", cvPoint(5, img_size - 10), &font, CV_RGB(0, 0, 0));
     printf(" If error occurs - run training with flag: -dont_show \n");
     cvNamedWindow("average loss", CV_WINDOW_NORMAL);
     cvMoveWindow("average loss", 0, 0);
@@ -778,7 +780,7 @@ IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_li
     return img;
 }
 
-void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches, float precision)
+void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches, float precision, int draw_precision)
 {
     int img_offset = 50;
     int draw_size = img_size - img_offset;
@@ -792,18 +794,19 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
     cvCircle(img, pt1, 1, CV_RGB(0, 0, 255), CV_FILLED, 8, 0);
 
     // precision
-    if (precision >= 0) {
+    if (draw_precision) {
         static float old_precision = 0;
-        static iteration_old = 0;
+        static int iteration_old = 0;
+        static int text_iteration_old = 0;
+        if(iteration_old == 0) cvPutText(img, "mAP%", cvPoint(0, 12), &font, CV_RGB(255, 0, 0));
 
-        if (old_precision != precision) {
-            cvLine(img,
-                cvPoint(img_offset + draw_size * (float)iteration_old / max_batches, draw_size * (1 - old_precision)),
-                cvPoint(img_offset + draw_size * (float)current_batch / max_batches, draw_size * (1 - precision)),
-                CV_RGB(255, 0, 0), 1, 8, 0);
+        cvLine(img,
+            cvPoint(img_offset + draw_size * (float)iteration_old / max_batches, draw_size * (1 - old_precision)),
+            cvPoint(img_offset + draw_size * (float)current_batch / max_batches, draw_size * (1 - precision)),
+            CV_RGB(255, 0, 0), 1, 8, 0);
 
-            old_precision = precision;
-            iteration_old = current_batch;
+        if (((int)(old_precision*10) != (int)(precision*10)) || (current_batch - text_iteration_old) >= max_batches/10) {
+            text_iteration_old = current_batch;
             sprintf(char_buff, "%2.0f%% ", precision * 100);
             CvFont font3;
             cvInitFont(&font3, CV_FONT_HERSHEY_COMPLEX_SMALL, 0.7, 0.7, 0, 5, CV_AA);
@@ -813,7 +816,8 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
             cvInitFont(&font2, CV_FONT_HERSHEY_COMPLEX_SMALL, 0.7, 0.7, 0, 1, CV_AA);
             cvPutText(img, char_buff, cvPoint(pt1.x - 30, draw_size * (1 - precision) + 15), &font2, CV_RGB(200, 0, 0));
         }
-        cvPutText(img, "mAP%", cvPoint(0, 12), &font, CV_RGB(255, 0, 0));
+        old_precision = precision;
+        iteration_old = current_batch;
     }
 
     sprintf(char_buff, "current avg loss = %2.4f    iteration = %d", avg_loss, current_batch);
@@ -823,12 +827,14 @@ void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_
     pt1.y += 15;
     cvPutText(img, char_buff, pt1, &font, CV_RGB(0, 0, 0));
 
-
-
     cvShowImage("average loss", img);
     int k = cvWaitKey(20);
     if (k == 's' || current_batch == (max_batches - 1) || current_batch % 100 == 0) {
-        cvSaveImage("chart.jpg", img, 0);
+        //cvSaveImage("chart.jpg", img, 0);
+        IplImage* img_rgb = cvCreateImage(cvSize(img->width, img->height), 8, 3);
+        cvCvtColor(img, img_rgb, CV_RGB2BGR);
+        stbi_write_png("chart.png", img_rgb->width, img_rgb->height, 3, (char *)img_rgb->imageData, 0);
+        cvRelease(&img_rgb);
         cvPutText(img, "- Saved", cvPoint(250, img_size - 10), &font, CV_RGB(255, 0, 0));
     }
     else

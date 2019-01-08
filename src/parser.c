@@ -732,6 +732,8 @@ network parse_network_cfg_custom(char *filename, int batch)
 
     float bflops = 0;
     size_t workspace_size = 0;
+    size_t max_inputs = 0;
+    size_t max_outputs = 0;
     n = n->next;
     int count = 0;
     free_section(s);
@@ -803,9 +805,12 @@ network parse_network_cfg_custom(char *filename, int batch)
         l.stopbackward = option_find_int_quiet(options, "stopbackward", 0);
         l.dontload = option_find_int_quiet(options, "dontload", 0);
         l.dontloadscales = option_find_int_quiet(options, "dontloadscales", 0);
+        l.learning_rate_scale = option_find_float_quiet(options, "learning_rate", 1);
         option_unused(options);
         net.layers[count] = l;
         if (l.workspace_size > workspace_size) workspace_size = l.workspace_size;
+        if (l.inputs > max_inputs) max_inputs = l.inputs;
+        if (l.outputs > max_outputs) max_outputs = l.outputs;
         free_section(s);
         n = n->next;
         ++count;
@@ -828,6 +833,14 @@ network parse_network_cfg_custom(char *filename, int batch)
             net.workspace = cuda_make_array(0, workspace_size/sizeof(float) + 1);
             int size = get_network_input_size(net) * net.batch;
             net.input_state_gpu = cuda_make_array(0, size);
+
+            // pre-allocate memory for inference on Tensor Cores (fp16)
+            if (net.cudnn_half) {
+                *net.max_input16_size = max_inputs;
+                check_error(cudaMalloc((void **)net.input16_gpu, *net.max_input16_size * sizeof(short))); //sizeof(half)
+                *net.max_output16_size = max_outputs;
+                check_error(cudaMalloc((void **)net.output16_gpu, *net.max_output16_size * sizeof(short))); //sizeof(half)
+            }
         }else {
             net.workspace = calloc(1, workspace_size);
         }
@@ -1178,7 +1191,9 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     }
     else {
         printf("\n seen 32 \n");
-        fread(net->seen, sizeof(int), 1, fp);
+        uint32_t iseen = 0;
+        fread(&iseen, sizeof(uint32_t), 1, fp);
+        *net->seen = iseen;
     }
     int transpose = (major > 1000) || (minor > 1000);
 

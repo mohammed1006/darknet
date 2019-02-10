@@ -154,10 +154,10 @@ box_label *read_boxes(char *filename, int *n)
         *n = 0;
         return boxes;
     }
-    float x, y, h, w;
+    float x, y, h, w, a;
     int id;
     int count = 0;
-    while(fscanf(file, "%d %f %f %f %f", &id, &x, &y, &w, &h) == 5){
+    while(fscanf(file, "%d %f %f %f %f %f", &id, &x, &y, &w, &h, &a) == 6){
         boxes = realloc(boxes, (count+1)*sizeof(box_label));
         boxes[count].id = id;
         boxes[count].x = x;
@@ -168,6 +168,7 @@ box_label *read_boxes(char *filename, int *n)
         boxes[count].right  = x + w/2;
         boxes[count].top    = y - h/2;
         boxes[count].bottom = y + h/2;
+        boxes[count].a = a;
         ++count;
     }
     fclose(file);
@@ -232,7 +233,7 @@ void fill_truth_swag(char *path, float *truth, int classes, int flip, float dx, 
     box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
     correct_boxes(boxes, count, dx, dy, sx, sy, flip);
-    float x,y,w,h;
+    float x,y,w,h,a ;
     int id;
     int i;
 
@@ -242,15 +243,17 @@ void fill_truth_swag(char *path, float *truth, int classes, int flip, float dx, 
         w =  boxes[i].w;
         h =  boxes[i].h;
         id = boxes[i].id;
+        a = boxes[i].a;
 
         if (w < .0 || h < .0) continue;
 
-        int index = (4+classes) * i;
+        int index = (5+classes) * i;
 
         truth[index++] = x;
         truth[index++] = y;
         truth[index++] = w;
         truth[index++] = h;
+        truth[++index] = a; // Increment prior to skip ID
 
         if (id < classes) truth[index+id] = 1;
     }
@@ -266,7 +269,7 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
     box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
     correct_boxes(boxes, count, dx, dy, sx, sy, flip);
-    float x,y,w,h;
+    float x,y,w,h, a;
     int id;
     int i;
 
@@ -276,6 +279,7 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
         w =  boxes[i].w;
         h =  boxes[i].h;
         id = boxes[i].id;
+        a = boxes[i].a;
 
         if (w < .001 || h < .001) continue;
 
@@ -285,7 +289,7 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
         x = x*num_boxes - col;
         y = y*num_boxes - row;
 
-        int index = (col+row*num_boxes)*(5+classes);
+        int index = (col+row*num_boxes)*(6+classes);
         if (truth[index]) continue;
         truth[index++] = 1;
 
@@ -296,6 +300,7 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
         truth[index++] = y;
         truth[index++] = w;
         truth[index++] = h;
+        truth[++index] = a; // Increment prior to skip ID
     }
     free(boxes);
 }
@@ -320,7 +325,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
     randomize_boxes(boxes, count);
     correct_boxes(boxes, count, dx, dy, sx, sy, flip);
     if (count > num_boxes) count = num_boxes;
-    float x, y, w, h;
+    float x, y, w, h, a;
     int id;
     int sub = 0;
 
@@ -330,6 +335,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
         w = boxes[i].w;
         h = boxes[i].h;
         id = boxes[i].id;
+        a = boxes[i].a;
 
         // not detect small objects
         //if ((w < 0.001F || h < 0.001F)) continue;
@@ -382,11 +388,12 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
         if (x == 0) x += lowest_w;
         if (y == 0) y += lowest_h;
 
-        truth[(i-sub)*5+0] = x;
-        truth[(i-sub)*5+1] = y;
-        truth[(i-sub)*5+2] = w;
-        truth[(i-sub)*5+3] = h;
-        truth[(i-sub)*5+4] = id;
+        truth[(i-sub)*6+0] = x;
+        truth[(i-sub)*6+1] = y;
+        truth[(i-sub)*6+2] = w;
+        truth[(i-sub)*6+3] = h;
+        truth[(i-sub)*6+4] = id;
+        truth[(i - sub) * 6 + 5] = a;
     }
     free(boxes);
 }
@@ -569,7 +576,7 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
     d.X.cols = h*w*3;
 
 
-    int k = size*size*(5+classes);
+    int k = size*size*(6+classes);
     d.y = make_matrix(n, k);
     for(i = 0; i < n; ++i){
         image orig = load_image_color(random_paths[i], 0, 0);
@@ -693,7 +700,7 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
     d.X.vals = calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*3;
 
-    int k = (4+classes)*30;
+    int k = (5+classes)*30;
     d.y = make_matrix(1, k);
 
     int dw = w*jitter;
@@ -751,7 +758,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     d.X.vals = calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*c;
 
-    d.y = make_matrix(n, 5*boxes);
+    d.y = make_matrix(n, 6*boxes);
     for(i = 0; i < n; ++i){
         const char *filename = random_paths[i];
 
@@ -820,7 +827,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     d.X.vals = calloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*c;
 
-    d.y = make_matrix(n, 5 * boxes);
+    d.y = make_matrix(n, 6 * boxes);
     for (i = 0; i < n; ++i) {
         image orig = load_image(random_paths[i], 0, 0, c);
 

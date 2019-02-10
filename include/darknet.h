@@ -636,7 +636,7 @@ typedef struct image {
 
 // box.h
 typedef struct box {
-    float x, y, w, h;
+    float x, y, w, h, a;
 } box;
 
 // box.h
@@ -710,7 +710,7 @@ typedef struct load_args {
 // data.h
 typedef struct box_label {
     int id;
-    float x, y, w, h;
+    float x, y, w, h, a;
     float left, right, top, bottom;
 } box_label;
 

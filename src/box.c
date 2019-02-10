@@ -93,7 +93,17 @@ float box_union(box a, box b)
 
 float box_iou(box a, box b)
 {
-    return box_intersection(a, b)/box_union(a, b);
+    float iou = box_intersection(a, b) / box_union(a, b);
+    if (iou <= 0)
+        return iou;
+
+	// "Dirty": Scale iou by the angle difference:
+    float angleDiff = fabs(b.a - a.a);
+    float pi = 3.14159265359;
+    float anglePenalty = (pi - angleDiff) / pi;
+    iou *= (anglePenalty*anglePenalty); // Square for more impact
+
+    return iou;
 }
 
 float box_rmse(box a, box b)
@@ -101,7 +111,8 @@ float box_rmse(box a, box b)
     return sqrt(pow(a.x-b.x, 2) + 
                 pow(a.y-b.y, 2) + 
                 pow(a.w-b.w, 2) + 
-                pow(a.h-b.h, 2));
+                pow(a.h-b.h, 2)+
+                pow(a.a - b.a, 2));
 }
 
 dbox dintersect(box a, box b)

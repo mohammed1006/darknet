@@ -161,7 +161,7 @@ void draw_label(image a, int r, int c, image label, const float *rgb)
     }
 }
 
-void draw_box_bw(image a, int x1, int y1, int x2, int y2, float brightness)
+void draw_box_bw(image a, int x1, int y1, int x2, int y2, float brightness, float angle)
 {
     //normalize_image(a);
     int i;
@@ -175,22 +175,50 @@ void draw_box_bw(image a, int x1, int y1, int x2, int y2, float brightness)
     if (y2 < 0) y2 = 0;
     if (y2 >= a.h) y2 = a.h - 1;
 
-    for (i = x1; i <= x2; ++i) {
-        a.data[i + y1*a.w + 0 * a.w*a.h] = brightness;
-        a.data[i + y2*a.w + 0 * a.w*a.h] = brightness;
+    double xRotation = (x2 - x1) / 2.0 + x1;
+    double yRotation = (y2 - y1) / 2.0 + y1;
+
+    // Draw (most) horizontal lines:
+    for (int y = 0; y <= 1; y++)
+    {
+        int yTemp = y1;
+        if (y == 1)
+            yTemp = y2;
+        for (i = x1; i <= x2; ++i) {
+        // Rotate point:
+        int xRotated = ((i - xRotation) * cos(angle)) - ((yTemp - yRotation) * sin(angle)) + xRotation;
+        int yRotated = ((i - xRotation) * sin(angle)) + ((yTemp - yRotation) * cos(angle)) + yRotation;
+        if (xRotated < 0 || xRotated >= a.w || yRotated < 0 || yRotated >= a.h)
+            continue;
+
+        a.data[xRotated + yRotated *a.w + 0 * a.w*a.h] = brightness;
+        }
     }
-    for (i = y1; i <= y2; ++i) {
-        a.data[x1 + i*a.w + 0 * a.w*a.h] = brightness;
-        a.data[x2 + i*a.w + 0 * a.w*a.h] = brightness;
+
+    // Draw (most) vertical lines:
+    for (int x = 0; x <= 1; x++)
+    {
+        int xTemp = x1;
+        if (x == 1)
+            xTemp = x2;
+        for (i = y1; i <= y2; ++i) {
+            // Rotate point:
+            int xRotated = ((xTemp - xRotation) * cos(angle)) - ((i - yRotation) * sin(angle)) + xRotation;
+            int yRotated = ((xTemp - xRotation) * sin(angle)) + ((i - yRotation) * cos(angle)) + yRotation;
+            if (xRotated < 0 || xRotated >= a.w || yRotated < 0 || yRotated >= a.h)
+                continue;
+
+            a.data[xRotated + yRotated * a.w + 0 * a.w*a.h] = brightness;
+        }
     }
 }
 
-void draw_box_width_bw(image a, int x1, int y1, int x2, int y2, int w, float brightness)
+void draw_box_width_bw(image a, int x1, int y1, int x2, int y2, int w, float brightness, float angle)
 {
     int i;
     for (i = 0; i < w; ++i) {
         float alternate_color = (w % 2) ? (brightness) : (1.0 - brightness);
-        draw_box_bw(a, x1 + i, y1 + i, x2 - i, y2 - i, alternate_color);
+        draw_box_bw(a, x1 + i, y1 + i, x2 - i, y2 - i, alternate_color, angle);
     }
 }
 
@@ -405,7 +433,7 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
             //free_image(cropped_im);
 
             if (im.c == 1) {
-                draw_box_width_bw(im, left, top, right, bot, width, 0.8);    // 1 channel Black-White
+                draw_box_width_bw(im, left, top, right, bot, width, 0.8, b.a);    // 1 channel Black-White
             }
             else {
                 draw_box_width(im, left, top, right, bot, width, red, green, blue); // 3 channels RGB

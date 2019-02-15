@@ -3,12 +3,8 @@
 
 #include "darknet.h"
 
-//typedef struct{
-//    float x, y, w, h;
-//} box;
-
 typedef struct{
-    float dx, dy, dw, dh;
+    float dx, dy, dw, dh, da;
 } dbox;
 
 //typedef struct detection {

@@ -1,3 +1,4 @@
+#include "darknet.h"
 #include "network.h"
 #include "region_layer.h"
 #include "cost_layer.h"
@@ -24,9 +25,10 @@
 #pragma comment(lib, "opencv_imgproc" OPENCV_VERSION ".lib")
 #pragma comment(lib, "opencv_highgui" OPENCV_VERSION ".lib")
 #endif
+IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_lines, int img_size, int dont_show);
 
-IplImage* draw_train_chart(float max_img_loss, int max_batches, int number_of_lines, int img_size);
-void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches, float precision, int draw_precision);
+void draw_train_loss(IplImage* img, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches,
+    float precision, int draw_precision, char *accuracy_name, int dont_show, int mjpeg_port);
 
 #define CV_RGB(r, g, b) cvScalar( (b), (g), (r), 0 )
 #endif    // OPENCV
@@ -37,7 +39,7 @@ int check_mistakes;
 
 static int coco_ids[] = { 1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90 };
 
-void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int calc_map)
+void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int calc_map, int mjpeg_port)
 {
     list *options = read_data_cfg(datacfg);
     char *train_images = option_find_str(options, "train", "data/train.txt");
@@ -60,7 +62,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
         cuda_set_device(gpus[0]);
         printf(" Prepare additional network for mAP calculation...\n");
-        net_map = parse_network_cfg_custom(cfgfile, 1);
+        net_map = parse_network_cfg_custom(cfgfile, 1, 0);
         int k;  // free memory unnecessary arrays
         for (k = 0; k < net_map.n; ++k) {
             free_layer(net_map.layers[k]);
@@ -157,8 +159,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     float max_img_loss = 5;
     int number_of_lines = 100;
     int img_size = 1000;
-    if (!dont_show)
-        img = draw_train_chart(max_img_loss, net.max_batches, number_of_lines, img_size);
+    img = draw_train_chart(max_img_loss, net.max_batches, number_of_lines, img_size, dont_show);
 #endif    //OPENCV
 
     pthread_t load_thread = load_data(args);
@@ -177,8 +178,14 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             //int dim_h = (random_val + (init_h / 32 - 5)) * 32;    // +-160
 
             float random_val = rand_scale(1.4);    // *x or /x
-            int dim_w = roundl(random_val*init_w / 32) * 32;
-            int dim_h = roundl(random_val*init_h / 32) * 32;
+            int dim_w = roundl(random_val*init_w / 32 + 1) * 32;
+            int dim_h = roundl(random_val*init_h / 32 + 1) * 32;
+
+            // at the beginning
+            if (avg_loss < 0) {
+                dim_w = roundl(1.4*init_w / 32 + 1) * 32;
+                dim_h = roundl(1.4*init_h / 32 + 1) * 32;
+            }
 
             if (dim_w < 32) dim_w = 32;
             if (dim_h < 32) dim_h = 32;
@@ -237,42 +244,47 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         avg_loss = avg_loss*.9 + loss*.1;
 
         i = get_current_batch(net);
+
+        int calc_map_for_each = iter_map + 4 * train_images_num / (net.batch * net.subdivisions);  // calculate mAP for each 4 Epochs
+        calc_map_for_each = fmax(calc_map_for_each, net.burn_in);
+        calc_map_for_each = fmax(calc_map_for_each, 1000);
+        if (calc_map) {
+            printf("\n (next mAP calculation at %d iterations) ", calc_map_for_each);
+            if (mean_average_precision > 0) printf("\n Last accuracy mAP@0.5 = %2.2f %% ", mean_average_precision * 100);
+        }
+
         if (net.cudnn_half) {
-            if (i < net.burn_in * 3) printf("\n Tensor Cores are disabled until the first %d iterations are reached.", 3 * net.burn_in);
-            else printf("\n Tensor Cores are used.");
+            if (i < net.burn_in * 3) fprintf(stderr, "\n Tensor Cores are disabled until the first %d iterations are reached.", 3 * net.burn_in);
+            else fprintf(stderr, "\n Tensor Cores are used.");
         }
         printf("\n %d: %f, %f avg loss, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), (what_time_is_it_now() - time), i*imgs);
 
-#ifdef OPENCV
-        if (!dont_show) {
-            int draw_precision = 0;
-            int calc_map_for_each = 4 * train_images_num / (net.batch * net.subdivisions);  // calculate mAP for each 4 Epochs
-            if (calc_map && (i >= (iter_map + calc_map_for_each) || i == net.max_batches) && i >= net.burn_in && i >= 1000) {
-                if (l.random) {
-                    printf("Resizing to initial size: %d x %d \n", init_w, init_h);
-                    args.w = init_w;
-                    args.h = init_h;
-                    pthread_join(load_thread, 0);
-                    train = buffer;
-                    load_thread = load_data(args);
-                    int k;
-                    for (k = 0; k < ngpus; ++k) {
-                        resize_network(nets + k, init_w, init_h);
-                    }
-                    net = nets[0];
+        int draw_precision = 0;
+        if (calc_map && (i >= calc_map_for_each || i == net.max_batches)) {
+            if (l.random) {
+                printf("Resizing to initial size: %d x %d \n", init_w, init_h);
+                args.w = init_w;
+                args.h = init_h;
+                pthread_join(load_thread, 0);
+                train = buffer;
+                load_thread = load_data(args);
+                int k;
+                for (k = 0; k < ngpus; ++k) {
+                    resize_network(nets + k, init_w, init_h);
                 }
-
-                // combine Training and Validation networks
-                network net_combined = combine_train_valid_networks(net, net_map);
-
-                iter_map = i;
-                mean_average_precision = validate_detector_map(datacfg, cfgfile, weightfile, 0.25, 0.5, &net_combined);
-                printf("\n mean_average_precision = %f \n", mean_average_precision);
-                draw_precision = 1;
+                net = nets[0];
             }
 
-            draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches, mean_average_precision, draw_precision);
+            // combine Training and Validation networks
+            network net_combined = combine_train_valid_networks(net, net_map);
+
+            iter_map = i;
+            mean_average_precision = validate_detector_map(datacfg, cfgfile, weightfile, 0.25, 0.5, &net_combined);
+            printf("\n mean_average_precision (mAP@0.5) = %f \n", mean_average_precision);
+            draw_precision = 1;
         }
+#ifdef OPENCV
+        draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches, mean_average_precision, draw_precision, "mAP%", dont_show, mjpeg_port);
 #endif    // OPENCV
 
         //if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
@@ -417,7 +429,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     int *map = 0;
     if (mapf) map = read_map(mapf);
 
-    network net = parse_network_cfg_custom(cfgfile, 1);    // set batch=1
+    network net = parse_network_cfg_custom(cfgfile, 1, 0);    // set batch=1
     if (weightfile) {
         load_weights(&net, weightfile);
     }
@@ -469,6 +481,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     float nms = .45;
 
     int nthreads = 4;
+    if (m < 4) nthreads = m;
     image *val = calloc(nthreads, sizeof(image));
     image *val_resized = calloc(nthreads, sizeof(image));
     image *buf = calloc(nthreads, sizeof(image));
@@ -541,7 +554,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
 
 void validate_detector_recall(char *datacfg, char *cfgfile, char *weightfile)
 {
-    network net = parse_network_cfg_custom(cfgfile, 1);    // set batch=1
+    network net = parse_network_cfg_custom(cfgfile, 1, 0);    // set batch=1
     if (weightfile) {
         load_weights(&net, weightfile);
     }
@@ -655,7 +668,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
         net = *existing_net;
     }
     else {
-        net = parse_network_cfg_custom(cfgfile, 1);    // set batch=1
+        net = parse_network_cfg_custom(cfgfile, 1, 0);    // set batch=1
         if (weightfile) {
             load_weights(&net, weightfile);
         }
@@ -965,13 +978,9 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
         thresh_calc_avg_iou, tp_for_thresh, fp_for_thresh, unique_truth_count - tp_for_thresh, avg_iou * 100);
 
     mean_average_precision = mean_average_precision / classes;
-    if (iou_thresh == 0.5) {
-        printf("\n mean average precision (mAP) = %f, or %2.2f %% \n", mean_average_precision, mean_average_precision * 100);
-    }
-    else {
-        printf("\n average precision (AP) = %f, or %2.2f %% for IoU threshold = %f \n", mean_average_precision, mean_average_precision * 100, iou_thresh);
-    }
+    printf("\n IoU threshold = %2.0f %% \n", iou_thresh * 100);
 
+    printf(" mean average precision (mAP@%0.2f) = %f, or %2.2f %% \n", iou_thresh, mean_average_precision, mean_average_precision * 100);
 
     for (i = 0; i < classes; ++i) {
         free(pr[i]);
@@ -1220,7 +1229,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 //#endif // OPENCV
 
 void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh,
-    float hier_thresh, int dont_show, int ext_output, int save_labels)
+    float hier_thresh, int dont_show, int ext_output, int save_labels, char *outfile)
 {
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
@@ -1228,7 +1237,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     char **names = get_labels_custom(name_list, &names_size); //get_labels(name_list);
 
     image **alphabet = load_alphabet();
-    network net = parse_network_cfg_custom(cfgfile, 1); // set batch=1
+    network net = parse_network_cfg_custom(cfgfile, 1, 0); // set batch=1
     if (weightfile) {
         load_weights(&net, weightfile);
     }
@@ -1244,6 +1253,14 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     double time;
     char buff[256];
     char *input = buff;
+    char *json_buf = NULL;
+    int json_image_id = 0;
+    FILE* json_file = NULL;
+    if (outfile) {
+        json_file = fopen(outfile, "wb");
+        char *tmp = "[\n";
+        fwrite(tmp, sizeof(char), strlen(tmp), json_file);
+    }
     int j;
     float nms = .45;    // 0.4F
     while (1) {
@@ -1256,12 +1273,14 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
             printf("Enter Image Path: ");
             fflush(stdout);
             input = fgets(input, 256, stdin);
-            if (!input) return;
+            if (!input) break;
             strtok(input, "\n");
         }
+        //image im;
+        //image sized = load_image_resize(input, net.w, net.h, net.c, &im);
         image im = load_image(input, 0, 0, net.c);
-        int letterbox = 0;
         image sized = resize_image(im, net.w, net.h);
+        int letterbox = 0;
         //image sized = letterbox_image(im, net.w, net.h); letterbox = 1;
         layer l = net.layers[net.n - 1];
 
@@ -1285,6 +1304,18 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         save_image(im, "predictions");
         if (!dont_show) {
             show_image(im, "predictions");
+        }
+
+        if (outfile) {
+            if (json_buf) {
+                char *tmp = ", \n";
+                fwrite(tmp, sizeof(char), strlen(tmp), json_file);
+            }
+            ++json_image_id;
+            json_buf = detection_to_json(dets, nboxes, l.classes, names, json_image_id, input);
+
+            fwrite(json_buf, sizeof(char), strlen(json_buf), json_file);
+            free(json_buf);
         }
 
         // pseudo labeling concept - fast.ai
@@ -1327,6 +1358,12 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         if (filename) break;
     }
 
+    if (outfile) {
+        char *tmp = "\n]";
+        fwrite(tmp, sizeof(char), strlen(tmp), json_file);
+        fclose(json_file);
+    }
+
     // free memory
     free_ptrs(names, net.layers[net.n - 1].classes);
     free_list_contents_kvp(options);
@@ -1352,7 +1389,7 @@ void test_headless(char *datacfg, char *cfgfile, char *weightfile, float thresh,
     int names_size = 0;
     char **names = get_labels_custom(name_list, &names_size); //get_labels(name_list);
 
-    network net = parse_network_cfg_custom(cfgfile, 1); // set batch=1
+    network net = parse_network_cfg_custom(cfgfile, 1, 0); // set batch=1
     if(weightfile){
         load_weights(&net, weightfile);
     }
@@ -1421,7 +1458,8 @@ void run_detector(int argc, char **argv)
     int show = find_arg(argc, argv, "-show");
     int calc_map = find_arg(argc, argv, "-map");
     check_mistakes = find_arg(argc, argv, "-check_mistakes");
-    int http_stream_port = find_int_arg(argc, argv, "-http_port", -1);
+    int mjpeg_port = find_int_arg(argc, argv, "-mjpeg_port", -1);
+    int json_port = find_int_arg(argc, argv, "-json_port", -1);
     char *in_filename = find_char_arg(argc, argv, "-in_filename", 0);
     char *out_filename = find_char_arg(argc, argv, "-out_filename", 0);
     char *outfile = find_char_arg(argc, argv, "-out", 0);
@@ -1475,8 +1513,8 @@ void run_detector(int argc, char **argv)
         if (strlen(weights) > 0)
             if (weights[strlen(weights) - 1] == 0x0d) weights[strlen(weights) - 1] = 0;
     char *filename = (argc > 6) ? argv[6] : 0;
-    if (0 == strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, dont_show, ext_output, save_labels);
-    else if (0 == strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear, dont_show, calc_map);
+    if (0 == strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, dont_show, ext_output, save_labels, outfile);
+    else if (0 == strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear, dont_show, calc_map, mjpeg_port);
     else if (0 == strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if (0 == strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);
     else if (0 == strcmp(argv[2], "map")) validate_detector_map(datacfg, cfg, weights, thresh, iou_thresh, NULL);
@@ -1490,7 +1528,7 @@ void run_detector(int argc, char **argv)
             if (strlen(filename) > 0)
                 if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
         demo(cfg, weights, thresh, hier_thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename,
-            http_stream_port, dont_show, ext_output);
+            mjpeg_port, json_port, dont_show, ext_output);
 
         free_list_contents_kvp(options);
         free_list(options);

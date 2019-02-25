@@ -167,7 +167,7 @@ layer parse_deconvolutional(list *options, size_params params)
     int padding = option_find_int_quiet(options, "padding",0);
     if(pad) padding = size/2;
 
-    layer l = make_deconvolutional_layer(batch,h,w,c,n,size,stride,padding, activation, batch_normalize, params.net->adam);
+    layer l = make_deconvolutional_layer(batch,h,w,c,n,size,stride,activation);
 
     return l;
 }

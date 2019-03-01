@@ -1,4 +1,10 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
 int gpu_index = 0;
+#ifdef __cplusplus
+}
+#endif // __cplusplus
 
 #ifdef GPU
 
@@ -53,8 +59,10 @@ void check_error(cudaError_t status)
 
 void check_error_extended(cudaError_t status, const char *file, int line, const char *date_time)
 {
-    if (status != cudaSuccess)
+    if (status != cudaSuccess) {
         printf("CUDA status Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+        check_error(status);
+    }
 #ifdef DEBUG
     status = cudaDeviceSynchronize();
     if (status != cudaSuccess)
@@ -71,7 +79,7 @@ dim3 cuda_gridsize(size_t n){
         x = ceil(sqrt(k));
         y = (n-1)/(x*BLOCK) + 1;
     }
-    dim3 d = {x, y, 1};
+    dim3 d = { (unsigned int)x, (unsigned int)y, 1 };
     //printf("%ld %ld %ld %ld\n", n, x, y, x*y*BLOCK);
     return d;
 }
@@ -169,8 +177,10 @@ void cudnn_check_error(cudnnStatus_t status)
 
 void cudnn_check_error_extended(cudnnStatus_t status, const char *file, int line, const char *date_time)
 {
-    if (status != CUDNN_STATUS_SUCCESS)
+    if (status != CUDNN_STATUS_SUCCESS) {
         printf("\n cuDNN status Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+        cudnn_check_error(status);
+    }
 #ifdef DEBUG
     status = cudaDeviceSynchronize();
     if (status != CUDNN_STATUS_SUCCESS)
@@ -188,7 +198,7 @@ cublasHandle_t blas_handle()
     if(!init[i]) {
         cublasCreate(&handle[i]);
         cublasStatus_t status = cublasSetStream(handle[i], get_cuda_stream());
-        CHECK_CUDA(status);
+        CHECK_CUDA((cudaError_t)status);
         init[i] = 1;
     }
     return handle[i];
@@ -226,7 +236,7 @@ void cuda_random(float *x_gpu, size_t n)
 
 float cuda_compare(float *x_gpu, float *x, size_t n, char *s)
 {
-    float *tmp = calloc(n, sizeof(float));
+    float* tmp = (float*)calloc(n, sizeof(float));
     cuda_pull_array(x_gpu, tmp, n);
     //int i;
     //for(i = 0; i < n; ++i) printf("%f %f\n", tmp[i], x[i]);
@@ -310,6 +320,6 @@ int get_gpu_compute_capability(int i)
 }
 
 #else // GPU
-#include "cuda.h"
+#include "darknet.h"
 void cuda_set_device(int n) {}
 #endif // GPU

@@ -1,3 +1,4 @@
+#include "image.h"
 #include "http_stream.h"
 
 #ifdef OPENCV
@@ -17,9 +18,10 @@ using std::endl;
 // socket related abstractions:
 //
 #ifdef _WIN32
+#ifndef USE_CMAKE_LIBS
 #pragma comment(lib, "ws2_32.lib")
-#include <winsock.h>
-#include <windows.h>
+#endif
+#include "gettimeofday.h"
 #include <time.h>
 #define PORT        unsigned long
 #define ADDRPOINTER   int*
@@ -44,7 +46,7 @@ static int close_socket(SOCKET s) {
     return result;
 }
 #else   // nix
-#include <unistd.h>
+#include "darkunistd.h"
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -85,16 +87,15 @@ static int close_socket(SOCKET s) {
 #endif // _WIN32
 
 
-#include "opencv2/opencv.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/highgui/highgui_c.h"
-#include "opencv2/imgproc/imgproc_c.h"
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/highgui/highgui_c.h>
+#include <opencv2/imgproc/imgproc_c.h>
 #ifndef CV_VERSION_EPOCH
-#include "opencv2/videoio/videoio.hpp"
+#include <opencv2/videoio/videoio.hpp>
 #endif
 using namespace cv;
 
-#include "image.h"
 
 
 class MJPG_sender
@@ -102,7 +103,7 @@ class MJPG_sender
     SOCKET sock;
     SOCKET maxfd;
     fd_set master;
-    int timeout; // master sock timeout, shutdown after timeout millis.
+    int timeout; // master sock timeout, shutdown after timeout usec.
     int quality; // jpeg compression [1..100]
     int close_all_sockets;
 
@@ -195,7 +196,9 @@ public:
         std::vector<int> params;
         params.push_back(IMWRITE_JPEG_QUALITY);
         params.push_back(quality);
-        cv::imencode(".jpg", frame, outbuf, params);
+        cv::imencode(".jpg", frame, outbuf, params);  //REMOVED FOR COMPATIBILITY
+        // https://docs.opencv.org/3.4/d4/da8/group__imgcodecs.html#ga292d81be8d76901bff7988d18d2b42ac
+        //std::cerr << "cv::imencode call disabled!" << std::endl;
         size_t outlen = outbuf.size();
 
 #ifdef _WIN32
@@ -227,17 +230,17 @@ public:
                 }
                 maxfd = (maxfd>client ? maxfd : client);
                 FD_SET(client, &master);
-                _write(client, "HTTP/1.0 200 OK\r\n", 0);
+                _write(client, "HTTP/1.0 200 OK\n", 0);
                 _write(client,
-                    "Server: Mozarella/2.2\r\n"
-                    "Accept-Range: bytes\r\n"
-                    "Connection: close\r\n"
-                    "Max-Age: 0\r\n"
-                    "Expires: 0\r\n"
-                    "Cache-Control: no-cache, private\r\n"
-                    "Pragma: no-cache\r\n"
-                    "Content-Type: multipart/x-mixed-replace; boundary=mjpegstream\r\n"
-                    "\r\n", 0);
+                    "Server: Mozarella/2.2\n"
+                    "Accept-Range: bytes\n"
+                    "Connection: close\n"
+                    "Max-Age: 0\n"
+                    "Expires: 0\n"
+                    "Cache-Control: no-cache, private\n"
+                    "Pragma: no-cache\n"
+                    "Content-Type: multipart/x-mixed-replace; boundary=mjpegstream\n"
+                    "\n", 0);
                 cerr << "MJPG_sender: new client " << client << endl;
             }
             else // existing client, just stream pix
@@ -249,7 +252,7 @@ public:
                 }
 
                 char head[400];
-                sprintf(head, "--mjpegstream\r\nContent-Type: image/jpeg\r\nContent-Length: %zu\r\n\r\n", outlen);
+                sprintf(head, "--mjpegstream\nContent-Type: image/jpeg\nContent-Length: %zu\n\n", outlen);
                 _write(s, head, 0);
                 int n = _write(s, (char*)(&outbuf[0]), outlen);
                 //cerr << "known client " << s << " " << n << endl;
@@ -289,7 +292,7 @@ class JSON_sender
     SOCKET sock;
     SOCKET maxfd;
     fd_set master;
-    int timeout; // master sock timeout, shutdown after timeout millis.
+    int timeout; // master sock timeout, shutdown after timeout usec.
     int close_all_sockets;
 
     int _write(int sock, char const*const s, int len)
@@ -406,18 +409,18 @@ public:
                 }
                 maxfd = (maxfd>client ? maxfd : client);
                 FD_SET(client, &master);
-                _write(client, "HTTP/1.0 200 OK\r\n", 0);
+                _write(client, "HTTP/1.0 200 OK\n", 0);
                 _write(client,
-                    "Server: Mozarella/2.2\r\n"
-                    "Accept-Range: bytes\r\n"
-                    "Connection: close\r\n"
-                    "Max-Age: 0\r\n"
-                    "Expires: 0\r\n"
-                    "Cache-Control: no-cache, private\r\n"
-                    "Pragma: no-cache\r\n"
-                    "Content-Type: application/json\r\n"
+                    "Server: Mozarella/2.2\n"
+                    "Accept-Range: bytes\n"
+                    "Connection: close\n"
+                    "Max-Age: 0\n"
+                    "Expires: 0\n"
+                    "Cache-Control: no-cache, private\n"
+                    "Pragma: no-cache\n"
+                    "Content-Type: application/json\n"
                     //"Content-Type: multipart/x-mixed-replace; boundary=boundary\r\n"
-                    "\r\n", 0);
+                    "\n", 0);
                 _write(client, "[\n", 0);   // open JSON array
                 int n = _write(client, outputbuf, outlen);
                 cerr << "JSON_sender: new client " << client << endl;
@@ -473,7 +476,7 @@ void send_json(detection *dets, int nboxes, int classes, char **names, long long
 
 // ----------------------------------------
 
-CvCapture* get_capture_video_stream(char *path) {
+CvCapture* get_capture_video_stream(const char *path) {
     CvCapture* cap = NULL;
     try {
         cap = (CvCapture*)new cv::VideoCapture(path);
@@ -511,7 +514,7 @@ IplImage* get_webcam_frame(CvCapture *cap) {
             src = cvCloneImage(&tmp);
         }
         else {
-            std::cout << " Video-stream stoped! \n";
+            std::cout << " Video-stream stopped! \n";
         }
     }
     catch (...) {
@@ -536,9 +539,6 @@ int get_stream_fps_cpp(CvCapture *cap) {
     return fps;
 }
 // ----------------------------------------
-extern "C" {
-    image ipl_to_image(IplImage* src);    // image.c
-}
 
 image image_data_augmentation(IplImage* ipl, int w, int h,
     int pleft, int ptop, int swidth, int sheight, int flip,

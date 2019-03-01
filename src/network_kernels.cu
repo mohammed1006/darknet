@@ -3,7 +3,6 @@
 //#include "cublas_v2.h"
 #include "cuda.h"
 
-extern "C" {
 #include <stdio.h>
 #include <time.h>
 #include <assert.h>
@@ -35,10 +34,9 @@ extern "C" {
 #include "route_layer.h"
 #include "shortcut_layer.h"
 #include "blas.h"
-}
 
 #ifdef OPENCV
-#include "opencv2/highgui/highgui_c.h"
+#include <opencv2/highgui/highgui_c.h>
 #endif
 
 #include "http_stream.h"
@@ -112,6 +110,18 @@ void backward_network_gpu(network net, network_state state)
             state.delta = prev.delta_gpu;
         }
         l.backward_gpu(l, state);
+
+        /*
+        if(i != 0)
+        {
+            layer l = net.layers[i - 1];
+            int state_delta_nan_inf = is_nan_or_inf(state.delta, l.outputs * l.batch);
+            int state_input_nan_inf = is_nan_or_inf(state.input, l.outputs * l.batch);
+            printf("\n i - %d  is_nan_or_inf(s.delta) = %d \n", i, state_delta_nan_inf);
+            printf(" i - %d  is_nan_or_inf(s.input) = %d \n", i, state_input_nan_inf);
+            if (state_delta_nan_inf || state_input_nan_inf) { printf(" found "); getchar(); }
+        }
+        */
     }
 }
 
@@ -396,9 +406,11 @@ void sync_nets(network *nets, int n, int interval)
 float train_networks(network *nets, int n, data d, int interval)
 {
     int i;
+#ifdef _DEBUG
     int batch = nets[0].batch;
     int subdivisions = nets[0].subdivisions;
     assert(batch * subdivisions * n == d.X.rows);
+#endif
     pthread_t *threads = (pthread_t *) calloc(n, sizeof(pthread_t));
     float *errors = (float *) calloc(n, sizeof(float));
 
@@ -459,4 +471,3 @@ float *network_predict_gpu(network net, float *input)
     //cuda_free(state.input);   // will be freed in the free_network()
     return out;
 }
-

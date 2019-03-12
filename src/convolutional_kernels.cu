@@ -3,10 +3,11 @@
 #include "cublas_v2.h"
 
 #ifdef CUDNN
+#ifndef USE_CMAKE_LIBS
 #pragma comment(lib, "cudnn.lib")
 #endif
+#endif
 
-extern "C" {
 #include "convolutional_layer.h"
 #include "batchnorm_layer.h"
 #include "gemm.h"
@@ -15,7 +16,7 @@ extern "C" {
 #include "col2im.h"
 #include "utils.h"
 #include "cuda.h"
-}
+
 
 __global__ void binarize_kernel(float *x, int n, float *binary)
 {
@@ -73,7 +74,6 @@ void binarize_weights_gpu(float *weights, int n, int size, float *binary)
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
-#define WARP_SIZE 32
 
 __global__ void set_zero_kernel(float *src, int size)
 {
@@ -205,8 +205,8 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 
             if (l.c % 32 == 0)
             {
-                // fprintf(stderr, "\n\n l.index = %d, l.w = %d, l.c = %d, l.n = %d, l.stride = %d, l.pad = %d - new XNOR \n", l.index, l.w, l.c, l.n, l.stride, l.pad);
-                // fprintf(stderr, "l.align_workspace_size = %d, (l.c * l.w * l.h)  = %d \n", l.align_workspace_size, (l.c * l.w * l.h));
+                //printf("\n\n l.index = %d, l.w = %d, l.c = %d, l.n = %d, l.stride = %d, l.pad = %d - new XNOR \n", l.index, l.w, l.c, l.n, l.stride, l.pad);
+                //printf("l.align_workspace_size = %d, (l.c * l.w * l.h)  = %d \n", l.align_workspace_size, (l.c * l.w * l.h));
 
                 //float *intput_cpu = (float *)calloc(l.inputs, sizeof(float));
                 // state.input
@@ -420,9 +420,10 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 //#ifdef CUDNN_HALF
     //if (state.use_mixed_precision) {
     int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
-    if (state.index != 0 && state.net.cudnn_half && !l.xnor && (!state.train || iteration_num > 3*state.net.burn_in))
+    if (state.index != 0 && state.net.cudnn_half && !l.xnor && (!state.train || iteration_num > 3*state.net.burn_in) &&
+        l.c % 8 == 0 && l.n % 8 == 0)
     {
-        // fprintf(stderr, "\n CUDNN_HALF!!! state.index = %d \n", state.index);
+        //printf("\n CUDNN_HALF!!! state.index = %d \n", state.index);
 
         // Note: For improved performance it is advised to use beta[0] = 0.0.
         // For Tensor Core: cudnnSetConvolutionMathType() where cudnnMathType_t mathType = CUDNN_TENSOR_OP_MATH;
@@ -434,7 +435,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         const size_t output16_size = l.batch*l.out_c*l.out_h*l.out_w;
 
         if (*state.net.max_input16_size < input16_size) {
-            // fprintf(stderr, "\n input16_size: cur = %zu \t max = %zu \n", input16_size, *state.net.max_input16_size);
+            //printf("\n input16_size: cur = %zu \t max = %zu \n", input16_size, *state.net.max_input16_size);
             *state.net.max_input16_size = input16_size;
             if (*state.net.input16_gpu) cuda_free(*state.net.input16_gpu);
             assert(*state.net.max_input16_size > 0);
@@ -476,10 +477,10 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 simple_copy_ongpu(l.outputs*l.batch / 2, output16, l.x_gpu);
                 //copy_ongpu(l.outputs*l.batch / 2, output16, 1, l.x_gpu, 1);
                 //cudaMemcpyAsync(l.x_gpu, output16, l.outputs*l.batch*sizeof(half), cudaMemcpyDefault, get_cuda_stream());
-                float one = 1;
-                float zero = 0;
+                float one = 1.0f;
+                float zero = 0.0f;
                 // Batch-normalization can still take FP16 inputs and outputs, saving half the bandwidth
-                // compared to FP32, it�s just that the statistics and value adjustment should be done in FP32.
+                // compared to FP32, it's just that the statistics and value adjustment should be done in FP32.
                 CHECK_CUDNN(cudnnBatchNormalizationForwardTraining(cudnn_handle(),
                     CUDNN_BATCHNORM_SPATIAL,
                     &one,
@@ -518,6 +519,15 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     else {
 
         //#else
+        /*
+        int input_nan_inf = is_nan_or_inf(state.input, l.inputs * l.batch);
+        printf("\n is_nan_or_inf(state.input) = %d \n", input_nan_inf);
+        if (input_nan_inf) getchar();
+
+        int weights_nan_inf = is_nan_or_inf(l.weights_gpu, l.size * l.size * l.c * l.n);
+        printf("\n is_nan_or_inf(l.weights_gpu) = %d \n", weights_nan_inf);
+        if (weights_nan_inf) getchar();
+        */
 
         CHECK_CUDNN(cudnnConvolutionForward(cudnn_handle(),
             &alpha, //&one,
@@ -580,6 +590,10 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     //if(l.dot > 0) dot_error_gpu(l);
     if(l.binary || l.xnor) swap_binary(&l);
     //cudaDeviceSynchronize();    // for correct profiling of performance
+
+    if (state.net.try_fix_nan) {
+        fix_nan_and_inf(l.output_gpu, l.outputs*l.batch);
+    }
 }
 
 void backward_convolutional_layer_gpu(convolutional_layer l, network_state state)
@@ -605,9 +619,9 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
 
 //#ifdef CUDNN_HALF
     int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
-    if (state.index != 0 && state.net.cudnn_half && !l.xnor && (!state.train || iteration_num > 3*state.net.burn_in))
+    if (state.index != 0 && state.net.cudnn_half && !l.xnor && (!state.train || iteration_num > 3*state.net.burn_in) &&
+        l.c % 8 == 0 && l.n % 8 == 0)
     {
-
         const size_t input16_size = l.batch*l.c*l.w*l.h;
         const size_t delta16_size = l.batch*l.n*l.out_w*l.out_h;
 
@@ -637,8 +651,8 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
             //    l.mean_gpu = l.rolling_mean_gpu;
             //    l.variance_gpu = l.rolling_variance_gpu;
             //}
-            float one = 1;
-            float zero = 0;
+            float one = 1.0f;
+            float zero = 0.0f;
             CHECK_CUDNN(cudnnBatchNormalizationBackward(cudnn_handle(),
                 CUDNN_BATCHNORM_SPATIAL,
                 &one,
@@ -760,6 +774,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
                 &one,
                 l.dsrcTensorDesc,
                 state.delta));
+
             if (l.binary || l.xnor) swap_binary(&l);
             if (l.xnor) gradient_array_ongpu(original_input, l.batch*l.c*l.h*l.w, HARDTAN, state.delta);
         }
@@ -801,6 +816,14 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network_state state
         }
     }
 #endif
+    if (state.net.try_fix_nan) {
+        if (state.delta) {
+            fix_nan_and_inf(state.delta, l.inputs * l.batch);
+        }
+        int size = l.size * l.size * l.c * l.n;
+        fix_nan_and_inf(l.weight_updates_gpu, size);
+        fix_nan_and_inf(l.weights_gpu, size);
+    }
 }
 
 void pull_convolutional_layer(convolutional_layer layer)
@@ -934,4 +957,3 @@ void update_convolutional_layer_gpu(convolutional_layer layer, int batch, float 
     }
 }
 */
-

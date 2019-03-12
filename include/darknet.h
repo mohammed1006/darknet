@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <pthread.h>
 
+#ifndef LIB_API
 #ifdef LIB_EXPORTS
 #if defined(_MSC_VER)
 #define LIB_API __declspec(dllexport)
@@ -25,9 +26,12 @@
 #define LIB_API
 #endif
 #endif
+#endif
+
+#define NFRAMES 3
+#define SECRET_NUM -1234
 
 #ifdef GPU
-#define BLOCK 512
 
 #include "cuda_runtime.h"
 #include "curand.h"
@@ -69,8 +73,6 @@ typedef struct metadata metadata;
 struct tree;
 typedef struct tree tree;
 
-
-#define SECRET_NUM -1234
 extern int gpu_index;
 
 // option_list.h
@@ -365,7 +367,9 @@ struct layer {
     float *c_cpu;
     float *dc_cpu;
 
-    float * binary_input;
+    float *binary_input;
+    uint32_t *bin_re_packed_input;
+    char *t_bit_input;
 
     struct layer *input_layer;
     struct layer *self_layer;
@@ -566,7 +570,9 @@ typedef struct network {
     float saturation;
     float hue;
     int random;
-    int small_object;
+    int track;
+    int augment_speed;
+    int try_fix_nan;
 
     int gpu_index;
     tree *hierarchy;
@@ -694,7 +700,9 @@ typedef struct load_args {
     int scale;
     int center;
     int coords;
-    int small_object;
+    int mini_batch;
+    int track;
+    int augment_speed;
     float jitter;
     int flip;
     float angle;

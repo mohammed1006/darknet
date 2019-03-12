@@ -1,3 +1,4 @@
+#include "image.h"
 #include "http_stream.h"
 
 #ifdef OPENCV
@@ -17,9 +18,10 @@ using std::endl;
 // socket related abstractions:
 //
 #ifdef _WIN32
+#ifndef USE_CMAKE_LIBS
 #pragma comment(lib, "ws2_32.lib")
-#include <winsock.h>
-#include <windows.h>
+#endif
+#include "gettimeofday.h"
 #include <time.h>
 #define PORT        unsigned long
 #define ADDRPOINTER   int*
@@ -44,7 +46,7 @@ static int close_socket(SOCKET s) {
     return result;
 }
 #else   // nix
-#include <unistd.h>
+#include "darkunistd.h"
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -85,16 +87,15 @@ static int close_socket(SOCKET s) {
 #endif // _WIN32
 
 
-#include "opencv2/opencv.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/highgui/highgui_c.h"
-#include "opencv2/imgproc/imgproc_c.h"
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/highgui/highgui_c.h>
+#include <opencv2/imgproc/imgproc_c.h>
 #ifndef CV_VERSION_EPOCH
-#include "opencv2/videoio/videoio.hpp"
+#include <opencv2/videoio/videoio.hpp>
 #endif
 using namespace cv;
 
-#include "image.h"
 
 
 class MJPG_sender
@@ -102,7 +103,7 @@ class MJPG_sender
     SOCKET sock;
     SOCKET maxfd;
     fd_set master;
-    int timeout; // master sock timeout, shutdown after timeout millis.
+    int timeout; // master sock timeout, shutdown after timeout usec.
     int quality; // jpeg compression [1..100]
     int close_all_sockets;
 
@@ -114,7 +115,7 @@ class MJPG_sender
 
 public:
 
-    MJPG_sender(int port = 0, int _timeout = 200000, int _quality = 30)
+    MJPG_sender(int port = 0, int _timeout = 400000, int _quality = 30)
         : sock(INVALID_SOCKET)
         , timeout(_timeout)
         , quality(_quality)
@@ -195,7 +196,9 @@ public:
         std::vector<int> params;
         params.push_back(IMWRITE_JPEG_QUALITY);
         params.push_back(quality);
-        cv::imencode(".jpg", frame, outbuf, params);
+        cv::imencode(".jpg", frame, outbuf, params);  //REMOVED FOR COMPATIBILITY
+        // https://docs.opencv.org/3.4/d4/da8/group__imgcodecs.html#ga292d81be8d76901bff7988d18d2b42ac
+        //std::cerr << "cv::imencode call disabled!" << std::endl;
         size_t outlen = outbuf.size();
 
 #ifdef _WIN32
@@ -289,7 +292,7 @@ class JSON_sender
     SOCKET sock;
     SOCKET maxfd;
     fd_set master;
-    int timeout; // master sock timeout, shutdown after timeout millis.
+    int timeout; // master sock timeout, shutdown after timeout usec.
     int close_all_sockets;
 
     int _write(int sock, char const*const s, int len)
@@ -300,7 +303,7 @@ class JSON_sender
 
 public:
 
-    JSON_sender(int port = 0, int _timeout = 200000)
+    JSON_sender(int port = 0, int _timeout = 400000)
         : sock(INVALID_SOCKET)
         , timeout(_timeout)
     {
@@ -473,7 +476,7 @@ void send_json(detection *dets, int nboxes, int classes, char **names, long long
 
 // ----------------------------------------
 
-CvCapture* get_capture_video_stream(char *path) {
+CvCapture* get_capture_video_stream(const char *path) {
     CvCapture* cap = NULL;
     try {
         cap = (CvCapture*)new cv::VideoCapture(path);
@@ -511,7 +514,7 @@ IplImage* get_webcam_frame(CvCapture *cap) {
             src = cvCloneImage(&tmp);
         }
         else {
-            std::cout << " Video-stream stoped! \n";
+            std::cout << " Video-stream stopped! \n";
         }
     }
     catch (...) {
@@ -536,9 +539,6 @@ int get_stream_fps_cpp(CvCapture *cap) {
     return fps;
 }
 // ----------------------------------------
-extern "C" {
-    image ipl_to_image(IplImage* src);    // image.c
-}
 
 image image_data_augmentation(IplImage* ipl, int w, int h,
     int pleft, int ptop, int swidth, int sheight, int flip,

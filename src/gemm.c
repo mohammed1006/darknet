@@ -74,7 +74,7 @@ void time_random_matrix(int TA, int TB, int m, int k, int n)
         gemm_cpu(TA,TB,m,n,k,1,a,lda,b,ldb,1,c,n);
     }
     end = clock();
-    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf ms\n",m,k,k,n, TA, TB, (float)(end-start)/CLOCKS_PER_SEC);
+    fprintf(stderr, "Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf ms\n",m,k,k,n, TA, TB, (float)(end-start)/CLOCKS_PER_SEC);
     free(a);
     free(b);
     free(c);
@@ -131,21 +131,21 @@ static inline uint64_t fill_bit_int64(char src) {
 void binary_int32_printf(uint32_t src) {
     int i;
     for (i = 0; i < 32; ++i) {
-        if (src & 1) printf("1");
-        else printf("0");
+        if (src & 1) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
         src = src >> 1;
     }
-    printf("\n");
+    fprintf(stderr, "\n");
 }
 
 void binary_int64_printf(uint64_t src) {
     int i;
     for (i = 0; i < 64; ++i) {
-        if (src & 1) printf("1");
-        else printf("0");
+        if (src & 1) fprintf(stderr, "1");
+        else fprintf(stderr, "0");
         src = src >> 1;
     }
-    printf("\n");
+    fprintf(stderr, "\n");
 }
 
 /*
@@ -307,7 +307,7 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
                 if (K - k < 64)  tmp_count = tmp_count - (64 - (K - k));    // remove extra bits
                 count += tmp_count;
                 //binary_int64_printf(c_bit64);
-                //printf(", count = %d \n\n", tmp_count);
+                //fprintf(stderr, ", count = %d \n\n", tmp_count);
             }
 
             C[i*ldc + j] = (2 * count - K) * mean_val;
@@ -459,7 +459,7 @@ void transpose8rS32_reversed_diagonale(unsigned char* A, unsigned char* B, int m
 void transpose_bin(char *A, char *B, const int n, const int m,
     const int lda, const int ldb, const int block_size)
 {
-    //printf("\n n = %d, ldb = %d \t\t m = %d, lda = %d \n", n, ldb, m, lda);
+    //fprintf(stderr, "\n n = %d, ldb = %d \t\t m = %d, lda = %d \n", n, ldb, m, lda);
     int i;
     #pragma omp parallel for
     for (i = 0; i < n; i += 8) {
@@ -483,8 +483,8 @@ void transpose_bin(char *A, char *B, const int n, const int m,
 void transpose_bin(uint32_t *A, uint32_t *B, const int n, const int m,
     const int lda, const int ldb, const int block_size)
 {
-    //printf("\n n = %d (n mod 32 = %d), m = %d (m mod 32 = %d) \n", n, n % 32, m, m % 32);
-    //printf("\n lda = %d (lda mod 32 = %d), ldb = %d (ldb mod 32 = %d) \n", lda, lda % 32, ldb, ldb % 32);
+    //fprintf(stderr, "\n n = %d (n mod 32 = %d), m = %d (m mod 32 = %d) \n", n, n % 32, m, m % 32);
+    //fprintf(stderr, "\n lda = %d (lda mod 32 = %d), ldb = %d (ldb mod 32 = %d) \n", lda, lda % 32, ldb, ldb % 32);
     int i;
     #pragma omp parallel for
     for (i = 0; i < n; i += 32) {
@@ -667,8 +667,8 @@ int is_avx() {
     if (result == -1) {
         check_cpu_features();
         result = HW_AVX;
-        if (result == 1) printf(" Used AVX \n");
-        else printf(" Not used AVX \n");
+        if (result == 1) fprintf(stderr, " Used AVX \n");
+        else fprintf(stderr, " Not used AVX \n");
     }
     return result;
 }
@@ -678,8 +678,8 @@ int is_fma_avx2() {
     if (result == -1) {
         check_cpu_features();
         result = HW_FMA3 && HW_AVX2;
-        if (result == 1) printf(" Used FMA & AVX2 \n");
-        else printf(" Not used FMA & AVX2 \n");
+        if (result == 1) fprintf(stderr, " Used FMA & AVX2 \n");
+        else fprintf(stderr, " Not used FMA & AVX2 \n");
     }
     return result;
 }
@@ -890,7 +890,7 @@ void gemm_nn_bin_32bit_packed(int M, int N, int K, float ALPHA,
     for (i = 0; i < M; ++i) {   // l.n
         int j, s;
         float mean_val = mean_arr[i];
-        //printf(" l.mean_arr[i] = %d \n ", l.mean_arr[i]);
+        //fprintf(stderr, " l.mean_arr[i] = %d \n ", l.mean_arr[i]);
         for (s = 0; s < K; ++s) // l.size*l.size*l.c/32  or (l.size*l.size*l.c)
         {
             PUT_IN_REGISTER uint32_t A_PART = A[i*lda + s];
@@ -1075,16 +1075,16 @@ void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
                                 __m256 w = _mm256_set1_ps(weights[weights_index]);
                                 //__m256 w_sign = _mm256_and_ps(w, _mm256_castsi256_ps(all256_sing1)); // check sign in 8 x 32-bit floats
                                 __m256 xor256 = _mm256_xor_ps(w, in);
-                                //printf("\n xor256_1 = %f, xor256_2 = %f \n", xor256.m256_f32[0], xor256.m256_f32[1]);
-                                //printf("\n in = %f, w = %f, xor256 = %f \n", in.m256_f32[0], w_sign.m256_f32[0], xor256.m256_f32[0]);
+                                //fprintf(stderr, "\n xor256_1 = %f, xor256_2 = %f \n", xor256.m256_f32[0], xor256.m256_f32[1]);
+                                //fprintf(stderr, "\n in = %f, w = %f, xor256 = %f \n", in.m256_f32[0], w_sign.m256_f32[0], xor256.m256_f32[0]);
 
                                 //__m256 pn1 = _mm256_and_ps(_mm256_castsi256_ps(all256i_one), xor256);
 
 
                                 //sum256 = xor256;
                                 sum256 = _mm256_add_ps(xor256, sum256);
-                                //printf("\n --- \n");
-                                //printf("\n 0 = %f, 1 = %f, 2 = %f, 3 = %f, 4 = %f, 5 = %f, 6 = %f, 7 = %f \n", in.m256_f32[0], in.m256_f32[1], in.m256_f32[2], in.m256_f32[3], in.m256_f32[4], in.m256_f32[5], in.m256_f32[6], in.m256_f32[7]);
+                                //fprintf(stderr, "\n --- \n");
+                                //fprintf(stderr, "\n 0 = %f, 1 = %f, 2 = %f, 3 = %f, 4 = %f, 5 = %f, 6 = %f, 7 = %f \n", in.m256_f32[0], in.m256_f32[1], in.m256_f32[2], in.m256_f32[3], in.m256_f32[4], in.m256_f32[5], in.m256_f32[6], in.m256_f32[7]);
 
                                 if (f_x < ksize-1) {
                                     //in = _mm256_permutevar8x32_ps(in, idx256);
@@ -1099,7 +1099,7 @@ void convolution_2d(int w, int h, int ksize, int n, int c, int pad, int stride,
                     //output[output_index] += sum;
 
                     sum256 = _mm256_mul_ps(sum256, mean256);
-                    //printf("\n cur_mean = %f, sum256 = %f, sum256 = %f, in = %f \n",
+                    //fprintf(stderr, "\n cur_mean = %f, sum256 = %f, sum256 = %f, in = %f \n",
                     //    cur_mean, sum256.m256_f32[0], sum256.m256_f32[1], input[input_pre_index]);
 
                     //__m256 out = *((__m256*)&output[output_index]);
@@ -1232,7 +1232,7 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
 
                 //count += popcnt256(c_bit256);
                 //binary_int64_printf(c_bit64);
-                //printf(", count = %d \n\n", tmp_count);
+                //fprintf(stderr, ", count = %d \n\n", tmp_count);
             }
 
             int count_0 = get_count_mula(count_sum_0);
@@ -1502,7 +1502,7 @@ void im2col_cpu_custom(float* data_im,
 
     }
     else {
-        //printf("\n Error: is no non-optimized version \n");
+        //fprintf(stderr, "\n Error: is no non-optimized version \n");
         im2col_cpu(data_im, channels, height, width, ksize, stride, pad, data_col);
     }
 }
@@ -1597,7 +1597,7 @@ void im2col_cpu_custom_align(float* data_im,
 
     }
     else {
-        printf("\n Error: is no non-optimized version \n");
+        fprintf(stderr, "\n Error: is no non-optimized version \n");
         //im2col_cpu(data_im, channels, height, width, ksize, stride, pad, data_col); // must be aligned for transpose after float_to_bin
         // float_to_bit(b, t_input, src_size);
         // transpose_bin(t_input, *t_bit_input, k, n, bit_align, new_ldb, 8);
@@ -1721,7 +1721,7 @@ void im2col_cpu_custom_bin(float* data_im,
 
     }
     else {
-        printf("\n Error: is no non-optimized version \n");
+        fprintf(stderr, "\n Error: is no non-optimized version \n");
         //im2col_cpu(data_im, channels, height, width, ksize, stride, pad, data_col); // must be aligned for transpose after float_to_bin
         // float_to_bit(b, t_input, src_size);
         // transpose_bin(t_input, *t_bit_input, k, n, bit_align, new_ldb, 8);
@@ -1988,7 +1988,7 @@ void gemm_nn_bin_32bit_packed(int M, int N, int K, float ALPHA,
     for (i = 0; i < M; ++i) {   // l.n
         int j, s;
         float mean_val = mean_arr[i];
-        //printf(" l.mean_arr[i] = %d \n ", l.mean_arr[i]);
+        //fprintf(stderr, " l.mean_arr[i] = %d \n ", l.mean_arr[i]);
         for (s = 0; s < K; ++s) // l.size*l.size*l.c/32  or (l.size*l.size*l.c)
         {
             //PUT_IN_REGISTER float A_PART = 1*a[i*k + s];
@@ -1998,7 +1998,7 @@ void gemm_nn_bin_32bit_packed(int M, int N, int K, float ALPHA,
                 //c[i*n + j] += A_PART*b[s*n + j];
                 PUT_IN_REGISTER uint32_t B_PART = B[s * ldb + j];
                 uint32_t xnor_result = ~(A_PART ^ B_PART);
-                //printf(" xnor_result = %d, ", xnor_result);
+                //fprintf(stderr, " xnor_result = %d, ", xnor_result);
                 int32_t count = popcnt_32(xnor_result);  // must be Signed int
 
                 C[i*ldc + j] += (2 * count - 32) * mean_val;
@@ -2101,7 +2101,7 @@ void gemm_nn_custom_bin_mean_transposed(int M, int N, int K, float ALPHA_UNUSED,
                 if (K - k < 64)  tmp_count = tmp_count - (64 - (K - k));    // remove extra bits
                 count += tmp_count;
                 //binary_int64_printf(c_bit64);
-                //printf(", count = %d \n\n", tmp_count);
+                //fprintf(stderr, ", count = %d \n\n", tmp_count);
             }
 
             C[i*ldc + j] = (2 * count - K) * mean_val;
@@ -2113,7 +2113,7 @@ void im2col_cpu_custom_transpose(float* data_im,
     int channels, int height, int width,
     int ksize, int stride, int pad, float* data_col, int ldb_align)
 {
-    printf("\n im2col_cpu_custom_transpose() isn't implemented without AVX \n");
+    fprintf(stderr, "\n im2col_cpu_custom_transpose() isn't implemented without AVX \n");
 }
 
 //From Berkeley Vision's Caffe!
@@ -2204,7 +2204,7 @@ void im2col_cpu_custom(float* data_im,
 
     }
     else {
-        //printf("\n Error: is no non-optimized version \n");
+        //fprintf(stderr, "\n Error: is no non-optimized version \n");
         im2col_cpu(data_im, channels, height, width, ksize, stride, pad, data_col);
     }
 }
@@ -2314,7 +2314,7 @@ void im2col_cpu_custom_bin(float* data_im,
 
     }
     else {
-        printf("\n Error: is no non-optimized version \n");
+        fprintf(stderr, "\n Error: is no non-optimized version \n");
         //im2col_cpu(data_im, channels, height, width, ksize, stride, pad, data_col); // must be aligned for transpose after float_to_bin
         // float_to_bit(b, t_input, src_size);
         // transpose_bin(t_input, *t_bit_input, k, n, bit_align, new_ldb, 8);
@@ -2551,7 +2551,7 @@ void convolution_repacked(uint32_t *packed_input, uint32_t *packed_weights, floa
                             //uint32_t bit2 = weight > 0;
                             //uint32_t count = (~(bit1 ^ bit2)) & 1;
                             //float result = (2 * (float)count - 1) * mean_val;
-                            //printf("\n mul = %f, bit1 = %d, bit2 = %d, count = %d, mean = %f, result = %f  ", input*weight, bit1, bit2, count, mean_val, result);
+                            //fprintf(stderr, "\n mul = %f, bit1 = %d, bit2 = %d, count = %d, mean = %f, result = %f  ", input*weight, bit1, bit2, count, mean_val, result);
                             //sum += result;
 
                             uint32_t input = ((uint32_t *)packed_input)[chan*w*h + input_y*w + input_x];
@@ -2628,7 +2628,7 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
         float BETA,
         float *C, int ldc)
 {
-    //printf("cpu: %d %d %d %d %d %f %d %d %f %d\n",TA, TB, M, N, K, ALPHA, lda, ldb, BETA, ldc);
+    //fprintf(stderr, "cpu: %d %d %d %d %d %f %d %d %f %d\n",TA, TB, M, N, K, ALPHA, lda, ldb, BETA, ldc);
     if (BETA != 1){
         int i, j;
         for(i = 0; i < M; ++i){
@@ -2717,7 +2717,7 @@ void time_gpu_random_matrix(int TA, int TB, int m, int k, int n)
         gemm_gpu(TA,TB,m,n,k,1,a,lda,b,ldb,1,c,n);
     }
     end = clock();
-    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf s\n",m,k,k,n, TA, TB, (float)(end-start)/CLOCKS_PER_SEC);
+    fprintf(stderr, "Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf s\n",m,k,k,n, TA, TB, (float)(end-start)/CLOCKS_PER_SEC);
     free(a);
     free(b);
     free(c);
@@ -2748,7 +2748,7 @@ void time_ongpu(int TA, int TB, int m, int k, int n)
     double gflop = flop/pow(10., 9);
     end = clock();
     double seconds = sec(end-start);
-    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf s, %lf GFLOPS\n",m,k,k,n, TA, TB, seconds, gflop/seconds);
+    fprintf(stderr, "Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %lf s, %lf GFLOPS\n",m,k,k,n, TA, TB, seconds, gflop/seconds);
     cuda_free(a_cl);
     cuda_free(b_cl);
     cuda_free(c_cl);
@@ -2777,18 +2777,18 @@ void test_gpu_accuracy(int TA, int TB, int m, int k, int n)
     int i;
     //pm(m,k,b);
     gemm_gpu(TA,TB,m,n,k,1,a,lda,b,ldb,1,c_gpu,n);
-    //printf("GPU\n");
+    //fprintf(stderr, "GPU\n");
     //pm(m, n, c_gpu);
 
     gemm_cpu(TA,TB,m,n,k,1,a,lda,b,ldb,1,c,n);
-    //printf("\n\nCPU\n");
+    //fprintf(stderr, "\n\nCPU\n");
     //pm(m, n, c);
     double sse = 0;
     for(i = 0; i < m*n; ++i) {
-        //printf("%f %f\n", c[i], c_gpu[i]);
+        //fprintf(stderr, "%f %f\n", c[i], c_gpu[i]);
         sse += pow(c[i]-c_gpu[i], 2);
     }
-    printf("Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %g SSE\n",m,k,k,n, TA, TB, sse/(m*n));
+    fprintf(stderr, "Matrix Multiplication %dx%d * %dx%d, TA=%d, TB=%d: %g SSE\n",m,k,k,n, TA, TB, sse/(m*n));
     free(a);
     free(b);
     free(c);

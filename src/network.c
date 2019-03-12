@@ -206,7 +206,7 @@ void forward_network(network net, network_state state)
         }
         //double time = get_time_point();
         l.forward(l, state);
-        //printf("%d - Predicted in %lf milli-seconds.\n", i, ((double)get_time_point() - time) / 1000);
+        //fprintf(stderr, "%d - Predicted in %lf milli-seconds.\n", i, ((double)get_time_point() - time) / 1000);
         state.input = l.output;
     }
 }
@@ -370,7 +370,7 @@ int recalculate_workspace_size(network *net)
     size_t workspace_size = 0;
     for (i = 0; i < net->n; ++i) {
         layer l = net->layers[i];
-        //printf(" %d: layer = %d,", i, l.type);
+        //fprintf(stderr, " %d: layer = %d,", i, l.type);
         if (l.type == CONVOLUTIONAL) {
             l.workspace_size = get_convolutional_workspace_size(l);
         }
@@ -383,9 +383,9 @@ int recalculate_workspace_size(network *net)
 
 #ifdef GPU
     if (gpu_index >= 0) {
-        printf("\n try to allocate additional workspace_size = %1.2f MB \n", (float)workspace_size / 1000000);
+        fprintf(stderr, "\n try to allocate additional workspace_size = %1.2f MB \n", (float)workspace_size / 1000000);
         net->workspace = cuda_make_array(0, workspace_size / sizeof(float) + 1);
-        printf(" CUDA allocate done! \n");
+        fprintf(stderr, " CUDA allocate done! \n");
     }
     else {
         free(net->workspace);
@@ -449,7 +449,7 @@ int resize_network(network *net, int w, int h)
     //fflush(stderr);
     for (i = 0; i < net->n; ++i){
         layer l = net->layers[i];
-        //printf(" %d: layer = %d,", i, l.type);
+        //fprintf(stderr, " %d: layer = %d,", i, l.type);
         if(l.type == CONVOLUTIONAL){
             resize_convolutional_layer(&l, w, h);
         }
@@ -491,7 +491,7 @@ int resize_network(network *net, int w, int h)
     const int size = get_network_input_size(*net) * net->batch;
 #ifdef GPU
     if(gpu_index >= 0){
-        printf(" try to allocate additional workspace_size = %1.2f MB \n", (float)workspace_size / 1000000);
+        fprintf(stderr, " try to allocate additional workspace_size = %1.2f MB \n", (float)workspace_size / 1000000);
         net->workspace = cuda_make_array(0, workspace_size/sizeof(float) + 1);
         net->input_state_gpu = cuda_make_array(0, size);
         if (cudaSuccess == cudaHostAlloc(&net->input_pinned_cpu, size * sizeof(float), cudaHostRegisterMapped))
@@ -501,7 +501,7 @@ int resize_network(network *net, int w, int h)
             net->input_pinned_cpu = (float*)calloc(size, sizeof(float));
             net->input_pinned_cpu_flag = 0;
         }
-        printf(" CUDA allocate done! \n");
+        fprintf(stderr, " CUDA allocate done! \n");
     }else {
         free(net->workspace);
         net->workspace = (float*)calloc(1, workspace_size);
@@ -680,7 +680,7 @@ void fill_network_boxes(network *net, int w, int h, float thresh, float hier, in
             dets += count;
             if (prev_classes < 0) prev_classes = l.classes;
             else if (prev_classes != l.classes) {
-                printf(" Error: Different [yolo] layers have different number of classes = %d and %d - check your cfg-file! \n",
+                fprintf(stderr, " Error: Different [yolo] layers have different number of classes = %d and %d - check your cfg-file! \n",
                     prev_classes, l.classes);
             }
         }
@@ -871,10 +871,10 @@ void compare_networks(network n1, network n2, data test)
             else ++a;
         }
     }
-    printf("%5d %5d\n%5d %5d\n", a, b, c, d);
+    fprintf(stderr, "%5d %5d\n%5d %5d\n", a, b, c, d);
     float num = pow((abs(b - c) - 1.), 2.);
     float den = b + c;
-    printf("%f\n", num/den);
+    fprintf(stderr, "%f\n", num/den);
 }
 
 float network_accuracy(network net, data d)
@@ -947,7 +947,7 @@ void fuse_conv_batchnorm(network net)
         layer *l = &net.layers[j];
 
         if (l->type == CONVOLUTIONAL) {
-            //printf(" Merges Convolutional-%d and batch_norm \n", j);
+            //fprintf(stderr, " Merges Convolutional-%d and batch_norm \n", j);
 
             if (l->batch_normalize) {
                 int f;
@@ -973,7 +973,7 @@ void fuse_conv_batchnorm(network net)
             }
         }
         else {
-            //printf(" Fusion skip layer type: %d \n", l->type);
+            //fprintf(stderr, " Fusion skip layer type: %d \n", l->type);
         }
     }
 }
@@ -987,10 +987,10 @@ void calculate_binary_weights(network net)
         layer *l = &net.layers[j];
 
         if (l->type == CONVOLUTIONAL) {
-            //printf(" Merges Convolutional-%d and batch_norm \n", j);
+            //fprintf(stderr, " Merges Convolutional-%d and batch_norm \n", j);
 
             if (l->xnor) {
-                //printf("\n %d \n", j);
+                //fprintf(stderr, "\n %d \n", j);
                 //l->lda_align = 256; // 256bit for AVX2    // set in make_convolutional_layer()
                 //if (l->size*l->size*l->c >= 2048) l->lda_align = 512;
 
@@ -1017,7 +1017,7 @@ void calculate_binary_weights(network net)
             }
         }
     }
-    //printf("\n calculate_binary_weights Done! \n");
+    //fprintf(stderr, "\n calculate_binary_weights Done! \n");
 
 }
 

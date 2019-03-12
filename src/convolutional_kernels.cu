@@ -205,8 +205,8 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 
             if (l.c % 32 == 0)
             {
-                //printf("\n\n l.index = %d, l.w = %d, l.c = %d, l.n = %d, l.stride = %d, l.pad = %d - new XNOR \n", l.index, l.w, l.c, l.n, l.stride, l.pad);
-                //printf("l.align_workspace_size = %d, (l.c * l.w * l.h)  = %d \n", l.align_workspace_size, (l.c * l.w * l.h));
+                //fprintf(stderr, "\n\n l.index = %d, l.w = %d, l.c = %d, l.n = %d, l.stride = %d, l.pad = %d - new XNOR \n", l.index, l.w, l.c, l.n, l.stride, l.pad);
+                //fprintf(stderr, "l.align_workspace_size = %d, (l.c * l.w * l.h)  = %d \n", l.align_workspace_size, (l.c * l.w * l.h));
 
                 //float *intput_cpu = (float *)calloc(l.inputs, sizeof(float));
                 // state.input
@@ -423,7 +423,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     if (state.index != 0 && state.net.cudnn_half && !l.xnor && (!state.train || iteration_num > 3*state.net.burn_in) &&
         l.c % 8 == 0 && l.n % 8 == 0)
     {
-        //printf("\n CUDNN_HALF!!! state.index = %d \n", state.index);
+        //fprintf(stderr, "\n CUDNN_HALF!!! state.index = %d \n", state.index);
 
         // Note: For improved performance it is advised to use beta[0] = 0.0.
         // For Tensor Core: cudnnSetConvolutionMathType() where cudnnMathType_t mathType = CUDNN_TENSOR_OP_MATH;
@@ -435,7 +435,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         const size_t output16_size = l.batch*l.out_c*l.out_h*l.out_w;
 
         if (*state.net.max_input16_size < input16_size) {
-            //printf("\n input16_size: cur = %zu \t max = %zu \n", input16_size, *state.net.max_input16_size);
+            //fprintf(stderr, "\n input16_size: cur = %zu \t max = %zu \n", input16_size, *state.net.max_input16_size);
             *state.net.max_input16_size = input16_size;
             if (*state.net.input16_gpu) cuda_free(*state.net.input16_gpu);
             assert(*state.net.max_input16_size > 0);
@@ -521,11 +521,11 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         //#else
         /*
         int input_nan_inf = is_nan_or_inf(state.input, l.inputs * l.batch);
-        printf("\n is_nan_or_inf(state.input) = %d \n", input_nan_inf);
+        fprintf(stderr, "\n is_nan_or_inf(state.input) = %d \n", input_nan_inf);
         if (input_nan_inf) getchar();
 
         int weights_nan_inf = is_nan_or_inf(l.weights_gpu, l.size * l.size * l.c * l.n);
-        printf("\n is_nan_or_inf(l.weights_gpu) = %d \n", weights_nan_inf);
+        fprintf(stderr, "\n is_nan_or_inf(l.weights_gpu) = %d \n", weights_nan_inf);
         if (weights_nan_inf) getchar();
         */
 

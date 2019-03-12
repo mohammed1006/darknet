@@ -48,11 +48,11 @@ char **get_sequential_paths(char **paths, int n, int m, int mini_batch, int augm
     char** sequentia_paths = (char**)calloc(n, sizeof(char*));
     int i;
     pthread_mutex_lock(&mutex);
-    //printf("n = %d, mini_batch = %d \n", n, mini_batch);
+    //fprintf(stderr, "n = %d, mini_batch = %d \n", n, mini_batch);
     unsigned int *start_time_indexes = (unsigned int *)calloc(mini_batch, sizeof(unsigned int));
     for (i = 0; i < mini_batch; ++i) {
         start_time_indexes[i] = random_gen() % m;
-        //printf(" start_time_indexes[i] = %u, ", start_time_indexes[i]);
+        //fprintf(stderr, " start_time_indexes[i] = %u, ", start_time_indexes[i]);
     }
 
     for (i = 0; i < n; ++i) {
@@ -63,9 +63,9 @@ char **get_sequential_paths(char **paths, int n, int m, int mini_batch, int augm
 
             //int index = random_gen() % m;
             sequentia_paths[i] = paths[index];
-            //if(i == 0) printf("%s\n", paths[index]);
-            //printf(" index = %u - grp: %s \n", index, paths[index]);
-            if (strlen(sequentia_paths[i]) <= 4) printf(" Very small path to the image: %s \n", sequentia_paths[i]);
+            //if(i == 0) fprintf(stderr, "%s\n", paths[index]);
+            //fprintf(stderr, " index = %u - grp: %s \n", index, paths[index]);
+            if (strlen(sequentia_paths[i]) <= 4) fprintf(stderr, " Very small path to the image: %s \n", sequentia_paths[i]);
         } while (strlen(sequentia_paths[i]) == 0);
     }
     //free(start_time_indexes);

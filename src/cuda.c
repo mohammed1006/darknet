@@ -31,7 +31,7 @@ void check_error(cudaError_t status)
     {
         const char *s = cudaGetErrorString(status);
         char buffer[256];
-        printf("CUDA Error: %s\n", s);
+         fprintf(stderr, "CUDA Error: %s\n", s);
         snprintf(buffer, 256, "CUDA Error: %s", s);
 #ifdef WIN32
         getchar();
@@ -42,7 +42,7 @@ void check_error(cudaError_t status)
     {
         const char *s = cudaGetErrorString(status2);
         char buffer[256];
-        printf("CUDA Error Prev: %s\n", s);
+         fprintf(stderr, "CUDA Error Prev: %s\n", s);
         snprintf(buffer, 256, "CUDA Error Prev: %s", s);
 #ifdef WIN32
         getchar();
@@ -54,11 +54,11 @@ void check_error(cudaError_t status)
 void check_error_extended(cudaError_t status, const char *file, int line, const char *date_time)
 {
     if (status != cudaSuccess)
-        printf("CUDA status Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+         fprintf(stderr, "CUDA status Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
 #ifdef DEBUG
     status = cudaDeviceSynchronize();
     if (status != cudaSuccess)
-        printf("CUDA status = cudaDeviceSynchronize() Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+         fprintf(stderr, "CUDA status = cudaDeviceSynchronize() Error: file: %s() : line: %d : build time: %s \n", file, line, date_time);
 #endif
     check_error(status);
 }
@@ -72,7 +72,7 @@ dim3 cuda_gridsize(size_t n){
         y = (n-1)/(x*BLOCK) + 1;
     }
     dim3 d = {x, y, 1};
-    //printf("%ld %ld %ld %ld\n", n, x, y, x*y*BLOCK);
+    // fprintf(stderr, "%ld %ld %ld %ld\n", n, x, y, x*y*BLOCK);
     return d;
 }
 
@@ -85,10 +85,10 @@ cudaStream_t get_cuda_stream() {
         cudaError_t status = cudaStreamCreate(&streamsArray[i]);
         //cudaError_t status = cudaStreamCreateWithFlags(&streamsArray[i], cudaStreamNonBlocking);
         if (status != cudaSuccess) {
-            printf(" cudaStreamCreate error: %d \n", status);
+             fprintf(stderr, " cudaStreamCreate error: %d \n", status);
             const char *s = cudaGetErrorString(status);
             char buffer[256];
-            printf("CUDA Error: %s\n", s);
+             fprintf(stderr, "CUDA Error: %s\n", s);
             status = cudaStreamCreateWithFlags(&streamsArray[i], cudaStreamDefault);
             CHECK_CUDA(status);
         }
@@ -106,10 +106,10 @@ cudaStream_t get_cuda_memcpy_stream() {
         cudaError_t status = cudaStreamCreate(&streamsArray2[i]);
         //cudaError_t status = cudaStreamCreateWithFlags(&streamsArray2[i], cudaStreamNonBlocking);
         if (status != cudaSuccess) {
-            printf(" cudaStreamCreate-Memcpy error: %d \n", status);
+             fprintf(stderr, " cudaStreamCreate-Memcpy error: %d \n", status);
             const char *s = cudaGetErrorString(status);
             char buffer[256];
-            printf("CUDA Error: %s\n", s);
+             fprintf(stderr, "CUDA Error: %s\n", s);
             status = cudaStreamCreateWithFlags(&streamsArray2[i], cudaStreamDefault);
             CHECK_CUDA(status);
         }
@@ -147,7 +147,7 @@ void cudnn_check_error(cudnnStatus_t status)
     {
         const char *s = cudnnGetErrorString(status);
         char buffer[256];
-        printf("cuDNN Error: %s\n", s);
+         fprintf(stderr, "cuDNN Error: %s\n", s);
         snprintf(buffer, 256, "cuDNN Error: %s", s);
 #ifdef WIN32
         getchar();
@@ -158,7 +158,7 @@ void cudnn_check_error(cudnnStatus_t status)
     {
         const char *s = cudnnGetErrorString(status2);
         char buffer[256];
-        printf("cuDNN Error Prev: %s\n", s);
+         fprintf(stderr, "cuDNN Error Prev: %s\n", s);
         snprintf(buffer, 256, "cuDNN Error Prev: %s", s);
 #ifdef WIN32
         getchar();
@@ -170,11 +170,11 @@ void cudnn_check_error(cudnnStatus_t status)
 void cudnn_check_error_extended(cudnnStatus_t status, const char *file, int line, const char *date_time)
 {
     if (status != CUDNN_STATUS_SUCCESS)
-        printf("\n cuDNN status Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+         fprintf(stderr, "\n cuDNN status Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
 #ifdef DEBUG
     status = cudaDeviceSynchronize();
     if (status != CUDNN_STATUS_SUCCESS)
-        printf("\n cuDNN status = cudaDeviceSynchronize() Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
+         fprintf(stderr, "\n cuDNN status = cudaDeviceSynchronize() Error in: file: %s() : line: %d : build time: %s \n", file, line, date_time);
 #endif
     cudnn_check_error(status);
 }
@@ -229,10 +229,10 @@ float cuda_compare(float *x_gpu, float *x, size_t n, char *s)
     float *tmp = calloc(n, sizeof(float));
     cuda_pull_array(x_gpu, tmp, n);
     //int i;
-    //for(i = 0; i < n; ++i) printf("%f %f\n", tmp[i], x[i]);
+    //for(i = 0; i < n; ++i)  fprintf(stderr, "%f %f\n", tmp[i], x[i]);
     axpy_cpu(n, -1, x, 1, tmp, 1);
     float err = dot_cpu(n, tmp, 1, tmp, 1);
-    printf("Error %s: %f\n", s, sqrt(err/n));
+     fprintf(stderr, "Error %s: %f\n", s, sqrt(err/n));
     free(tmp);
     return err;
 }

@@ -205,8 +205,8 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 
             if (l.c % 32 == 0)
             {
-                //printf("\n\n l.index = %d, l.w = %d, l.c = %d, l.n = %d, l.stride = %d, l.pad = %d - new XNOR \n", l.index, l.w, l.c, l.n, l.stride, l.pad);
-                //printf("l.align_workspace_size = %d, (l.c * l.w * l.h)  = %d \n", l.align_workspace_size, (l.c * l.w * l.h));
+                // fprintf(stderr, "\n\n l.index = %d, l.w = %d, l.c = %d, l.n = %d, l.stride = %d, l.pad = %d - new XNOR \n", l.index, l.w, l.c, l.n, l.stride, l.pad);
+                // fprintf(stderr, "l.align_workspace_size = %d, (l.c * l.w * l.h)  = %d \n", l.align_workspace_size, (l.c * l.w * l.h));
 
                 //float *intput_cpu = (float *)calloc(l.inputs, sizeof(float));
                 // state.input
@@ -287,7 +287,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 //cudaMemcpy(l.transposed_align_workspace_gpu, t_bit_input, t_bit_input_size * sizeof(char), cudaMemcpyDefault);
 
                 //cudaMemcpy(state.workspace, b, t_bit_input_size * sizeof(char), cudaMemcpyDefault);
-                //printf("\n n = %d, n % 32 = %d, new_ldb = %d, new_ldb % 32 = %d \n", n, n % 32, new_ldb, new_ldb % 32);
+                // fprintf(stderr, "\n n = %d, n % 32 = %d, new_ldb = %d, new_ldb % 32 = %d \n", n, n % 32, new_ldb, new_ldb % 32);
 
                 //start_timer();
                 transpose_uint32_gpu((uint32_t *)state.workspace, (uint32_t *)l.transposed_align_workspace_gpu, new_k, n, n, new_ldb);
@@ -326,7 +326,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
             }
             else
             {
-                //printf("\n\n l.index = %d, l.w = %d, l.c = %d, l.n = %d, l.stride = %d, l.pad = %d - old XNOR \n", l.index, l.w, l.c, l.n, l.stride, l.pad);
+                // fprintf(stderr, "\n\n l.index = %d, l.w = %d, l.c = %d, l.n = %d, l.stride = %d, l.pad = %d - old XNOR \n", l.index, l.w, l.c, l.n, l.stride, l.pad);
                 //cudaDeviceSynchronize();
 
                 int i = 0;
@@ -422,7 +422,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
     if (state.index != 0 && state.net.cudnn_half && !l.xnor && (!state.train || iteration_num > 3*state.net.burn_in))
     {
-        //printf("\n CUDNN_HALF!!! state.index = %d \n", state.index);
+        // fprintf(stderr, "\n CUDNN_HALF!!! state.index = %d \n", state.index);
 
         // Note: For improved performance it is advised to use beta[0] = 0.0.
         // For Tensor Core: cudnnSetConvolutionMathType() where cudnnMathType_t mathType = CUDNN_TENSOR_OP_MATH;
@@ -434,7 +434,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         const size_t output16_size = l.batch*l.out_c*l.out_h*l.out_w;
 
         if (*state.net.max_input16_size < input16_size) {
-            //printf("\n input16_size: cur = %zu \t max = %zu \n", input16_size, *state.net.max_input16_size);
+            // fprintf(stderr, "\n input16_size: cur = %zu \t max = %zu \n", input16_size, *state.net.max_input16_size);
             *state.net.max_input16_size = input16_size;
             if (*state.net.input16_gpu) cuda_free(*state.net.input16_gpu);
             assert(*state.net.max_input16_size > 0);
@@ -479,7 +479,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 float one = 1;
                 float zero = 0;
                 // Batch-normalization can still take FP16 inputs and outputs, saving half the bandwidth
-                // compared to FP32, it’s just that the statistics and value adjustment should be done in FP32.
+                // compared to FP32, itï¿½s just that the statistics and value adjustment should be done in FP32.
                 CHECK_CUDNN(cudnnBatchNormalizationForwardTraining(cudnn_handle(),
                     CUDNN_BATCHNORM_SPATIAL,
                     &one,

@@ -47,7 +47,7 @@ moves load_go_moves(char *filename)
         m.data[count] = line;
         ++count;
     }
-    printf("%d\n", count);
+     fprintf(stderr, "%d\n", count);
     m.n = count;
     m.data = realloc(m.data, count*sizeof(char*));
     return m;
@@ -120,12 +120,12 @@ void train_go(char *cfgfile, char *weightfile)
     srand(time(0));
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
-    printf("%s\n", base);
+     fprintf(stderr, "%s\n", base);
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
 
     char *backup_directory = "/home/pjreddie/backup/";
 
@@ -144,7 +144,7 @@ void train_go(char *cfgfile, char *weightfile)
         float loss = train_network_datum(net, board, move) / net.batch;
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.95 + loss*.05;
-        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
+         fprintf(stderr, "%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
         if(*net.seen/N > epoch){
             epoch = *net.seen/N;
             char buff[256];
@@ -403,13 +403,13 @@ void valid_go(char *cfgfile, char *weightfile, int multi)
 {
     srand(time(0));
     char *base = basecfg(cfgfile);
-    printf("%s\n", base);
+     fprintf(stderr, "%s\n", base);
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
     }
     set_batch_network(&net, 1);
-    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
 
     float *board = calloc(19*19, sizeof(float));
     float *move = calloc(19*19, sizeof(float));
@@ -427,7 +427,7 @@ void valid_go(char *cfgfile, char *weightfile, int multi)
         predict_move(net, board, move, multi);
         int index = max_index(move, 19*19);
         if(index == truth) ++correct;
-        printf("%d Accuracy %f\n", i, (float) correct/(i+1));
+         fprintf(stderr, "%d Accuracy %f\n", i, (float) correct/(i+1));
     }
 }
 
@@ -454,11 +454,11 @@ void engine_go(char *filename, char *weightfile, int multi)
         //fprintf(stderr, "%s\n", buff);
         if (!has_id) ids[0] = 0;
         if (!strcmp(buff, "protocol_version")){
-            printf("=%s 2\n\n", ids);
+             fprintf(stderr, "=%s 2\n\n", ids);
         } else if (!strcmp(buff, "name")){
-            printf("=%s DarkGo\n\n", ids);
+             fprintf(stderr, "=%s DarkGo\n\n", ids);
         } else if (!strcmp(buff, "version")){
-            printf("=%s 1.0\n\n", ids);
+             fprintf(stderr, "=%s 1.0\n\n", ids);
         } else if (!strcmp(buff, "known_command")){
             char comm[256];
             scanf("%s", comm);
@@ -474,10 +474,10 @@ void engine_go(char *filename, char *weightfile, int multi)
                     !strcmp(comm, "final_status_list") || 
                     !strcmp(comm, "play") || 
                     !strcmp(comm, "genmove"));
-            if(known) printf("=%s true\n\n", ids);
-            else printf("=%s false\n\n", ids);
+            if(known)  fprintf(stderr, "=%s true\n\n", ids);
+            else  fprintf(stderr, "=%s false\n\n", ids);
         } else if (!strcmp(buff, "list_commands")){
-            printf("=%s protocol_version\nname\nversion\nknown_command\nlist_commands\nquit\nboardsize\nclear_board\nkomi\nplay\ngenmove\nfinal_status_list\n\n", ids);
+             fprintf(stderr, "=%s protocol_version\nname\nversion\nknown_command\nlist_commands\nquit\nboardsize\nclear_board\nkomi\nplay\ngenmove\nfinal_status_list\n\n", ids);
         } else if (!strcmp(buff, "quit")){
             break;
         } else if (!strcmp(buff, "boardsize")){
@@ -485,18 +485,18 @@ void engine_go(char *filename, char *weightfile, int multi)
             scanf("%d", &boardsize);
             //fprintf(stderr, "%d\n", boardsize);
             if(boardsize != 19){
-                printf("?%s unacceptable size\n\n", ids);
+                 fprintf(stderr, "?%s unacceptable size\n\n", ids);
             } else {
-                printf("=%s \n\n", ids);
+                 fprintf(stderr, "=%s \n\n", ids);
             }
         } else if (!strcmp(buff, "clear_board")){
             passed = 0;
             memset(board, 0, 19*19*sizeof(float));
-            printf("=%s \n\n", ids);
+             fprintf(stderr, "=%s \n\n", ids);
         } else if (!strcmp(buff, "komi")){
             float komi = 0;
             scanf("%f", &komi);
-            printf("=%s \n\n", ids);
+             fprintf(stderr, "=%s \n\n", ids);
         } else if (!strcmp(buff, "play")){
             char color[256];
             scanf("%s ", color);
@@ -506,7 +506,7 @@ void engine_go(char *filename, char *weightfile, int multi)
             int player = (color[0] == 'b' || color[0] == 'B') ? 1 : -1;
             if(c == 'p' && count < 2) {
                 passed = 1;
-                printf("=%s \n\n", ids);
+                 fprintf(stderr, "=%s \n\n", ids);
                 char *line = fgetl(stdin);
                 free(line);
                 fflush(stdout);
@@ -527,7 +527,7 @@ void engine_go(char *filename, char *weightfile, int multi)
             move_go(board, player, r, c);
             board_to_string(one, board);
 
-            printf("=%s \n\n", ids);
+             fprintf(stderr, "=%s \n\n", ids);
             print_board(board, 1, 0);
         } else if (!strcmp(buff, "genmove")){
             char color[256];
@@ -536,7 +536,7 @@ void engine_go(char *filename, char *weightfile, int multi)
 
             int index = generate_move(net, player, board, multi, .1, .7, two, 1);
             if(passed || index < 0){
-                printf("=%s pass\n\n", ids);
+                 fprintf(stderr, "=%s pass\n\n", ids);
                 passed = 0;
             } else {
                 int row = index / 19;
@@ -550,7 +550,7 @@ void engine_go(char *filename, char *weightfile, int multi)
                 board_to_string(one, board);
                 row = 19 - row;
                 if (col >= 8) ++col;
-                printf("=%s %c%d\n\n", ids, 'A' + col, row);
+                 fprintf(stderr, "=%s %c%d\n\n", ids, 'A' + col, row);
                 print_board(board, 1, 0);
             }
 
@@ -588,16 +588,16 @@ void engine_go(char *filename, char *weightfile, int multi)
                 }
                 char *l = 0;
                 while((l = fgetl(p))){
-                    printf("%s\n", l);
+                     fprintf(stderr, "%s\n", l);
                     free(l);
                 }
             } else {
-                printf("?%s unknown command\n\n", ids);
+                 fprintf(stderr, "?%s unknown command\n\n", ids);
             }
         } else {
             char *line = fgetl(stdin);
             free(line);
-            printf("?%s unknown command\n\n", ids);
+             fprintf(stderr, "?%s unknown command\n\n", ids);
         }
         fflush(stdout);
         fflush(stderr);
@@ -650,12 +650,12 @@ void test_go(char *cfg, char *weights, int multi)
             int index = indexes[i];
             row = index / 19;
             col = index % 19;
-            printf("%d: %c %d, %.2f%%\n", i+1, col + 'A' + 1*(col > 7 && noi), (inverted)?19 - row : row+1, move[index]*100);
+             fprintf(stderr, "%d: %c %d, %.2f%%\n", i+1, col + 'A' + 1*(col > 7 && noi), (inverted)?19 - row : row+1, move[index]*100);
         }
-        //if(color == 1) printf("\u25EF Enter move: ");
-        //else printf("\u25C9 Enter move: ");
-        if(color == 1) printf("X Enter move: ");
-        else printf("O Enter move: ");
+        //if(color == 1)  fprintf(stderr, "\u25EF Enter move: ");
+        //else  fprintf(stderr, "\u25C9 Enter move: ");
+        if(color == 1)  fprintf(stderr, "X Enter move: ");
+        else  fprintf(stderr, "O Enter move: ");
 
         char c;
         char *line = fgetl(stdin);
@@ -783,9 +783,9 @@ void self_go(char *filename, char *weightfile, char *f2, char *w2, int multi)
             int j;
             for(; i < count; i += 2){
                 for(j = 0; j < 93; ++j){
-                    printf("%c", boards[i][j]);
+                     fprintf(stderr, "%c", boards[i][j]);
                 }
-                printf("\n");
+                 fprintf(stderr, "\n");
             }
             memset(board, 0, 19*19*sizeof(float));
             player = 1;

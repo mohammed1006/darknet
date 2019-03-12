@@ -879,7 +879,7 @@ void repack_input_gpu_bin(float *input, uint32_t *re_packed_input_bin, int w, in
     int size = (w * h * c) / 32 + 1;
     const int block_size = BLOCK;
     const int num_blocks = get_number_of_blocks(size, block_size);
-    //printf("\n num_blocks = %d, num_blocks/32 = %d,  block_size = %d \n", num_blocks, num_blocks / 32, block_size);
+    // fprintf(stderr, "\n num_blocks = %d, num_blocks/32 = %d,  block_size = %d \n", num_blocks, num_blocks / 32, block_size);
     repack_input_kernel_bin << <num_blocks, block_size, 0, get_cuda_stream() >> >(input, re_packed_input_bin, w, h, c);
     CHECK_CUDA(cudaPeekAtLastError());
 }
@@ -930,7 +930,7 @@ void repack_input_gpu_bin(float *input, uint32_t *re_packed_input_bin, int w, in
     int size = w * h * c;
     const int block_size = 256;// 128;
     const int num_blocks = get_number_of_blocks(size, block_size);
-    printf("\n num_blocks = %d, num_blocks/32 = %d,  block_size = %d \n", num_blocks, num_blocks/32, block_size);
+     fprintf(stderr, "\n num_blocks = %d, num_blocks/32 = %d,  block_size = %d \n", num_blocks, num_blocks/32, block_size);
     repack_input_kernel_bin << <num_blocks, block_size, 0, get_cuda_stream() >> >(input, re_packed_input_bin, w, h, c);
     CHECK_CUDA(cudaPeekAtLastError());
 }
@@ -1061,7 +1061,7 @@ __global__ void gemm_nn_custom_bin_mean_transposed_gpu_kernel(int M, int N, int 
                     if (K - k < 64)  tmp_count = tmp_count - (64 - (K - k));    // remove extra bits
                     count += tmp_count;
                     //binary_int64_printf(c_bit64);
-                    //printf(", count = %d \n\n", tmp_count);
+                    // fprintf(stderr, ", count = %d \n\n", tmp_count);
                 }
 
                 C[i*ldc + j] = (2 * count - K) * mean_val;
@@ -1780,14 +1780,14 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
     int size = M*N;
     const int num_blocks = get_number_of_blocks(size, BLOCK);
 
-    //printf("\n M = %d, N = %d, M %% 8 = %d, N %% 8 = %d \n", M, N, M % 8, N % 8);
+    // fprintf(stderr, "\n M = %d, N = %d, M %% 8 = %d, N %% 8 = %d \n", M, N, M % 8, N % 8);
 
     /*
-    printf("\n gemm_bin size = %d, num_blocks = %d, M*K = %d KB, N*K = %d KB \n (w) M*K/num_blocks = %d KB, (i) N*K/num_blocks = %d KB \n",
+     fprintf(stderr, "\n gemm_bin size = %d, num_blocks = %d, M*K = %d KB, N*K = %d KB \n (w) M*K/num_blocks = %d KB, (i) N*K/num_blocks = %d KB \n",
         size, num_blocks, M*K / 1024, N*K / 1024, M*lda / num_blocks / 1024, N*ldb / num_blocks / 1024);
-    printf(" M / 512 = %d, N / 512 = %d, M*lda / 512 = %d, N*ldb / 512 = %d \n", M / 512, N / 512, M*lda/512, N*ldb/512);
+     fprintf(stderr, " M / 512 = %d, N / 512 = %d, M*lda / 512 = %d, N*ldb / 512 = %d \n", M / 512, N / 512, M*lda/512, N*ldb/512);
     */
-    //printf(" shared_memory: (w) lda*BLOCK/N = %d, (i) ldb*BLOCK/M = %d, \t lda = %d \n\n", lda*BLOCK / N, ldb*BLOCK / M, lda);
+    // fprintf(stderr, " shared_memory: (w) lda*BLOCK/N = %d, (i) ldb*BLOCK/M = %d, \t lda = %d \n\n", lda*BLOCK / N, ldb*BLOCK / M, lda);
 
 
     //if (M % 8 == 0 && N % 8 == 0 && M == 128)
@@ -1800,8 +1800,8 @@ void gemm_nn_custom_bin_mean_transposed_gpu(int M, int N, int K,
         int size = (M_aligned / 8)*(N_aligned / 16)*WARP_SIZE;
         const int num_blocks = get_number_of_blocks(size, BLOCK);
 
-        //printf(" lda = %d, ldb = %d, ldc = %d, lda/32 = %d, ldb/32 = %d, ldc/32 = %d \n", lda, ldb, ldc, lda / 32, ldb / 32, ldc / 32);
-        //printf("  l.c (K/9) = %d, M (l.n) = %d \n", (K%9 == 0)? K / 9: K, M);
+        // fprintf(stderr, " lda = %d, ldb = %d, ldc = %d, lda/32 = %d, ldb/32 = %d, ldc/32 = %d \n", lda, ldb, ldc, lda / 32, ldb / 32, ldc / 32);
+        // fprintf(stderr, "  l.c (K/9) = %d, M (l.n) = %d \n", (K%9 == 0)? K / 9: K, M);
         gemm_nn_custom_bin_mean_transposed_tensor_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (
             M, N, K,
             A, lda,
@@ -1925,12 +1925,12 @@ void convolve_bin_cpu(float *input, float *weights, float *output, int in_w, int
                             //w_bit = (w_bit > 0) ? 1 : -1;
                             //int8_t res = in_bit*w_bit;
                             //sum += res;
-                            //printf("\n i: %d x w: %d = res: %d \t sum: %d \t mean = %f \n", in_bit, w_bit, res, sum, mean_val);
+                            // fprintf(stderr, "\n i: %d x w: %d = res: %d \t sum: %d \t mean = %f \n", in_bit, w_bit, res, sum, mean_val);
                         }
                     }
-                    //printf("sum = %d, ", sum);
+                    // fprintf(stderr, "sum = %d, ", sum);
                     sum = sum - (good_val - sum);
-                    //printf(" size = %d, sum = %d \n", size, sum);
+                    // fprintf(stderr, " size = %d, sum = %d \n", size, sum);
 
                     // l.output[filters][width][height] +=
                     //        state.input[channels][width][height] *
@@ -2001,7 +2001,7 @@ void convolve_gpu(float *input, float *weights, float *output, int in_w, int in_
 {
     int array_size = in_w*in_h*n;    // width X height X filters
     const int num_blocks = array_size / BLOCK + 1;
-    //printf("\n array_size = %d, num_blocks = %d, w = %d, h = %d, n = %d, c = %d, pad = %d \n", array_size, num_blocks, in_w, in_h, n, in_c, pad);
+    // fprintf(stderr, "\n array_size = %d, num_blocks = %d, w = %d, h = %d, n = %d, c = %d, pad = %d \n", array_size, num_blocks, in_w, in_h, n, in_c, pad);
 
     convolve_gpu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (input, weights, output, in_w, in_h, in_c, n, size, pad);
     CHECK_CUDA(cudaPeekAtLastError());
@@ -2217,7 +2217,7 @@ void convolve_bin_gpu(float *input, float *weights, float *output, int in_w, int
 {
     int array_size = in_w*in_h*n;    // width X height X filters
     const int num_blocks = array_size / BLOCK + 1;
-    //printf("\n array_size = %d, num_blocks = %d, w = %d, h = %d, n = %d, c = %d, pad = %d \n", array_size, num_blocks, in_w, in_h, n, in_c, pad);
+    // fprintf(stderr, "\n array_size = %d, num_blocks = %d, w = %d, h = %d, n = %d, c = %d, pad = %d \n", array_size, num_blocks, in_w, in_h, n, in_c, pad);
 
     convolve_bin_gpu_kernel << <num_blocks, BLOCK, 0, get_cuda_stream() >> > (input, weights, output, in_w, in_h, in_c, n, size, pad, new_lda, mean_arr_gpu);
     CHECK_CUDA(cudaPeekAtLastError());

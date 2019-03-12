@@ -237,7 +237,7 @@ void run_nightmare(int argc, char **argv)
         //flip_image(crop);
         image f_im = resize_image(crop, out_im.w, out_im.h);
         free_image(crop);
-        printf("%d features\n", out_im.w*out_im.h*out_im.c);
+         fprintf(stderr, "%d features\n", out_im.w*out_im.h*out_im.c);
 
 
         im = resize_image(im, im.w, im.h);
@@ -288,7 +288,7 @@ void run_nightmare(int argc, char **argv)
         }else{
             sprintf(buff, "%s_%s_%d_%06d",imbase, cfgbase, max_layer, e);
         }
-        printf("%d %s\n", e, buff);
+         fprintf(stderr, "%d %s\n", e, buff);
         save_image(im, buff);
         //show_image(im, buff);
         //cvWaitKey(0);

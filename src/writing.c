@@ -12,18 +12,18 @@ void train_writing(char *cfgfile, char *weightfile)
     srand(time(0));
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
-    printf("%s\n", base);
+     fprintf(stderr, "%s\n", base);
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = net.batch*net.subdivisions;
     list *plist = get_paths("figures.list");
     char **paths = (char **)list_to_array(plist);
     clock_t time;
     int N = plist->size;
-    printf("N: %d\n", N);
+     fprintf(stderr, "N: %d\n", N);
     image out = get_network_image(net);
 
     data train, buffer;
@@ -46,7 +46,7 @@ void train_writing(char *cfgfile, char *weightfile)
         pthread_join(load_thread, 0);
         train = buffer;
         load_thread = load_data_in_thread(args);
-        printf("Loaded %lf seconds\n",sec(clock()-time));
+         fprintf(stderr, "Loaded %lf seconds\n",sec(clock()-time));
 
         time=clock();
         float loss = train_network(net, train);
@@ -69,7 +69,7 @@ void train_writing(char *cfgfile, char *weightfile)
 
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
-        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
+         fprintf(stderr, "%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
         free_data(train);
         if(get_current_batch(net)%100 == 0){
             char buff[256];
@@ -100,7 +100,7 @@ void test_writing(char *cfgfile, char *weightfile, char *filename)
         if(filename){
             strncpy(input, filename, 256);
         }else{
-            printf("Enter Image Path: ");
+             fprintf(stderr, "Enter Image Path: ");
             fflush(stdout);
             input = fgets(input, 256, stdin);
             if(!input) return;
@@ -109,11 +109,11 @@ void test_writing(char *cfgfile, char *weightfile, char *filename)
 
         image im = load_image_color(input, 0, 0);
         resize_network(&net, im.w, im.h);
-        printf("%d %d %d\n", im.h, im.w, im.c);
+         fprintf(stderr, "%d %d %d\n", im.h, im.w, im.c);
         float *X = im.data;
         time=clock();
         network_predict(net, X);
-        printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
+         fprintf(stderr, "%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         image pred = get_network_image(net);
 
         image upsampled = resize_image(pred, im.w, im.h);

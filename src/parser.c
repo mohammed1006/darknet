@@ -294,8 +294,8 @@ layer parse_yolo(list *options, size_params params)
     int max_boxes = option_find_int_quiet(options, "max", 90);
     layer l = make_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes, max_boxes);
     if (l.outputs != params.inputs) {
-        printf("Error: l.outputs == params.inputs \n");
-        printf("filters= in the [convolutional]-layer doesn't correspond to classes= or mask= in [yolo]-layer \n");
+         fprintf(stderr, "Error: l.outputs == params.inputs \n");
+         fprintf(stderr, "filters= in the [convolutional]-layer doesn't correspond to classes= or mask= in [yolo]-layer \n");
         exit(EXIT_FAILURE);
     }
     //assert(l.outputs == params.inputs);
@@ -337,8 +337,8 @@ layer parse_region(list *options, size_params params)
 
     layer l = make_region_layer(params.batch, params.w, params.h, num, classes, coords, max_boxes);
     if (l.outputs != params.inputs) {
-        printf("Error: l.outputs == params.inputs \n");
-        printf("filters= in the [convolutional]-layer doesn't correspond to classes= or num= in [region]-layer \n");
+         fprintf(stderr, "Error: l.outputs == params.inputs \n");
+         fprintf(stderr, "filters= in the [convolutional]-layer doesn't correspond to classes= or num= in [region]-layer \n");
         exit(EXIT_FAILURE);
     }
     //assert(l.outputs == params.inputs);
@@ -461,7 +461,7 @@ layer parse_reorg(list *options, size_params params)
 
 layer parse_reorg_old(list *options, size_params params)
 {
-    printf("\n reorg_old \n");
+     fprintf(stderr, "\n reorg_old \n");
     int stride = option_find_int(options, "stride", 1);
     int reverse = option_find_int_quiet(options, "reverse", 0);
 
@@ -890,7 +890,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
 
     LAYER_TYPE lt = net.layers[net.n - 1].type;
     if ((net.w % 32 != 0 || net.h % 32 != 0) && (lt == YOLO || lt == REGION || lt == DETECTION)) {
-        printf("\n Warning: width=%d and height=%d in cfg-file must be divisible by 32 for default networks Yolo v1/v2/v3!!! \n\n",
+         fprintf(stderr, "\n Warning: width=%d and height=%d in cfg-file must be divisible by 32 for default networks Yolo v1/v2/v3!!! \n\n",
             net.w, net.h);
     }
     return net;
@@ -1109,15 +1109,15 @@ void load_connected_weights(layer l, FILE *fp, int transpose)
     if(transpose){
         transpose_matrix(l.weights, l.inputs, l.outputs);
     }
-    //printf("Biases: %f mean %f variance\n", mean_array(l.biases, l.outputs), variance_array(l.biases, l.outputs));
-    //printf("Weights: %f mean %f variance\n", mean_array(l.weights, l.outputs*l.inputs), variance_array(l.weights, l.outputs*l.inputs));
+    // fprintf(stderr, "Biases: %f mean %f variance\n", mean_array(l.biases, l.outputs), variance_array(l.biases, l.outputs));
+    // fprintf(stderr, "Weights: %f mean %f variance\n", mean_array(l.weights, l.outputs*l.inputs), variance_array(l.weights, l.outputs*l.inputs));
     if (l.batch_normalize && (!l.dontloadscales)){
         fread(l.scales, sizeof(float), l.outputs, fp);
         fread(l.rolling_mean, sizeof(float), l.outputs, fp);
         fread(l.rolling_variance, sizeof(float), l.outputs, fp);
-        //printf("Scales: %f mean %f variance\n", mean_array(l.scales, l.outputs), variance_array(l.scales, l.outputs));
-        //printf("rolling_mean: %f mean %f variance\n", mean_array(l.rolling_mean, l.outputs), variance_array(l.rolling_mean, l.outputs));
-        //printf("rolling_variance: %f mean %f variance\n", mean_array(l.rolling_variance, l.outputs), variance_array(l.rolling_variance, l.outputs));
+        // fprintf(stderr, "Scales: %f mean %f variance\n", mean_array(l.scales, l.outputs), variance_array(l.scales, l.outputs));
+        // fprintf(stderr, "rolling_mean: %f mean %f variance\n", mean_array(l.rolling_mean, l.outputs), variance_array(l.rolling_mean, l.outputs));
+        // fprintf(stderr, "rolling_variance: %f mean %f variance\n", mean_array(l.rolling_variance, l.outputs), variance_array(l.rolling_variance, l.outputs));
     }
 #ifdef GPU
     if(gpu_index >= 0){
@@ -1184,13 +1184,13 @@ void load_convolutional_weights(layer l, FILE *fp)
         if(0){
             int i;
             for(i = 0; i < l.n; ++i){
-                printf("%g, ", l.rolling_mean[i]);
+                 fprintf(stderr, "%g, ", l.rolling_mean[i]);
             }
-            printf("\n");
+             fprintf(stderr, "\n");
             for(i = 0; i < l.n; ++i){
-                printf("%g, ", l.rolling_variance[i]);
+                 fprintf(stderr, "%g, ", l.rolling_variance[i]);
             }
-            printf("\n");
+             fprintf(stderr, "\n");
         }
         if(0){
             fill_cpu(l.n, 0, l.rolling_mean, 1);
@@ -1234,13 +1234,13 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     fread(&minor, sizeof(int), 1, fp);
     fread(&revision, sizeof(int), 1, fp);
     if ((major * 10 + minor) >= 2) {
-        printf("\n seen 64 \n");
+         fprintf(stderr, "\n seen 64 \n");
         uint64_t iseen = 0;
         fread(&iseen, sizeof(uint64_t), 1, fp);
         *net->seen = iseen;
     }
     else {
-        printf("\n seen 32 \n");
+         fprintf(stderr, "\n seen 32 \n");
         uint32_t iseen = 0;
         fread(&iseen, sizeof(uint32_t), 1, fp);
         *net->seen = iseen;
@@ -1312,7 +1312,7 @@ void load_weights(network *net, char *filename)
 // load network & force - set batch size
 network *load_network_custom(char *cfg, char *weights, int clear, int batch)
 {
-    printf(" Try to load cfg: %s, weights: %s, clear = %d \n", cfg, weights, clear);
+     fprintf(stderr, " Try to load cfg: %s, weights: %s, clear = %d \n", cfg, weights, clear);
     network *net = calloc(1, sizeof(network));
     *net = parse_network_cfg_custom(cfg, batch, 0);
     if (weights && weights[0] != 0) {
@@ -1325,7 +1325,7 @@ network *load_network_custom(char *cfg, char *weights, int clear, int batch)
 // load network & get batch size from cfg-file
 network *load_network(char *cfg, char *weights, int clear)
 {
-    printf(" Try to load cfg: %s, weights: %s, clear = %d \n", cfg, weights, clear);
+     fprintf(stderr, " Try to load cfg: %s, weights: %s, clear = %d \n", cfg, weights, clear);
     network *net = calloc(1, sizeof(network));
     *net = parse_network_cfg(cfg);
     if (weights && weights[0] != 0) {

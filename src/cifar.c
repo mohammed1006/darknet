@@ -13,12 +13,12 @@ void train_cifar(char *cfgfile, char *weightfile)
     srand(time(0));
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
-    printf("%s\n", base);
+     fprintf(stderr, "%s\n", base);
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
 
     char *backup_directory = "/home/pjreddie/backup/";
     int classes = 10;
@@ -33,7 +33,7 @@ void train_cifar(char *cfgfile, char *weightfile)
         float loss = train_network_sgd(net, train, 1);
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.95 + loss*.05;
-        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
+         fprintf(stderr, "%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
         if(*net.seen/N > epoch){
             epoch = *net.seen/N;
             char buff[256];
@@ -61,12 +61,12 @@ void train_cifar_distill(char *cfgfile, char *weightfile)
     srand(time(0));
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
-    printf("%s\n", base);
+     fprintf(stderr, "%s\n", base);
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
 
     char *backup_directory = "/home/pjreddie/backup/";
     int classes = 10;
@@ -89,7 +89,7 @@ void train_cifar_distill(char *cfgfile, char *weightfile)
         float loss = train_network_sgd(net, train, 1);
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.95 + loss*.05;
-        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
+         fprintf(stderr, "%d, %.3f: %f, %f avg, %f rate, %lf seconds, %d images\n", get_current_batch(net), (float)(*net.seen)/N, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
         if(*net.seen/N > epoch){
             epoch = *net.seen/N;
             char buff[256];
@@ -140,7 +140,7 @@ void test_cifar_multi(char *filename, char *weightfile)
         int class_id = max_index(test.y.vals[i], 10);
         if(index == class_id) avg_acc += 1;
         free_image(im);
-        printf("%4d: %.2f%%\n", i, 100.*avg_acc/(i+1));
+         fprintf(stderr, "%4d: %.2f%%\n", i, 100.*avg_acc/(i+1));
     }
 }
 
@@ -162,7 +162,7 @@ void test_cifar(char *filename, char *weightfile)
     float *acc = network_accuracies(net, test, 2);
     avg_acc += acc[0];
     avg_top5 += acc[1];
-    printf("top1: %f, %lf seconds, %d images\n", avg_acc, sec(clock()-time), test.X.rows);
+     fprintf(stderr, "top1: %f, %lf seconds, %d images\n", avg_acc, sec(clock()-time), test.X.rows);
     free_data(test);
 }
 

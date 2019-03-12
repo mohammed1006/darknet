@@ -50,7 +50,7 @@ float * get_network_output_gpu(network net);
 void forward_network_gpu(network net, network_state state)
 {
     //cudaDeviceSynchronize();
-    //printf("\n");
+    // fprintf(stderr, "\n");
     state.workspace = net.workspace;
     int i;
     for(i = 0; i < net.n; ++i){
@@ -59,7 +59,7 @@ void forward_network_gpu(network net, network_state state)
         if(l.delta_gpu && state.train){
             fill_ongpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
         }
-        //printf("\n layer %d - type: %d - \n", i, l.type);
+        // fprintf(stderr, "\n layer %d - type: %d - \n", i, l.type);
         //start_timer();
         l.forward_gpu(l, state);
         //CHECK_CUDA(cudaDeviceSynchronize());
@@ -328,7 +328,7 @@ void distribute_updates(layer l, layer base)
 
 void sync_layer(network *nets, int n, int j)
 {
-    //printf("Syncing layer %d\n", j);
+    // fprintf(stderr, "Syncing layer %d\n", j);
     int i;
     network net = nets[0];
     layer base = net.layers[j];
@@ -346,7 +346,7 @@ void sync_layer(network *nets, int n, int j)
         layer l = nets[i].layers[j];
         distribute_weights(l, base);
     }
-    //printf("Done syncing layer %d\n", j);
+    // fprintf(stderr, "Done syncing layer %d\n", j);
 }
 
 typedef struct{
@@ -409,15 +409,15 @@ float train_networks(network *nets, int n, data d, int interval)
     }
     for(i = 0; i < n; ++i){
         pthread_join(threads[i], 0);
-        //printf("%f\n", errors[i]);
+        // fprintf(stderr, "%f\n", errors[i]);
         sum += errors[i];
     }
     //cudaDeviceSynchronize();
     if (get_current_batch(nets[0]) % interval == 0) {
-        printf("Syncing... ");
+         fprintf(stderr, "Syncing... ");
         fflush(stdout);
         sync_nets(nets, n, interval);
-        printf("Done!\n");
+         fprintf(stderr, "Done!\n");
     }
     //cudaDeviceSynchronize();
     free(threads);

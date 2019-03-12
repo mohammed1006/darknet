@@ -132,7 +132,7 @@ void forward_cost_layer_gpu(cost_layer l, network_state state)
         int n = (1-l.ratio) * l.batch*l.inputs;
         float thresh = l.delta[n];
         thresh = 0;
-        printf("%f\n", thresh);
+         fprintf(stderr, "%f\n", thresh);
         supp_ongpu(l.batch*l.inputs, thresh, l.delta_gpu, 1);
     }
 

@@ -261,18 +261,18 @@ void denormalize_connected_layer(layer l)
 void statistics_connected_layer(layer l)
 {
     if(l.batch_normalize){
-        printf("Scales ");
+         fprintf(stderr, "Scales ");
         print_statistics(l.scales, l.outputs);
         /*
-        printf("Rolling Mean ");
+         fprintf(stderr, "Rolling Mean ");
         print_statistics(l.rolling_mean, l.outputs);
-        printf("Rolling Variance ");
+         fprintf(stderr, "Rolling Variance ");
         print_statistics(l.rolling_variance, l.outputs);
         */
     }
-    printf("Biases ");
+     fprintf(stderr, "Biases ");
     print_statistics(l.biases, l.outputs);
-    printf("Weights ");
+     fprintf(stderr, "Weights ");
     print_statistics(l.weights, l.outputs);
 }
 

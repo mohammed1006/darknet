@@ -75,7 +75,7 @@ void *fetch_in_thread(void *ptr)
         in_s = get_image_from_stream_resize(cap, net.w, net.h, net.c, &in_img, cpp_video_capture, dont_close_stream);
     if(!in_s.data){
         //error("Stream closed.");
-        printf("Stream closed.\n");
+         fprintf(stderr, "Stream closed.\n");
         flag_exit = 1;
         return EXIT_FAILURE;
     }
@@ -130,7 +130,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     demo_thresh = thresh;
     demo_ext_output = ext_output;
     demo_json_port = json_port;
-    printf("Demo\n");
+     fprintf(stderr, "Demo\n");
     net = parse_network_cfg_custom(cfgfile, 1, 0);    // set batch=1
     if(weightfile){
         load_weights(&net, weightfile);
@@ -141,18 +141,18 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     srand(2222222);
 
     if(filename){
-        printf("video file: %s\n", filename);
+         fprintf(stderr, "video file: %s\n", filename);
         cpp_video_capture = 1;
         cap = get_capture_video_stream(filename);
     }else{
-        printf("Webcam index: %d\n", cam_index);
+         fprintf(stderr, "Webcam index: %d\n", cam_index);
         cpp_video_capture = 1;
         cap = get_capture_webcam(cam_index);
     }
 
     if (!cap) {
 #ifdef WIN32
-        printf("Check that you have copied file opencv_ffmpeg340_64.dll to the same directory where is darknet.exe \n");
+         fprintf(stderr, "Check that you have copied file opencv_ffmpeg340_64.dll to the same directory where is darknet.exe \n");
 #endif
         error("Couldn't connect to webcam.\n");
     }
@@ -165,7 +165,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     for(j = 0; j < FRAMES; ++j) images[j] = make_image(1,1,3);
 
     if (l.classes != demo_classes) {
-        printf("Parameters don't match: in cfg-file classes=%d, in data-file classes=%d \n", l.classes, demo_classes);
+         fprintf(stderr, "Parameters don't match: in cfg-file classes=%d, in data-file classes=%d \n", l.classes, demo_classes);
         getchar();
         exit(0);
     }
@@ -232,10 +232,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             //if (nms) do_nms_obj(local_dets, local_nboxes, l.classes, nms);    // bad results
             if (nms) do_nms_sort(local_dets, local_nboxes, l.classes, nms);
 
-            printf("\033[2J");
-            printf("\033[1;1H");
-            printf("\nFPS:%.1f\n", fps);
-            printf("Objects:\n\n");
+             fprintf(stderr, "\033[2J");
+             fprintf(stderr, "\033[1;1H");
+             fprintf(stderr, "\nFPS:%.1f\n", fps);
+             fprintf(stderr, "Objects:\n\n");
 
             ++frame_id;
             if (demo_json_port > 0) {
@@ -278,7 +278,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             // save video file
             if (output_video_writer && show_img) {
                 cvWriteFrame(output_video_writer, show_img);
-                printf("\n cvWriteFrame \n");
+                 fprintf(stderr, "\n cvWriteFrame \n");
             }
 
             cvReleaseImage(&show_img);
@@ -306,10 +306,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             before = after;
         }
     }
-    printf("input video stream closed. \n");
+     fprintf(stderr, "input video stream closed. \n");
     if (output_video_writer) {
         cvReleaseVideoWriter(&output_video_writer);
-        printf("output_video_writer closed. \n");
+         fprintf(stderr, "output_video_writer closed. \n");
     }
 
     // free memory

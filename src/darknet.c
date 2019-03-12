@@ -100,9 +100,9 @@ void speed(char *cfgfile, int tics)
         network_predict(net, im.data);
     }
     double t = difftime(time(0), start);
-    printf("\n%d evals, %f Seconds\n", tics, t);
-    printf("Speed: %f sec/eval\n", t/tics);
-    printf("Speed: %f Hz\n", tics/t);
+     fprintf(stderr, "\n%d evals, %f Seconds\n", tics, t);
+     fprintf(stderr, "Speed: %f sec/eval\n", t/tics);
+     fprintf(stderr, "Speed: %f Hz\n", tics/t);
 }
 
 void operations(char *cfgfile)
@@ -139,8 +139,8 @@ void operations(char *cfgfile)
             ops += 2l * l.wo->inputs * l.wo->outputs;
         }
     }
-    printf("Floating Point Operations: %ld\n", ops);
-    printf("Floating Point Operations: %.2f Bn\n", (float)ops/1000000000.);
+     fprintf(stderr, "Floating Point Operations: %ld\n", ops);
+     fprintf(stderr, "Floating Point Operations: %.2f Bn\n", (float)ops/1000000000.);
 }
 
 void oneoff(char *cfgfile, char *weightfile, char *outfile)
@@ -158,7 +158,7 @@ void oneoff(char *cfgfile, char *weightfile, char *outfile)
     net.layers[net.n - 2].biases -= 5;
     net.layers[net.n - 2].weights -= 5*c;
     net.layers[net.n - 2].n = oldn;
-    printf("%d\n", oldn);
+     fprintf(stderr, "%d\n", oldn);
     layer l = net.layers[net.n - 2];
     copy_cpu(l.n/3, l.biases, 1, l.biases +   l.n/3, 1);
     copy_cpu(l.n/3, l.biases, 1, l.biases + 2*l.n/3, 1);
@@ -318,44 +318,44 @@ void statistics_net(char *cfgfile, char *weightfile)
     for (i = 0; i < net.n; ++i) {
         layer l = net.layers[i];
         if (l.type == CONNECTED && l.batch_normalize) {
-            printf("Connected Layer %d\n", i);
+             fprintf(stderr, "Connected Layer %d\n", i);
             statistics_connected_layer(l);
         }
         if (l.type == GRU && l.batch_normalize) {
-            printf("GRU Layer %d\n", i);
-            printf("Input Z\n");
+             fprintf(stderr, "GRU Layer %d\n", i);
+             fprintf(stderr, "Input Z\n");
             statistics_connected_layer(*l.input_z_layer);
-            printf("Input R\n");
+             fprintf(stderr, "Input R\n");
             statistics_connected_layer(*l.input_r_layer);
-            printf("Input H\n");
+             fprintf(stderr, "Input H\n");
             statistics_connected_layer(*l.input_h_layer);
-            printf("State Z\n");
+             fprintf(stderr, "State Z\n");
             statistics_connected_layer(*l.state_z_layer);
-            printf("State R\n");
+             fprintf(stderr, "State R\n");
             statistics_connected_layer(*l.state_r_layer);
-            printf("State H\n");
+             fprintf(stderr, "State H\n");
             statistics_connected_layer(*l.state_h_layer);
         }
         if (l.type == LSTM && l.batch_normalize) {
-            printf("LSTM Layer %d\n", i);
-            printf("wf\n");
+             fprintf(stderr, "LSTM Layer %d\n", i);
+             fprintf(stderr, "wf\n");
             statistics_connected_layer(*l.wf);
-            printf("wi\n");
+             fprintf(stderr, "wi\n");
             statistics_connected_layer(*l.wi);
-            printf("wg\n");
+             fprintf(stderr, "wg\n");
             statistics_connected_layer(*l.wg);
-            printf("wo\n");
+             fprintf(stderr, "wo\n");
             statistics_connected_layer(*l.wo);
-            printf("uf\n");
+             fprintf(stderr, "uf\n");
             statistics_connected_layer(*l.uf);
-            printf("ui\n");
+             fprintf(stderr, "ui\n");
             statistics_connected_layer(*l.ui);
-            printf("ug\n");
+             fprintf(stderr, "ug\n");
             statistics_connected_layer(*l.ug);
-            printf("uo\n");
+             fprintf(stderr, "uo\n");
             statistics_connected_layer(*l.uo);
         }
-        printf("\n");
+         fprintf(stderr, "\n");
     }
 }
 
@@ -449,7 +449,7 @@ int main(int argc, char **argv)
     gpu_index = find_int_arg(argc, argv, "-i", 0);
     if(find_arg(argc, argv, "-nogpu")) {
         gpu_index = -1;
-        printf("\n Currently Darknet doesn't support -nogpu flag. If you want to use CPU - please compile Darknet with GPU=0 in the Makefile, or compile darknet_no_gpu.sln on Windows.\n");
+         fprintf(stderr, "\n Currently Darknet doesn't support -nogpu flag. If you want to use CPU - please compile Darknet with GPU=0 in the Makefile, or compile darknet_no_gpu.sln on Windows.\n");
         exit(-1);
     }
 

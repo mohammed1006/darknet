@@ -32,7 +32,7 @@ char **get_random_paths_indexes(char **paths, int n, int m, int *indexes)
         int index = random_gen()%m;
         indexes[i] = index;
         random_paths[i] = paths[index];
-        if(i == 0) printf("%s\n", paths[index]);
+        if(i == 0)  fprintf(stderr, "%s\n", paths[index]);
     }
     pthread_mutex_unlock(&mutex);
     return random_paths;
@@ -44,14 +44,14 @@ char **get_random_paths(char **paths, int n, int m)
     char **random_paths = calloc(n, sizeof(char*));
     int i;
     pthread_mutex_lock(&mutex);
-    //printf("n = %d \n", n);
+    // fprintf(stderr, "n = %d \n", n);
     for(i = 0; i < n; ++i){
         do {
             int index = random_gen() % m;
             random_paths[i] = paths[index];
-            //if(i == 0) printf("%s\n", paths[index]);
-            //printf("grp: %s\n", paths[index]);
-            if (strlen(random_paths[i]) <= 4) printf(" Very small path to the image: %s \n", random_paths[i]);
+            //if(i == 0)  fprintf(stderr, "%s\n", paths[index]);
+            // fprintf(stderr, "grp: %s\n", paths[index]);
+            if (strlen(random_paths[i]) <= 4)  fprintf(stderr, " Very small path to the image: %s \n", random_paths[i]);
         } while (strlen(random_paths[i]) == 0);
     }
     pthread_mutex_unlock(&mutex);
@@ -142,7 +142,7 @@ box_label *read_boxes(char *filename, int *n)
     box_label *boxes = calloc(1, sizeof(box_label));
     FILE *file = fopen(filename, "r");
     if (!file) {
-        printf("Can't open label file. (This can be normal only if you use MSCOCO): %s \n", filename);
+         fprintf(stderr, "Can't open label file. (This can be normal only if you use MSCOCO): %s \n", filename);
         //file_error(filename);
         FILE* fw = fopen("bad.list", "a");
         fwrite(filename, sizeof(char), strlen(filename), fw);
@@ -336,7 +336,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
         // if truth (box for object) is smaller than 1x1 pix
         char buff[256];
         if (id >= classes) {
-            printf("\n Wrong annotation: class_id = %d. But class_id should be [from 0 to %d] \n", id, (classes-1));
+             fprintf(stderr, "\n Wrong annotation: class_id = %d. But class_id should be [from 0 to %d] \n", id, (classes-1));
             sprintf(buff, "echo %s \"Wrong annotation: class_id = %d. But class_id should be [from 0 to %d]\" >> bad_label.list", labelpath, id, (classes-1));
             system(buff);
             getchar();
@@ -350,7 +350,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
             continue;
         }
         if (x == 999999 || y == 999999) {
-            printf("\n Wrong annotation: x = 0, y = 0 \n");
+             fprintf(stderr, "\n Wrong annotation: x = 0, y = 0 \n");
             sprintf(buff, "echo %s \"Wrong annotation: x = 0 or y = 0\" >> bad_label.list", labelpath);
             system(buff);
             ++sub;
@@ -358,7 +358,7 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
             continue;
         }
         if (x <= 0 || x > 1 || y <= 0 || y > 1) {
-            printf("\n Wrong annotation: x = %f, y = %f \n", x, y);
+             fprintf(stderr, "\n Wrong annotation: x = %f, y = %f \n", x, y);
             sprintf(buff, "echo %s \"Wrong annotation: x = %f, y = %f\" >> bad_label.list", labelpath, x, y);
             system(buff);
             ++sub;
@@ -366,14 +366,14 @@ void fill_truth_detection(char *path, int num_boxes, float *truth, int classes, 
             continue;
         }
         if (w > 1) {
-            printf("\n Wrong annotation: w = %f \n", w);
+             fprintf(stderr, "\n Wrong annotation: w = %f \n", w);
             sprintf(buff, "echo %s \"Wrong annotation: w = %f\" >> bad_label.list", labelpath, w);
             system(buff);
             w = 1;
             if (check_mistakes) getchar();
         }
         if (h > 1) {
-            printf("\n Wrong annotation: h = %f \n", h);
+             fprintf(stderr, "\n Wrong annotation: h = %f \n", h);
             sprintf(buff, "echo %s \"Wrong annotation: h = %f\" >> bad_label.list", labelpath, h);
             system(buff);
             h = 1;
@@ -398,9 +398,9 @@ void print_letters(float *pred, int n)
     int i;
     for(i = 0; i < n; ++i){
         int index = max_index(pred+i*NUMCHARS, NUMCHARS);
-        printf("%c", int_to_alphanum(index));
+         fprintf(stderr, "%c", int_to_alphanum(index));
     }
-    printf("\n");
+     fprintf(stderr, "\n");
 }
 
 void fill_truth_captcha(char *path, int n, float *truth)
@@ -410,7 +410,7 @@ void fill_truth_captcha(char *path, int n, float *truth)
     int i;
     for(i = 0; i < strlen(begin) && i < n && begin[i] != '.'; ++i){
         int index = alphanum_to_int(begin[i]);
-        if(index > 35) printf("Bad %c\n", begin[i]);
+        if(index > 35)  fprintf(stderr, "Bad %c\n", begin[i]);
         truth[i*NUMCHARS+index] = 1;
     }
     for(;i < n; ++i){
@@ -456,7 +456,7 @@ void fill_truth(char *path, char **labels, int k, float *truth)
             ++count;
         }
     }
-    if(count != 1) printf("Too many or too few labels: %d, %s\n", count, path);
+    if(count != 1)  fprintf(stderr, "Too many or too few labels: %d, %s\n", count, path);
 }
 
 void fill_hierarchy(float *truth, int k, tree *hierarchy)
@@ -474,7 +474,7 @@ void fill_hierarchy(float *truth, int k, tree *hierarchy)
     int i;
     int count = 0;
     for(j = 0; j < hierarchy->groups; ++j){
-        //printf("%d\n", count);
+        // fprintf(stderr, "%d\n", count);
         int mask = 1;
         for(i = 0; i < hierarchy->group_size[j]; ++i){
             if(truth[count + i]){
@@ -528,7 +528,7 @@ matrix load_tags_paths(char **paths, int n, int k)
         }
         fclose(file);
     }
-    printf("%d/%d\n", count, n);
+     fprintf(stderr, "%d/%d\n", count, n);
     return y;
 }
 
@@ -865,7 +865,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 void *load_thread(void *ptr)
 {
     //srand(time(0));
-    //printf("Loading data: %d\n", random_gen());
+    // fprintf(stderr, "Loading data: %d\n", random_gen());
     load_args a = *(struct load_args*)ptr;
     if(a.exposure == 0) a.exposure = 1;
     if(a.saturation == 0) a.saturation = 1;

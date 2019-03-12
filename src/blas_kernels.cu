@@ -365,12 +365,12 @@ __global__ void reorg_kernel(int N, float *x, int w, int h, int c, int batch, in
     int offset = in_c / out_c;
     int w2 = in_w*stride + offset % stride;
     int h2 = in_h*stride + offset / stride;
-    //printf("%d\n", offset);
+    // fprintf(stderr, "%d\n", offset);
     int out_index = w2 + w*stride*(h2 + h*stride*(c2 + out_c*b));
 
-   // printf("%d %d %d\n", w2, h2, c2);
-    //printf("%d %d\n", in_index, out_index);
-    //if(out_index >= N || out_index < 0) printf("bad bad bad \n");
+   //  fprintf(stderr, "%d %d %d\n", w2, h2, c2);
+    // fprintf(stderr, "%d %d\n", in_index, out_index);
+    //if(out_index >= N || out_index < 0)  fprintf(stderr, "bad bad bad \n");
 
     if(forward) out[out_index] = x[in_index];
     else out[in_index] = x[out_index];

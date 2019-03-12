@@ -15,13 +15,13 @@ void train_swag(char *cfgfile, char *weightfile)
     char *backup_directory = "/home/pjreddie/backup/";
     srand(time(0));
     char *base = basecfg(cfgfile);
-    printf("%s\n", base);
+     fprintf(stderr, "%s\n", base);
     float avg_loss = -1;
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = net.batch*net.subdivisions;
     int i = *net.seen/imgs;
     data train, buffer;
@@ -58,14 +58,14 @@ void train_swag(char *cfgfile, char *weightfile)
         train = buffer;
         load_thread = load_data_in_thread(args);
 
-        printf("Loaded: %lf seconds\n", sec(clock()-time));
+         fprintf(stderr, "Loaded: %lf seconds\n", sec(clock()-time));
 
         time=clock();
         float loss = train_network(net, train);
         if (avg_loss < 0) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
 
-        printf("%d: %f, %f avg, %f rate, %lf seconds, %d images\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
+         fprintf(stderr, "%d: %f, %f avg, %f rate, %lf seconds, %d images\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
         if(i%1000==0 || i == 600){
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);

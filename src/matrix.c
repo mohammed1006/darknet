@@ -149,35 +149,35 @@ void matrix_to_csv(matrix m)
 
     for(i = 0; i < m.rows; ++i){
         for(j = 0; j < m.cols; ++j){
-            if(j > 0) printf(",");
-            printf("%.17g", m.vals[i][j]);
+            if(j > 0)  fprintf(stderr, ",");
+             fprintf(stderr, "%.17g", m.vals[i][j]);
         }
-        printf("\n");
+         fprintf(stderr, "\n");
     }
 }
 
 void print_matrix(matrix m)
 {
     int i, j;
-    printf("%d X %d Matrix:\n",m.rows, m.cols);
-    printf(" __");
-    for(j = 0; j < 16*m.cols-1; ++j) printf(" ");
-    printf("__ \n");
+     fprintf(stderr, "%d X %d Matrix:\n",m.rows, m.cols);
+     fprintf(stderr, " __");
+    for(j = 0; j < 16*m.cols-1; ++j)  fprintf(stderr, " ");
+     fprintf(stderr, "__ \n");
 
-    printf("|  ");
-    for(j = 0; j < 16*m.cols-1; ++j) printf(" ");
-    printf("  |\n");
+     fprintf(stderr, "|  ");
+    for(j = 0; j < 16*m.cols-1; ++j)  fprintf(stderr, " ");
+     fprintf(stderr, "  |\n");
 
     for(i = 0; i < m.rows; ++i){
-        printf("|  ");
+         fprintf(stderr, "|  ");
         for(j = 0; j < m.cols; ++j){
-            printf("%15.7f ", m.vals[i][j]);
+             fprintf(stderr, "%15.7f ", m.vals[i][j]);
         }
-        printf(" |\n");
+         fprintf(stderr, " |\n");
     }
-    printf("|__");
-    for(j = 0; j < 16*m.cols-1; ++j) printf(" ");
-    printf("__|\n");
+     fprintf(stderr, "|__");
+    for(j = 0; j < 16*m.cols-1; ++j)  fprintf(stderr, " ");
+     fprintf(stderr, "__|\n");
 }
 
 
@@ -282,7 +282,7 @@ int *sample(int n)
 float dist(float *x, float *y, int n)
 {
     int i;
-    //printf(" x0 = %f, x1 = %f, y0 = %f, y1 = %f \n", x[0], x[1], y[0], y[1]);
+    // fprintf(stderr, " x0 = %f, x1 = %f, y0 = %f, y1 = %f \n", x[0], x[1], y[0], y[1]);
     float mw = (x[0] < y[0]) ? x[0] : y[0];
     float mh = (x[1] < y[1]) ? x[1] : y[1];
     float inter = mw*mh;
@@ -324,7 +324,7 @@ model do_kmeans(matrix data, int k)
     for(i = 0; i < 1000 && !kmeans_expectation(data, assignments, centers); ++i) {
         kmeans_maximization(data, assignments, centers);
     }
-    printf("\n iterations = %d \n", i);
+     fprintf(stderr, "\n iterations = %d \n", i);
     model m;
     m.assignments = assignments;
     m.centers = centers;

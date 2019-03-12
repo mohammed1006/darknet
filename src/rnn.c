@@ -100,8 +100,8 @@ float_pair get_rnn_data(unsigned char *text, size_t *offsets, int characters, si
 
             if(curr > 255 || curr <= 0 || next > 255 || next <= 0){
                 /*text[(index+j+2)%len] = 0;
-                printf("%ld %d %d %d %d\n", index, j, len, (int)text[index+j], (int)text[index+j+1]);
-                printf("%s", text+index);
+                 fprintf(stderr, "%ld %d %d %d %d\n", index, j, len, (int)text[index+j], (int)text[index+j+1]);
+                 fprintf(stderr, "%s", text+index);
                 */
                 error("Bad char");
             }
@@ -163,15 +163,15 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
     int i = (*net.seen)/net.batch;
 
     int streams = batch/steps;
-    printf("\n batch = %d, steps = %d, streams = %d, subdivisions = %d, text_size = %d \n", batch, steps, streams, net.subdivisions, size);
-    printf(" global_batch = %d \n", batch*net.subdivisions);
+     fprintf(stderr, "\n batch = %d, steps = %d, streams = %d, subdivisions = %d, text_size = %d \n", batch, steps, streams, net.subdivisions, size);
+     fprintf(stderr, " global_batch = %d \n", batch*net.subdivisions);
     size_t *offsets = calloc(streams, sizeof(size_t));
     int j;
     for(j = 0; j < streams; ++j){
         offsets[j] = rand_size_t()%size;
-        //printf(" offset[%d] = %d, ", j, offsets[j]);
+        // fprintf(stderr, " offset[%d] = %d, ", j, offsets[j]);
     }
-    //printf("\n");
+    // fprintf(stderr, "\n");
 
     clock_t time;
     while(get_current_batch(net) < net.max_batches){
@@ -194,7 +194,7 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
         fprintf(stderr, "%d: %f, %f avg, %f rate, %lf seconds, %f epochs\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), (float) chars/size);
 
         for(j = 0; j < streams; ++j){
-            //printf("%d\n", j);
+            // fprintf(stderr, "%d\n", j);
             if(rand()%10 == 0){
                 //fprintf(stderr, "Reset\n");
                 offsets[j] = rand_size_t()%size;
@@ -220,9 +220,9 @@ void train_char_rnn(char *cfgfile, char *weightfile, char *filename, int clear, 
 
 void print_symbol(int n, char **tokens){
     if(tokens){
-        printf("%s ", tokens[n]);
+         fprintf(stderr, "%s ", tokens[n]);
     } else {
-        printf("%c", n);
+         fprintf(stderr, "%c", n);
     }
 }
 
@@ -272,7 +272,7 @@ void test_char_rnn(char *cfgfile, char *weightfile, int num, char *seed, float t
         float *out = network_predict(net, input);
         input[c] = 0;
         for(j = 32; j < 127; ++j){
-            //printf("%d %c %f\n",j, j, out[j]);
+            // fprintf(stderr, "%d %c %f\n",j, j, out[j]);
         }
         for(j = 0; j < inputs; ++j){
             if (out[j] < .0001) out[j] = 0;
@@ -283,7 +283,7 @@ void test_char_rnn(char *cfgfile, char *weightfile, int num, char *seed, float t
         //c = top_max_index(out, inputs, 2);
         print_symbol(c, tokens);
     }
-    printf("\n");
+     fprintf(stderr, "\n");
 }
 
 void test_tactic_rnn(char *cfgfile, char *weightfile, int num, float temp, int rseed, char *token_file)
@@ -328,7 +328,7 @@ void test_tactic_rnn(char *cfgfile, char *weightfile, int num, float temp, int r
         out = network_predict(net, input);
         input[c] = 0;
     }
-    printf("\n");
+     fprintf(stderr, "\n");
 }
 
 void valid_tactic_rnn(char *cfgfile, char *weightfile, char *seed)
@@ -379,7 +379,7 @@ void valid_tactic_rnn(char *cfgfile, char *weightfile, char *seed)
         ++count;
         sum += log(out[next])/log2;
         c = next;
-        printf("%d %d Perplexity: %4.4f    Word Perplexity: %4.4f\n", count, words, pow(2, -sum/count), pow(2, -sum/words));
+         fprintf(stderr, "%d %d Perplexity: %4.4f    Word Perplexity: %4.4f\n", count, words, pow(2, -sum/count), pow(2, -sum/words));
     }
 }
 
@@ -420,7 +420,7 @@ void valid_char_rnn(char *cfgfile, char *weightfile, char *seed)
         input[c] = 0;
         sum += log(out[next])/log2;
         c = next;
-        printf("%d Perplexity: %4.4f    Word Perplexity: %4.4f\n", count, pow(2, -sum/count), pow(2, -sum/words));
+         fprintf(stderr, "%d Perplexity: %4.4f    Word Perplexity: %4.4f\n", count, pow(2, -sum/count), pow(2, -sum/words));
     }
 }
 
@@ -465,11 +465,11 @@ void vec_char_rnn(char *cfgfile, char *weightfile, char *seed)
         #ifdef GPU
         cuda_pull_array(l.output_gpu, l.output, l.outputs);
         #endif
-        printf("%s", line);
+         fprintf(stderr, "%s", line);
         for(i = 0; i < l.outputs; ++i){
-            printf(",%g", l.output[i]);
+             fprintf(stderr, ",%g", l.output[i]);
         }
-        printf("\n");
+         fprintf(stderr, "\n");
     }
 }
 

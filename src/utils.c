@@ -158,13 +158,13 @@ void pm(int M, int N, float *A)
 {
     int i,j;
     for(i =0 ; i < M; ++i){
-        printf("%d ", i+1);
+         fprintf(stderr, "%d ", i+1);
         for(j = 0; j < N; ++j){
-            printf("%2.4f, ", A[i*N+j]);
+             fprintf(stderr, "%2.4f, ", A[i*N+j]);
         }
-        printf("\n");
+         fprintf(stderr, "\n");
     }
-    printf("\n");
+     fprintf(stderr, "\n");
 }
 
 void find_replace(char *str, char *orig, char *rep, char *output)
@@ -369,7 +369,7 @@ char *fgetl(FILE *fp)
             size *= 2;
             line = realloc(line, size*sizeof(char));
             if(!line) {
-                printf("%ld\n", size);
+                 fprintf(stderr, "%ld\n", size);
                 malloc_error();
             }
         }
@@ -532,7 +532,7 @@ void print_statistics(float *a, int n)
 {
     float m = mean_array(a, n);
     float v = variance_array(a, n);
-    printf("MSE: %.6f, Mean: %.6f, Variance: %.6f\n", mse_array(a, n), m, v);
+     fprintf(stderr, "MSE: %.6f, Mean: %.6f, Variance: %.6f\n", mse_array(a, n), m, v);
 }
 
 float variance_array(float *a, int n)

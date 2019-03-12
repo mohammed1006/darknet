@@ -31,12 +31,12 @@ void train_captcha(char *cfgfile, char *weightfile)
     srand(time(0));
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
-    printf("%s\n", base);
+     fprintf(stderr, "%s\n", base);
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = 1024;
     int i = *net.seen/imgs;
     int solved = 1;
@@ -48,7 +48,7 @@ void train_captcha(char *cfgfile, char *weightfile)
         plist = get_paths("/data/captcha/reimgs.raw.list");
     }
     char **paths = (char **)list_to_array(plist);
-    printf("%d\n", plist->size);
+     fprintf(stderr, "%d\n", plist->size);
     clock_t time;
     pthread_t load_thread;
     data train;
@@ -80,12 +80,12 @@ void train_captcha(char *cfgfile, char *weightfile)
          */
 
         load_thread = load_data_in_thread(args);
-        printf("Loaded: %lf seconds\n", sec(clock()-time));
+         fprintf(stderr, "Loaded: %lf seconds\n", sec(clock()-time));
         time=clock();
         float loss = train_network(net, train);
         if(avg_loss == -1) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
-        printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), *net.seen);
+         fprintf(stderr, "%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), *net.seen);
         free_data(train);
         if(i%100==0){
             char buff[256];
@@ -112,7 +112,7 @@ void test_captcha(char *cfgfile, char *weightfile, char *filename)
         if(filename){
             strncpy(input, filename, 256);
         }else{
-            //printf("Enter Image Path: ");
+            // fprintf(stderr, "Enter Image Path: ");
             //fflush(stdout);
             input = fgets(input, 256, stdin);
             if(!input) return;
@@ -122,13 +122,13 @@ void test_captcha(char *cfgfile, char *weightfile, char *filename)
         float *X = im.data;
         float *predictions = network_predict(net, X);
         top_predictions(net, 26, indexes);
-        //printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
+        // fprintf(stderr, "%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         for(i = 0; i < 26; ++i){
             int index = indexes[i];
-            if(i != 0) printf(", ");
-            printf("%s %f", names[index], predictions[index]);
+            if(i != 0)  fprintf(stderr, ", ");
+             fprintf(stderr, "%s %f", names[index], predictions[index]);
         }
-        printf("\n");
+         fprintf(stderr, "\n");
         fflush(stdout);
         free_image(im);
         if (filename) break;
@@ -155,7 +155,7 @@ void valid_captcha(char *cfgfile, char *weightfile, char *filename)
         image im = load_image_color(paths[i], net.w, net.h);
         float *X = im.data;
         float *predictions = network_predict(net, X);
-        //printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
+        // fprintf(stderr, "%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         int truth = -1;
         for(j = 0; j < 13; ++j){
             if (strstr(paths[i], labels[j])) truth = j;
@@ -164,12 +164,12 @@ void valid_captcha(char *cfgfile, char *weightfile, char *filename)
             fprintf(stderr, "bad: %s\n", paths[i]);
             return;
         }
-        printf("%d, ", truth);
+         fprintf(stderr, "%d, ", truth);
         for(j = 0; j < outputs; ++j){
-            if (j != 0) printf(", ");
-            printf("%f", predictions[j]);
+            if (j != 0)  fprintf(stderr, ", ");
+             fprintf(stderr, "%f", predictions[j]);
         }
-        printf("\n");
+         fprintf(stderr, "\n");
         fflush(stdout);
         free_image(im);
         if (filename) break;
@@ -182,17 +182,17 @@ void valid_captcha(char *cfgfile, char *weightfile, char *filename)
    float avg_loss = -1;
    srand(time(0));
    char *base = basecfg(cfgfile);
-   printf("%s\n", base);
+    fprintf(stderr, "%s\n", base);
    network net = parse_network_cfg(cfgfile);
    if(weightfile){
    load_weights(&net, weightfile);
    }
-   printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+    fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
    int imgs = 1024;
    int i = net.seen/imgs;
    list *plist = get_paths("/data/captcha/train.auto5");
    char **paths = (char **)list_to_array(plist);
-   printf("%d\n", plist->size);
+    fprintf(stderr, "%d\n", plist->size);
    clock_t time;
    while(1){
    ++i;
@@ -200,13 +200,13 @@ void valid_captcha(char *cfgfile, char *weightfile, char *filename)
    data train = load_data_captcha(paths, imgs, plist->size, 10, 200, 60);
    translate_data_rows(train, -128);
    scale_data_rows(train, 1./128);
-   printf("Loaded: %lf seconds\n", sec(clock()-time));
+    fprintf(stderr, "Loaded: %lf seconds\n", sec(clock()-time));
    time=clock();
    float loss = train_network(net, train);
    net.seen += imgs;
    if(avg_loss == -1) avg_loss = loss;
    avg_loss = avg_loss*.9 + loss*.1;
-   printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), net.seen);
+    fprintf(stderr, "%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), net.seen);
    free_data(train);
    if(i%10==0){
    char buff[256];
@@ -227,7 +227,7 @@ void valid_captcha(char *cfgfile, char *weightfile, char *filename)
    }
    char filename[256];
    while(1){
-   printf("Enter filename: ");
+    fprintf(stderr, "Enter filename: ");
    fgets(filename, 256, stdin);
    strtok(filename, "\n");
    image im = load_image_color(filename, 300, 57);
@@ -248,30 +248,30 @@ void encode_captcha(char *cfgfile, char *weightfile)
 float avg_loss = -1;
 srand(time(0));
 char *base = basecfg(cfgfile);
-printf("%s\n", base);
+ fprintf(stderr, "%s\n", base);
 network net = parse_network_cfg(cfgfile);
 if(weightfile){
     load_weights(&net, weightfile);
 }
-printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+ fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
 int imgs = 1024;
 int i = net.seen/imgs;
 list *plist = get_paths("/data/captcha/encode.list");
 char **paths = (char **)list_to_array(plist);
-printf("%d\n", plist->size);
+ fprintf(stderr, "%d\n", plist->size);
 clock_t time;
 while(1){
     ++i;
     time=clock();
     data train = load_data_captcha_encode(paths, imgs, plist->size, 300, 57);
     scale_data_rows(train, 1./255);
-    printf("Loaded: %lf seconds\n", sec(clock()-time));
+     fprintf(stderr, "Loaded: %lf seconds\n", sec(clock()-time));
     time=clock();
     float loss = train_network(net, train);
     net.seen += imgs;
     if(avg_loss == -1) avg_loss = loss;
     avg_loss = avg_loss*.9 + loss*.1;
-    printf("%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), net.seen);
+     fprintf(stderr, "%d: %f, %f avg, %lf seconds, %d images\n", i, loss, avg_loss, sec(clock()-time), net.seen);
     free_matrix(train.X);
     if(i%100==0){
         char buff[256];
@@ -285,7 +285,7 @@ void validate_captcha(char *cfgfile, char *weightfile)
 {
     srand(time(0));
     char *base = basecfg(cfgfile);
-    printf("%s\n", base);
+     fprintf(stderr, "%s\n", base);
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
@@ -313,7 +313,7 @@ void validate_captcha(char *cfgfile, char *weightfile)
         }
         accuracy += allcorrect;
     }
-    printf("Word Accuracy: %f, Char Accuracy %f\n", (float)accuracy/imgs, (float)correct/total);
+     fprintf(stderr, "Word Accuracy: %f, Char Accuracy %f\n", (float)accuracy/imgs, (float)correct/total);
     free_data(valid);
 }
 
@@ -322,7 +322,7 @@ void test_captcha(char *cfgfile, char *weightfile)
     setbuf(stdout, NULL);
     srand(time(0));
     //char *base = basecfg(cfgfile);
-    //printf("%s\n", base);
+    // fprintf(stderr, "%s\n", base);
     network net = parse_network_cfg(cfgfile);
     set_batch_network(&net, 1);
     if(weightfile){
@@ -330,7 +330,7 @@ void test_captcha(char *cfgfile, char *weightfile)
     }
     char filename[256];
     while(1){
-        //printf("Enter filename: ");
+        // fprintf(stderr, "Enter filename: ");
         fgets(filename, 256, stdin);
         strtok(filename, "\n");
         image im = load_image_color(filename, 200, 60);

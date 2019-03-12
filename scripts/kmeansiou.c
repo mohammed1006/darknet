@@ -158,15 +158,15 @@ int main(int argc, char *argv[])
         model m = do_kmeans(data, k);
         int *assignments = m.assignments;
         for(i = 0; i < k; ++i){
-            if(i != 0) printf("-\n");
+            if(i != 0)  fprintf(stderr, "-\n");
             for(j = 0; j < data.rows; ++j){   
                 if(!(assignments[j] == i)) continue;
-                printf("%f, %f\n", data.vals[j][0], data.vals[j][1]);
+                 fprintf(stderr, "%f, %f\n", data.vals[j][0], data.vals[j][1]);
             }
         }
     }else if(strcmp(argv[2], "centers")==0){
         model m = do_kmeans(data, k);
-        printf("WCSS: %f\n", WCSS(data, m.assignments, m.centers));
+         fprintf(stderr, "WCSS: %f\n", WCSS(data, m.assignments, m.centers));
         int *counts = 0;
         if(count){
             counts = calloc(k, sizeof(int));
@@ -175,13 +175,13 @@ int main(int argc, char *argv[])
             }
         }
         for(j = 0; j < m.centers.rows; ++j){
-            if(count) printf("%d, ", counts[j]);
-            printf("%f, %f\n", m.centers.vals[j][0], m.centers.vals[j][1]);
+            if(count)  fprintf(stderr, "%d, ", counts[j]);
+             fprintf(stderr, "%f, %f\n", m.centers.vals[j][0], m.centers.vals[j][1]);
         }
     }else if(strcmp(argv[2], "scan")==0){
         for(i = 1; i <= k; ++i){
             model m = do_kmeans(data, i);
-            printf("%f\n", WCSS(data, m.assignments, m.centers));
+             fprintf(stderr, "%f\n", WCSS(data, m.assignments, m.centers));
         }
     }
     return 0;

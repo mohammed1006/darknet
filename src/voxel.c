@@ -27,7 +27,7 @@ void extract_voxel(char *lfile, char *rfile, char *prefix)
         if(!l.w || !r.w) break;
         if(count%100 == 0) {
             shift = best_3d_shift_r(l, r, -l.h/100, l.h/100);
-            printf("%d\n", shift);
+             fprintf(stderr, "%d\n", shift);
         }
         image ls = crop_image(l, (l.w - w)/2, (l.h - h)/2, w, h);
         image rs = crop_image(r, 105 + (r.w - w)/2, (r.h - h)/2 + shift, w, h);
@@ -44,7 +44,7 @@ void extract_voxel(char *lfile, char *rfile, char *prefix)
     }
 
 #else
-    printf("need OpenCV for extraction\n");
+     fprintf(stderr, "need OpenCV for extraction\n");
 #endif
 }
 
@@ -54,13 +54,13 @@ void train_voxel(char *cfgfile, char *weightfile)
     char *backup_directory = "/home/pjreddie/backup/";
     srand(time(0));
     char *base = basecfg(cfgfile);
-    printf("%s\n", base);
+     fprintf(stderr, "%s\n", base);
     float avg_loss = -1;
     network net = parse_network_cfg(cfgfile);
     if(weightfile){
         load_weights(&net, weightfile);
     }
-    printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
+     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net.learning_rate, net.momentum, net.decay);
     int imgs = net.batch*net.subdivisions;
     int i = *net.seen/imgs;
     data train, buffer;
@@ -90,14 +90,14 @@ void train_voxel(char *cfgfile, char *weightfile)
         train = buffer;
         load_thread = load_data_in_thread(args);
 
-        printf("Loaded: %lf seconds\n", sec(clock()-time));
+         fprintf(stderr, "Loaded: %lf seconds\n", sec(clock()-time));
 
         time=clock();
         float loss = train_network(net, train);
         if (avg_loss < 0) avg_loss = loss;
         avg_loss = avg_loss*.9 + loss*.1;
 
-        printf("%d: %f, %f avg, %f rate, %lf seconds, %d images\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
+         fprintf(stderr, "%d: %f, %f avg, %f rate, %lf seconds, %d images\n", i, loss, avg_loss, get_current_rate(net), sec(clock()-time), i*imgs);
         if(i%1000==0){
             char buff[256];
             sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
@@ -131,7 +131,7 @@ void test_voxel(char *cfgfile, char *weightfile, char *filename)
         if(filename){
             strncpy(input, filename, 256);
         }else{
-            printf("Enter Image Path: ");
+             fprintf(stderr, "Enter Image Path: ");
             fflush(stdout);
             input = fgets(input, 256, stdin);
             if(!input) return;
@@ -139,13 +139,13 @@ void test_voxel(char *cfgfile, char *weightfile, char *filename)
         }
         image im = load_image_color(input, 0, 0);
         resize_network(&net, im.w, im.h);
-        printf("%d %d\n", im.w, im.h);
+         fprintf(stderr, "%d %d\n", im.w, im.h);
 
         float *X = im.data;
         time=clock();
         network_predict(net, X);
         image out = get_network_image(net);
-        printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
+         fprintf(stderr, "%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         save_image(out, "out");
 
         free_image(im);

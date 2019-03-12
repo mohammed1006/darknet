@@ -86,7 +86,7 @@ int get_device_name(int gpu, char* deviceName) {
 void check_cuda(cudaError_t status) {
     if (status != cudaSuccess) {
         const char *s = cudaGetErrorString(status);
-        printf("CUDA Error Prev: %s\n", s);
+         fprintf(stderr, "CUDA Error Prev: %s\n", s);
     }
 }
 #endif

@@ -275,7 +275,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
         forward_algo = CUDNN_CONVOLUTION_FWD_NO_WORKSPACE;
         backward_algo = CUDNN_CONVOLUTION_BWD_DATA_NO_WORKSPACE;
         backward_filter = CUDNN_CONVOLUTION_BWD_FILTER_NO_WORKSPACE;
-        printf(" CUDNN-slow ");
+         fprintf(stderr, " CUDNN-slow ");
     }
 
     CHECK_CUDNN(cudnnGetConvolutionForwardAlgorithm(cudnn_handle(),
@@ -578,7 +578,7 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
     size_t total_byte;
     CHECK_CUDA(cudaMemGetInfo(&free_byte, &total_byte));
     if (l->workspace_size > free_byte || l->workspace_size >= total_byte / 2) {
-        printf(" used slow CUDNN algo without Workspace! Need memory: %zu, available: %zu\n", l->workspace_size, (free_byte < total_byte/2) ? free_byte : total_byte/2);
+         fprintf(stderr, " used slow CUDNN algo without Workspace! Need memory: %zu, available: %zu\n", l->workspace_size, (free_byte < total_byte/2) ? free_byte : total_byte/2);
         cudnn_convolutional_setup(l, cudnn_smallest);
         l->workspace_size = get_convolutional_workspace_size(*l);
     }
@@ -628,7 +628,7 @@ void gemm_nn_custom(int M, int N, int K, float ALPHA,
     for (i = 0; i < M; ++i) {
         for (k = 0; k < K; ++k) {
             register float A_PART = ALPHA*A[i*lda + k];
-            //printf("\n weight = %f \n", A_PART);
+            // fprintf(stderr, "\n weight = %f \n", A_PART);
             for (j = 0; j < N; ++j) {
                 C[i*ldc + j] += A_PART*B[k*ldb + j];
             }
@@ -721,7 +721,7 @@ void binary_align_weights(convolutional_layer *l)
             }
         }
 
-        //printf("\n l.index = %d \t aw[0] = %f, aw[1] = %f, aw[2] = %f, aw[3] = %f \n", l->index, align_weights[0], align_weights[1], align_weights[2], align_weights[3]);
+        // fprintf(stderr, "\n l.index = %d \t aw[0] = %f, aw[1] = %f, aw[2] = %f, aw[3] = %f \n", l->index, align_weights[0], align_weights[1], align_weights[2], align_weights[3]);
         //memcpy(l->binary_weights, align_weights, (l->size * l->size * l->c * l->n) * sizeof(float));
 
         float_to_bit(align_weights, l->align_bit_weights, align_weights_size);
@@ -731,8 +731,8 @@ void binary_align_weights(convolutional_layer *l)
         {
             int M = l->n;
             int N = l->out_w*l->out_h;
-            //printf("\n M = %d, N = %d, M %% 8 = %d, N %% 8 = %d - weights \n", M, N, M % 8, N % 8);
-            //printf("\n l.w = %d, l.c = %d, l.n = %d \n", l->w, l->c, l->n);
+            // fprintf(stderr, "\n M = %d, N = %d, M %% 8 = %d, N %% 8 = %d - weights \n", M, N, M % 8, N % 8);
+            // fprintf(stderr, "\n l.w = %d, l.c = %d, l.n = %d \n", l->w, l->c, l->n);
             for (i = 0; i < align_weights_size / 8; ++i) l->align_bit_weights[i] = ~(l->align_bit_weights[i]);
         }
 
@@ -781,7 +781,7 @@ void binary_align_weights(convolutional_layer *l)
 size_t binary_transpose_align_input(int k, int n, float *b, char **t_bit_input, size_t ldb_align, int bit_align)
 {
     size_t new_ldb = k + (ldb_align - k%ldb_align); // (k / 8 + 1) * 8;
-    //printf("\n n = %d, bit_align = %d \n", n, bit_align);
+    // fprintf(stderr, "\n n = %d, bit_align = %d \n", n, bit_align);
     size_t t_intput_size = new_ldb * bit_align;// n;
     size_t t_bit_input_size = t_intput_size / 8;// +1;
 
@@ -815,7 +815,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     if (l.xnor && (!l.align_bit_weights || state.train)) {
         if (!l.align_bit_weights || state.train) {
             binarize_weights(l.weights, l.n, l.c*l.size*l.size, l.binary_weights);
-            //printf("\n binarize_weights l.align_bit_weights = %p \n", l.align_bit_weights);
+            // fprintf(stderr, "\n binarize_weights l.align_bit_weights = %p \n", l.align_bit_weights);
         }
         swap_binary(&l);
         binarize_cpu(state.input, l.c*l.h*l.w*l.batch, l.binary_input);
@@ -843,7 +843,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
             if(l.c % 32 == 0)
             {
-                //printf(" l.index = %d - new XNOR \n", l.index);
+                // fprintf(stderr, " l.index = %d - new XNOR \n", l.index);
 
                 int ldb_align = l.lda_align;
                 size_t new_ldb = k + (ldb_align - k%ldb_align); // (k / 8 + 1) * 8;
@@ -935,7 +935,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
             { // else (l.c % 32 != 0)
 
                 //--------------------------------------------------------
-                //printf(" l.index = %d - old XNOR \n", l.index);
+                // fprintf(stderr, " l.index = %d - old XNOR \n", l.index);
 
                 //im2col_cpu_custom_align(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b, l.bit_align);
                 im2col_cpu_custom_bin(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b, l.bit_align);
@@ -984,7 +984,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
         }
         else {
-            //printf(" l.index = %d - FP32 \n", l.index);
+            // fprintf(stderr, " l.index = %d - FP32 \n", l.index);
             im2col_cpu_custom(state.input, l.c, l.h, l.w, l.size, l.stride, l.pad, b);
 
             gemm(0, 0, m, n, k, 1, a, k, b, n, 1, c, n);

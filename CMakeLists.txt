@@ -64,7 +64,16 @@ set(CUDA_COMPUTE_MODEL_37 "37") #Compute capability for Tesla K80
 set(CUDA_COMPUTE_MODEL_35 "35") #Compute capability for Tesla K20/K40
 set(CUDA_COMPUTE_MODEL_30 "30") #Compute capability for Tesla K10, Quadro K4000
 
-set(default_cuda_compute_model ${CUDA_COMPUTE_MODEL_30})
+message("CUDA version found: ${CUDA_VERSION}")
+
+if(CUDA_VERSION VERSION_GREATER_EQUAL 10.0)
+  set(default_cuda_compute_model ${CUDA_COMPUTE_MODEL_75})
+elseif(CUDA_VERSION VERSION_GREATER_EQUAL 9.0)
+  set(default_cuda_compute_model ${CUDA_COMPUTE_MODEL_70})
+else()
+  set(default_cuda_compute_model ${CUDA_COMPUTE_MODEL_30})
+endif()
+
 if(ENABLE_CUDA AND NOT CUDA_COMPUTE_MODEL)
   message(STATUS "Setting the compute model to ${default_cuda_compute_model} as none was specified.")
   set(CUDA_COMPUTE_MODEL "${default_cuda_compute_model}" CACHE

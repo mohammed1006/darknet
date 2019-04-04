@@ -27,7 +27,7 @@ namespace Darknet
         private static extern int LibGetNetColorDepth(IntPtr pDetector);
 
         [DllImport(YoloLibraryName, EntryPoint = "dispose")]
-        private static extern int DisposeYolo(IntPtr pDetector);
+        private static extern void DisposeYolo(IntPtr pDetector);
 
         [StructLayout(LayoutKind.Sequential)]
         public struct bbox_t

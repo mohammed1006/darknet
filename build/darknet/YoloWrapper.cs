@@ -60,7 +60,7 @@ namespace Darknet
 				DisposeYolo(pDetector);
         }
 		
-		public int NetworkWidth => LibGetNetWidth(pDetector);
+        public int NetworkWidth => LibGetNetWidth(pDetector);
 
         public int NetworkHeight => LibGetNetHeight(pDetector);
 

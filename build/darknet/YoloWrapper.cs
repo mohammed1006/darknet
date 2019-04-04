@@ -47,7 +47,7 @@ namespace Darknet
             public bbox_t[] candidates;
         }
 
-		private IntPtr pDetector;
+        private IntPtr pDetector;
 
         public YoloWrapper(string configurationFilename, string weightsFilename, int gpu)
         {
@@ -56,8 +56,10 @@ namespace Darknet
 
         public void Dispose()
         {
-			if (pDetector != IntPtr.Zero)
-				DisposeYolo(pDetector);
+		    if (pDetector != IntPtr.Zero) {
+		        DisposeYolo(pDetector);
+                pDetector = IntPtr.Zero;
+            }
         }
 		
         public int NetworkWidth => LibGetNetWidth(pDetector);

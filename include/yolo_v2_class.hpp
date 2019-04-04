@@ -55,19 +55,12 @@ struct bbox_t_container {
 #include <opencv2/imgproc/imgproc_c.h>   // C
 #endif
 
-extern "C" LIB_API int init(const char *configurationFilename, const char *weightsFilename, int gpu);
-extern "C" LIB_API int detect_image(const char *filename, bbox_t_container &container);
-extern "C" LIB_API int detect_mat(const uint8_t* data, const size_t data_length, bbox_t_container &container);
-extern "C" LIB_API int dispose();
-extern "C" LIB_API int get_device_count();
-extern "C" LIB_API int get_device_name(int gpu, char* deviceName);
-
 class Detector {
     std::shared_ptr<void> detector_gpu_ptr;
     std::deque<std::vector<bbox_t>> prev_bbox_vec_deque;
 public:
     const int cur_gpu_id;
-    float nms = .4;
+    float nms = .4f;
     bool wait_stream;
 
     LIB_API Detector(std::string cfg_filename, std::string weight_filename, int gpu_id = 0);

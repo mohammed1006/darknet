@@ -16,7 +16,7 @@ namespace Darknet
 
         [DllImport(YoloLibraryName, EntryPoint = "detect_mat")]
         private static extern int DetectImage(IntPtr pDetector, IntPtr pArray, int nSize, float threshold, ref BboxContainer container);
-		
+
         [DllImport(YoloLibraryName, EntryPoint = "get_net_width")]
         private static extern int LibGetNetWidth(IntPtr pDetector);
 
@@ -56,12 +56,13 @@ namespace Darknet
 
         public void Dispose()
         {
-		    if (pDetector != IntPtr.Zero) {
-		        DisposeYolo(pDetector);
+            if (pDetector != IntPtr.Zero)
+            {
+                DisposeYolo(pDetector);
                 pDetector = IntPtr.Zero;
             }
         }
-		
+
         public int NetworkWidth => LibGetNetWidth(pDetector);
 
         public int NetworkHeight => LibGetNetHeight(pDetector);

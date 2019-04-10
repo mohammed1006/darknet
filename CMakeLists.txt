@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.8)
 
 set(Darknet_MAJOR_VERSION 1)
 set(Darknet_MINOR_VERSION 0)
@@ -6,9 +6,12 @@ set(Darknet_PATCH_VERSION 0)
 set(Darknet_VERSION ${Darknet_MAJOR_VERSION}.${Darknet_MINOR_VERSION}.${Darknet_PATCH_VERSION})
 
 set(CMAKE_VERBOSE_MAKEFILE "FALSE" CACHE BOOL "Create verbose makefile")
+set(BUILD_SHARED_LIBS "TRUE" CACHE BOOL "Create darklib as a shared library")
 
 if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-  set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+  set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+  message(STATUS "VCPKG found: $ENV{VCPKG_ROOT}")
+  message(STATUS "Using VCPKG integration")
 endif()
 
 project(Darknet VERSION ${Darknet_VERSION})
@@ -73,18 +76,16 @@ if(ENABLE_CUDA AND NOT CUDA_COMPUTE_MODEL)
 endif()
 
 if(USE_INTEGRATED_LIBS)
-  include_directories(${CMAKE_CURRENT_LIST_DIR}/3rdparty/include)
-  set(PThreads_windows_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/3rdparty/include)
-  set(PThreads_windows_LIBRARY ${CMAKE_CURRENT_LIST_DIR}/3rdparty/lib/x64/pthreadVC2.lib)
+  set(PThreads_windows_DIR ${CMAKE_CURRENT_LIST_DIR}/3rdparty/pthreads CACHE PATH "Path where pthreads for windows can be located")
   add_definitions(-D_TIMESPEC_DEFINED)
 endif()
+set(Stb_DIR ${CMAKE_CURRENT_LIST_DIR}/3rdparty/stb CACHE PATH "Path where Stb image library can be located")
 
 set(CMAKE_DEBUG_POSTFIX d)
-
 add_definitions(-DUSE_CMAKE_LIBS)
 
 if(MSVC)
-  set(CMAKE_CXX_FLAGS "/wd4013 /wd4018 /wd4028 /wd4047 /wd4068 /wd4090 /wd4101 /wd4113 /wd4133 /wd4190 /wd4244 /wd4267 /wd4305 /wd4477 /wd4996 /fp:fast ${CMAKE_CXX_FLAGS}")
+  set(CMAKE_CXX_FLAGS "/wd4013 /wd4018 /wd4028 /wd4047 /wd4068 /wd4090 /wd4101 /wd4113 /wd4133 /wd4190 /wd4244 /wd4267 /wd4305 /wd4477 /wd4996 /wd4819 /fp:fast ${CMAKE_CXX_FLAGS}")
   string(REGEX REPLACE "/O2" "/Ox" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
   add_definitions(-D_CRT_RAND_S)
   add_definitions(-DNOMINMAX)
@@ -99,6 +100,9 @@ if(CMAKE_COMPILER_IS_GNUCC)
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+  if (UNIX AND NOT APPLE)
+    set(CMAKE_CXX_FLAGS "-pthread ${CMAKE_CXX_FLAGS}")  #force pthread to avoid bugs in some cmake setups
+  endif()
   set(CMAKE_CXX_FLAGS "-Wno-deprecated -Wno-writable-strings ${CMAKE_CXX_FLAGS}")
   string(REGEX REPLACE "-O0" "-Og" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
   string(REGEX REPLACE "-O3" "-Ofast" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
@@ -108,6 +112,7 @@ set(ENABLE_OPENCV "TRUE" CACHE BOOL "Enable OpenCV integration")
 if(ENABLE_OPENCV)
   find_package(OpenCV)
 endif()
+find_package(Stb REQUIRED)
 
 set(SKIP_USELIB_TRACK "FALSE" CACHE BOOL "Skip building uselib_track" FORCE)
 if(OpenCV_FOUND)
@@ -139,15 +144,15 @@ if(ENABLE_CUDA)
   if (MSVC)
     if(CUDNN_FOUND)
       if(OpenCV_FOUND)
-        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${CUDA_COMPUTE_MODEL},code=[sm_${CUDA_COMPUTE_MODEL},compute_${CUDA_COMPUTE_MODEL}] -Wno-deprecated-declarations -Xcompiler=\"/wd4028,/wd4190,/wd4244,/wd4267,/wd4305,/wd4477,/wd4996,/DGPU,/DCUDNN,/DOPENCV\" ${CMAKE_CUDA_FLAGS}")
+        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${CUDA_COMPUTE_MODEL},code=[sm_${CUDA_COMPUTE_MODEL},compute_${CUDA_COMPUTE_MODEL}] -Wno-deprecated-declarations -Xcompiler=\"/wd4028,/wd4190,/wd4244,/wd4267,/wd4305,/wd4477,/wd4996,/wd4819,/DGPU,/DCUDNN,/DOPENCV\" ${CMAKE_CUDA_FLAGS}")
       else()
-        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${CUDA_COMPUTE_MODEL},code=[sm_${CUDA_COMPUTE_MODEL},compute_${CUDA_COMPUTE_MODEL}] -Wno-deprecated-declarations -Xcompiler=\"/wd4028,/wd4190,/wd4244,/wd4267,/wd4305,/wd4477,/wd4996,/DGPU,/DCUDNN\" ${CMAKE_CUDA_FLAGS}")
+        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${CUDA_COMPUTE_MODEL},code=[sm_${CUDA_COMPUTE_MODEL},compute_${CUDA_COMPUTE_MODEL}] -Wno-deprecated-declarations -Xcompiler=\"/wd4028,/wd4190,/wd4244,/wd4267,/wd4305,/wd4477,/wd4996,/wd4819,/DGPU,/DCUDNN\" ${CMAKE_CUDA_FLAGS}")
       endif()
     else()
       if(OpenCV_FOUND)
-        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${CUDA_COMPUTE_MODEL},code=[sm_${CUDA_COMPUTE_MODEL},compute_${CUDA_COMPUTE_MODEL}] -Wno-deprecated-declarations -Xcompiler=\"/wd4028,/wd4190,/wd4244,/wd4267,/wd4305,/wd4477,/wd4996,/DGPU,/DOPENCV\" ${CMAKE_CUDA_FLAGS}")
+        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${CUDA_COMPUTE_MODEL},code=[sm_${CUDA_COMPUTE_MODEL},compute_${CUDA_COMPUTE_MODEL}] -Wno-deprecated-declarations -Xcompiler=\"/wd4028,/wd4190,/wd4244,/wd4267,/wd4305,/wd4477,/wd4996,/wd4819,/DGPU,/DOPENCV\" ${CMAKE_CUDA_FLAGS}")
       else()
-        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${CUDA_COMPUTE_MODEL},code=[sm_${CUDA_COMPUTE_MODEL},compute_${CUDA_COMPUTE_MODEL}] -Wno-deprecated-declarations -Xcompiler=\"/wd4028,/wd4190,/wd4244,/wd4267,/wd4305,/wd4477,/wd4996,/DGPU\" ${CMAKE_CUDA_FLAGS}")
+        set(CMAKE_CUDA_FLAGS "-gencode arch=compute_${CUDA_COMPUTE_MODEL},code=[sm_${CUDA_COMPUTE_MODEL},compute_${CUDA_COMPUTE_MODEL}] -Wno-deprecated-declarations -Xcompiler=\"/wd4028,/wd4190,/wd4244,/wd4267,/wd4305,/wd4477,/wd4996,/wd4819,/DGPU\" ${CMAKE_CUDA_FLAGS}")
       endif()
     endif()
   else()
@@ -165,6 +170,25 @@ if(ENABLE_CUDA)
       endif()
     endif()
   endif()
+endif()
+
+set(ENABLE_ZED_CAMERA "TRUE" CACHE BOOL "Enable ZED Camera support")
+if(ENABLE_CUDA)
+  if(ENABLE_ZED_CAMERA)
+    find_package(ZED 2 QUIET)
+    if(ZED_FOUND)
+      include_directories(${ZED_INCLUDE_DIRS})
+      link_directories(${ZED_LIBRARY_DIR})
+      add_definitions(-DZED_STEREO)
+      message(STATUS "ZED SDK enabled")
+    else()
+      message(STATUS "ZED SDK not found")
+      set(ENABLE_ZED_CAMERA "FALSE" CACHE BOOL "Enable ZED Camera support" FORCE)
+    endif()
+  endif()
+else()
+  message(STATUS "ZED SDK not enabled, since it requires CUDA")
+  set(ENABLE_ZED_CAMERA "FALSE" CACHE BOOL "Enable ZED Camera support" FORCE)
 endif()
 
 set(CMAKE_THREAD_PREFER_PTHREAD ON)
@@ -200,6 +224,7 @@ file(GLOB sources "${CMAKE_CURRENT_LIST_DIR}/src/*.c")
 #add also .cpp files
 list(APPEND sources
   ${CMAKE_CURRENT_LIST_DIR}/src/http_stream.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/src/image_opencv.cpp
 )
 #remove darknet.c file which is necessary only for the executable, not for the lib
 list(REMOVE_ITEM sources
@@ -241,7 +266,7 @@ if(OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
   add_executable(uselib_track ${CMAKE_CURRENT_LIST_DIR}/src/yolo_console_dll.cpp)
   target_compile_definitions(uselib_track PRIVATE TRACK_OPTFLOW=1)
   set_target_properties(uselib_track PROPERTIES LINKER_LANGUAGE CXX)
-  target_include_directories(uselib_track PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include>)
+  target_include_directories(uselib_track PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
   target_link_libraries(uselib_track PRIVATE ${OpenCV_LIBS})
 endif()
 
@@ -252,9 +277,9 @@ add_executable(darknet ${CMAKE_CURRENT_LIST_DIR}/src/darknet.c ${sources} ${head
 set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/src/darknet.c PROPERTIES LANGUAGE CXX)
 set_target_properties(darknet PROPERTIES LINKER_LANGUAGE CXX)
 
-target_include_directories(darknet PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include>)
-target_include_directories(darklib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include>)
-target_include_directories(uselib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include>)
+target_include_directories(darknet PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
+target_include_directories(darklib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
+target_include_directories(uselib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:include> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
 
 if(CUDNN_FOUND)
   target_link_libraries(darknet PRIVATE CuDNN::CuDNN)
@@ -287,9 +312,14 @@ endif()
 target_link_libraries(darknet PRIVATE Threads::Threads)
 target_link_libraries(darklib PRIVATE Threads::Threads)
 
+if(ENABLE_ZED_CAMERA)
+  target_link_libraries(darknet PRIVATE ${ZED_LIBRARIES})
+  target_link_libraries(uselib PRIVATE ${ZED_LIBRARIES})
+endif()
+
 if(ENABLE_CUDA)
-  target_link_libraries(darknet PRIVATE curand cublas)
-  target_link_libraries(darklib PRIVATE curand cublas)
+  target_link_libraries(darknet PRIVATE curand cublas cuda)
+  target_link_libraries(darklib PRIVATE curand cublas cuda)
   set_target_properties(darklib PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 endif()
 
@@ -300,21 +330,19 @@ endif()
 
 set_target_properties(darklib PROPERTIES PUBLIC_HEADER "${exported_headers};${CMAKE_CURRENT_LIST_DIR}/include/yolo_v2_class.hpp")
 
-install(TARGETS darklib uselib darknet EXPORT DarknetTargets
+install(TARGETS darklib EXPORT DarknetTargets
   RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
   LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
   ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
   PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}"
   COMPONENT dev
 )
+install(TARGETS uselib darknet
+  DESTINATION "${INSTALL_BIN_DIR}"
+)
 if(OpenCV_VERSION VERSION_GREATER "3.0" AND NOT SKIP_USELIB_TRACK)
   install(TARGETS uselib_track
-    EXPORT DarknetTargets
-    RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
-    LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
-    ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
-    PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}"
-    COMPONENT dev
+    DESTINATION "${INSTALL_BIN_DIR}"
   )
 endif()
 

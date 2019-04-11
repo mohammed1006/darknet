@@ -537,6 +537,9 @@ typedef struct network {
     float *output;
     learning_rate_policy policy;
 
+//TC: avg loss to stop training..
+    float avg_loss;
+
     float learning_rate;
     float learning_rate_min;
     float learning_rate_max;

@@ -293,6 +293,13 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             save_weights(net, buff);
         }
         free_data(train);
+
+//TC - stop if required avg loss was reached..
+        if (avg_loss < net.avg_loss)
+        {
+            fprintf(stderr, "\nTarget avg loss reached, stopping Training.\n\tAvg loss required:\t%f\n\tAvg loss reached:\t%f\n\n", net.avg_loss, avg_loss);
+            break;
+        }
     }
 #ifdef GPU
     if (ngpus != 1) sync_nets(nets, ngpus, 0);

@@ -24,9 +24,25 @@ list_weights = list_weights.split('\n')[:-1]
 for weight in list_weights:
 	os.system("./../darknet detector map "+data_file+" "+cfg_file+" "+path_to_weights+weight+" >> "+weight.split(".")[-2]+".log")
 
+print('start csv')
+
 csv_filename = 'map_plots.csv'
 f0 = open(csv_filename, 'w')
 writ = csv.writer(f0, delimiter = ',')
+csv_header = []
+csv_header.append('weight')
+f1 = open(names_file)
+line = f1.readline()
+while(len(line)):
+	csv_header.append( line.split('\n')[0] + '-ap' )
+	print( line.split('\n')[0] )
+	line = f1.readline()
+csv_header.append('F1-score')
+csv_header.append('mAP')
+
+writ.writerow(csv_header)
+
+print("headers written")
 
 # plot = OrderedDict()
 for weight in list_weights:
@@ -48,11 +64,15 @@ for weight in list_weights:
 	plot["objects"] = objects
 	f2 = open(weight.split(".")[-2] +".log")
 	line2 = f2.readline()
-	count = 0
 	while(len(line2)):
 		if("F1-score" in line2):
 			plot["F1-score"] = line2.split(" ")[line2.split(" ").index("F1-score") + 2]
 			csv_write_list.append( line2.split(" ")[line2.split(" ").index("F1-score") + 2] )
+		line2 = f2.readline()
+	f2 = open(weight.split(".")[-2] +".log")
+	line2 = f2.readline()
+	count = 0
+	while(len(line2)):
 		if("mAP" in line2 and "%" in line2):  
 			if(True): #count):
 				# print(count)

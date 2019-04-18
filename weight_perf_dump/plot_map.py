@@ -42,6 +42,8 @@ stop_flag = 0
 
 # print("hereon")
 
+
+# uses .pckl file to read performance metrics
 for file in sorted(os.listdir(folder_path)):
 	if file.endswith(".pckl"):
 		f = pickle.load(open(file,'rb'))

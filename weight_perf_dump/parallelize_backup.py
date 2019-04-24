@@ -53,6 +53,7 @@ if __name__ == "__main__":
 	stop_flag = 0
 	#Run train
 	first_run = 1
+	count_backup_files = 0
 	# perform_train( params_data_file, params_cfg_file, params_pretained_weight )
 	p = Process(target = perform_train, args = (params_data_file, params_cfg_file, params_pretained_weight,))
 	p.start()
@@ -76,7 +77,9 @@ if __name__ == "__main__":
 			csv_write_list.append('mAP')
 			writ.writerow(csv_write_list)
 			f0.close()
-		elif( first_run==0 and count_backup_files < int(os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1]) and int(os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1])>=2 ):
+			
+		elif( first_run==0 and count_backup_files < len(os.listdir(params_backup_path)) and len(os.listdir(params_backup_path))>=2 )
+			#int(os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1]) and int(os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1])>=2 ):
 			#new weight file create. Check mAP and stopping condition
 			#
 			count_backup_files = int( os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1] )

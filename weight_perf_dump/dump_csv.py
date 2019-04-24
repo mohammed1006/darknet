@@ -22,7 +22,7 @@ list_weights = os.popen("ls "+path_to_weights).read() #~/darknet/backup_guns").r
 list_weights = list_weights.split('\n')[:-1]
 
 for weight in list_weights:
-	os.system("./../darknet detector map "+data_file+" "+cfg_file+" "+path_to_weights+weight+" >> "+weight.split(".")[-2]+".log")
+	os.system("./darknet detector map "+data_file+" "+cfg_file+" "+path_to_weights+weight+" >> "+weight.split(".")[-2]+".log")
 
 print('start csv')
 
@@ -34,7 +34,7 @@ csv_header.append('weight')
 f1 = open(names_file)
 line = f1.readline()
 while(len(line)):
-	csv_header.append( line.split('\n')[0] + '-ap' )
+	csv_header.append( line.split('\n')[0] + '-AP' )
 	print( line.split('\n')[0] )
 	line = f1.readline()
 csv_header.append('F1-score')

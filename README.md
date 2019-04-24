@@ -6,7 +6,7 @@
 -For all the paths required such as, path to weight files, cfg file, data file go to plot.conf
 -First, delete all .pckl and .log files in the darknet/ folder, then run dump_csv.py. This produces .pckl and .log files for the weights in the mentioned path and produces the 
   .csv file with headers for the weight iteration, AP for each objects, F1-score and mAP in each line for ewach weight file.
--Then, run plot_map.py. This uses the csv file created by dump_csv.py and implements stopping conditions with parametres mentioned in plot.conf. The best mAP, the corrsponding 
+-Then, run calc_best_map.py. This uses the csv file created by dump_csv.py and implements stopping conditions with parametres mentioned in plot.conf. The best mAP, the corrsponding 
    iteration and epoch are printed out
 
 

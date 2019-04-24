@@ -18,18 +18,18 @@ while(len(line)):
 	# print(line)
 	line = line.split('\n')[0]
 	# print(line)
-	param_dict[line.split(' = ')[0]] = np.float32(line.split(' = ')[1])
+	param_dict[line.split(' = ')[0]] = (line.split(' = ')[1])
 	line = f.readline()
 # f.close()
 
 
-params_batch = param_dict["BATCH_SIZE"]
-params_sub_batch = param_dict["SUB_BATCH_SIZE"]
-params_min_epoch = param_dict["MIN_EPOCH"]
-params_max_epoch = param_dict["MAX_EPOCH"]
-params_min_delta = param_dict["MIN_DELTA"]
-params_patience = param_dict["PATIENCE"]
-params_gpu_indx = param_dict["GPU_NUM"]
+params_batch = np.float32( param_dict["BATCH_SIZE"] )
+params_sub_batch = np.float32( param_dict["SUB_BATCH_SIZE"] )
+params_min_epoch = np.float32( param_dict["MIN_EPOCH"] )
+params_max_epoch = np.float32( param_dict["MAX_EPOCH"] )
+params_min_delta = np.float32( param_dict["MIN_DELTA"] )
+params_patience = np.float32( param_dict["PATIENCE"] )
+params_gpu_indx = np.float32( param_dict["GPU_NUM"] )
 
 # NEW conditions for new params
 multi_map = np.array([])

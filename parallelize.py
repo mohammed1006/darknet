@@ -1,26 +1,31 @@
 import os, sys
 import numpy as np
 import cv2 as cv 
+import csv
 # import multiprocessing as mp
 from multiprocessing import Process
 from collections import OrderedDict
-import csv
+import subprocess
 import glob
 
 def perform_train(data_path, cfg_path, pretrained_weight):
-	# command_string = "./../darknet/ detector train ../data/gun.data ../cfg/yolov3_gun.cfg ../darknet53.conv.74 -gpus 1,2,3 -dont_show"
-	command_string = "./../darknet detector train "+data_path+" "+cfg_path+" "+pretrained_weight+" -gpus 1,2,3 -dont_show"
+	# command_string = "./../darknet detector train ../data/gun.data ../cfg/yolov3_gun.cfg ../darknet53.conv.74 -gpus 1,2,3 -dont_show"
+	#print("Inside perform_train")
+	command_string = "./darknet detector train "+data_path+" "+cfg_path+" "+pretrained_weight+" -gpus 1,2,3 -dont_show"
+	#print(command_string)
+	#os.popen(command_string).read()
+	#subprocess.call([command_string])
 	os.system(command_string)
 
 
 def perform_inference(data_path, cfg_path, weight_path, weight_file):
-	command_string = "./../darknet detector map "+data_path+" "+cfg_path+" "+weight_path+"/"+weight_file+" -gpus 0 -dont_show >> "+weight_file.split(".")[0]+".log"
-	os.system(command_string)
+	command_string = "./darknet detector map "+data_path+" "+cfg_path+" "+weight_path+"/"+weight_file+" -gpus 0 -dont_show >> "+weight_file.split(".")[0]+".log"
+	os.popen(command_string).read()
 
 
 if __name__ == "__main__": 
 	#initialize dictionary for stopping condition with configuration parameters
-	f = open('plot.conf','rb')
+	f = open('weight_perf_dump/plot.conf','rb')
 	line = f.readline()
 	param_dict = OrderedDict()
 	while(len(line)):
@@ -30,7 +35,7 @@ if __name__ == "__main__":
 		# print(line)
 		param_dict[line.split(' = ')[0]] = (line.split(' = ')[1])
 		line = f.readline()
-	# f.close()
+	#f.close()
 
 	params_batch = np.float32( param_dict["BATCH_SIZE"] )
 	params_sub_batch = np.float32( param_dict["SUB_BATCH_SIZE"] )
@@ -39,11 +44,11 @@ if __name__ == "__main__":
 	params_min_delta = np.float32( param_dict["MIN_DELTA"] )
 	params_patience = np.float32( param_dict["PATIENCE"] )
 	params_gpu_indx = np.float32( param_dict["GPU_NUM"] )
-	params_data_file = param_dict["DATA_FILE"]
-	params_cfg_file = param_dict["CFG_FILE"]
-	params_names_file = param_dict["NAMES_FILE"]
-	params_backup_path = param_dict["BACKUP"]
-	params_pretained_weight = param_dict["PRETRAINED"]
+	params_data_file = str( param_dict["DATA_FILE"] )
+	params_cfg_file = str( param_dict["CFG_FILE"] )
+	params_names_file = str( param_dict["NAMES_FILE"] )
+	params_backup_path = str( param_dict["BACKUP"] )
+	params_pretained_weight = str( param_dict["PRETRAINED"] )
 	# NEW conditions for new params
 	all_map = np.array([])
 	# baseline_map = -1
@@ -54,10 +59,11 @@ if __name__ == "__main__":
 	#Run train
 	first_run = 1
 	# perform_train( params_data_file, params_cfg_file, params_pretained_weight )
-	p = Process(target = perform_train, args = (params_data_file, params_cfg_file, params_pretained_weight,))
-	p.start()
+	#p = Process(target = perform_train, args = (params_data_file, params_cfg_file, params_pretained_weight,))
+	#p.start()
 	#Run test for mAP and F1 score with conditions for stop_flag
 	# backup_path = "/home/anerudh/darknet/backup_guns2_test"
+	print("starting mAP dump on test set!")
 	while(True):
 		if(first_run==1):
 			count_backup_files = int( os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1] )
@@ -80,27 +86,47 @@ if __name__ == "__main__":
 			#new weight file create. Check mAP and stopping condition
 			#
 			count_backup_files = int( os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1] )
-			# weight_file = sorted(os.popen("ls "+params_backup_path).read().split("\n"))[-2]
+			#weight_file = sorted(os.popen("ls "+params_backup_path).read().split("\n"))[-1]
 			files = glob.glob(params_backup_path+'/*')
 			files.sort(key=os.path.getmtime)
 			weight_file = files[-2]
 			
 			#run inference here-
+			print('              ____________________                ')
+			print('             /____________________\               ')
+			print('            /______________________\              ')
+			print('           /________________________\             ')
+			print('          /__________________________\            ')
+			print('         |____________________________|           ')
+			print('         |____________________________|           ')
+			print('         |____________________________|           ')
+			print('         |____________________________|           ')
+			print('         |____________________________|           ')
+			print('         |____________________________|           ')
+			print('         |____________________________|           ')
+			print('         |____________________________|           ')
+			print('          \__________________________/            ')
+			print('           \________________________/             ')
+			print('            \______________________/              ')
+			print('             \____________________/               ')
+			print("running inference")
 			perform_inference(params_data_file, params_cfg_file, params_backup_path, weight_file)
 			
 			csv_filename = 'map_plots_early_stop.csv'
 			f0 = open(csv_filename, 'a+')
 			writ = csv.writer(f0, delimiter = ',')
+
 			csv_write_list = []
 			csv_write_list.append(first_run)
 			csv_write_list.append(count_backup_files)
 			csv_write_list.append( int(os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1]) )
 			writ.writerow(csv_write_list)
-
-
+			
 			f1 = open(params_names_file)
 			line = f1.readline()
 			csv_write_list = []
+			if(weight_file.split('.')[0].split("_")[-1] == 'last'):
+				continue
 			csv_write_list.append( weight_file.split('.')[0].split("_")[-1] )
 			while(len(line)):
 				f2 = open(weight_file.split(".")[-2] +".log")
@@ -118,7 +144,7 @@ if __name__ == "__main__":
 					csv_write_list.append( line2.split(" ")[line2.split(" ").index("F1-score") + 2] )
 				if("mAP" in line2 and "%" in line2):  
 					csv_write_list.append( line2.split(' ')[8] )
-					all_map = np.append(multi_map, np.float32( line2.split(' ')[8] ))
+					all_map = np.append(all_map, np.float32( line2.split(' ')[8] ))
 					count = count +1
 				line2 = f2.readline()
 			writ.writerow(csv_write_list)
@@ -126,9 +152,10 @@ if __name__ == "__main__":
 			f0.close()
 
 			epoch = int( weight_file.split(".")[0].split("_")[-1] )
-			if(all_map[-1]>best_map):
-				best_map = all_map[-1]
-				best_map_iter = epoch
+			if(len(all_map)>=0):
+				if(all_map[-1]>best_map):
+					best_map = all_map[-1]
+					best_map_iter = epoch
 			if(len(all_map)>=2):
 				if( (all_map[-1]-all_map[-2])/(all_map[-2]) > params_min_delta ):
 					# baseline_map = multi_map[-1]
@@ -142,17 +169,24 @@ if __name__ == "__main__":
 				stop_flag = 1
 				break
 			
-		# f0 = open(csv_filename, 'a+')
-		# writ = csv.writer(f0, delimiter = ',')
-		# csv_write_list = []
-		# csv_write_list.append(first_run)
-		# csv_write_list.append(count_backup_files)
-		# csv_write_list.append( int(os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1]) )
-		# writ.writerow(csv_write_list)
-		# f0.close()
+			#print(int(os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1]))
+			#print(count_backup_files)
+			
+		#f0 = open(csv_filename, 'a+')
+		#writ = csv.writer(f0, delimiter = ',')
+		#csv_write_list = []
+		#csv_write_list.append(first_run)
+		#csv_write_list.append(count_backup_files)
+		#csv_write_list.append( int(os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1]) )
+		#writ.writerow(csv_write_list)
+		#f0.close()
+		#print(int(os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1]))
+		#print(count_backup_files)
 
+			
 	if(stop_flag):
-		p.terminate()
+		#p.terminate()
+		print('stop condition met')
 
 
 	print("best map: " + str(best_map) )

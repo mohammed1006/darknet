@@ -18,14 +18,15 @@ def perform_train(data_path, cfg_path, pretrained_weight):
 	os.system(command_string)
 
 
-def perform_inference(data_path, cfg_path, weight_path, weight_file):
-	command_string = "./darknet detector map "+data_path+" "+cfg_path+" "+weight_path+"/"+weight_file+" -gpus 0 -dont_show >> "+weight_file.split(".")[0]+".log"
-	os.popen(command_string).read()
+def perform_inference(data_path, cfg_path, weight_file):
+	command_string = "./darknet detector map "+data_path+" "+cfg_path+" "+weight_file+" -gpus 0 -dont_show >> "+weight_file.split(".")[0]+".log"
+	#os.popen(command_string).read()
+	os.system(command_string)
 
 
 if __name__ == "__main__": 
 	#initialize dictionary for stopping condition with configuration parameters
-	f = open('weight_perf_dump/plot.conf','rb')
+	f = open('weight_perf_dump/plot_multi_obj.conf','rb')
 	line = f.readline()
 	param_dict = OrderedDict()
 	while(len(line)):
@@ -34,6 +35,7 @@ if __name__ == "__main__":
 		line = line.split('\n')[0]
 		# print(line)
 		param_dict[line.split(' = ')[0]] = (line.split(' = ')[1])
+		print(param_dict[line.split(' = ')[0]])
 		line = f.readline()
 	#f.close()
 
@@ -58,15 +60,18 @@ if __name__ == "__main__":
 	stop_flag = 0
 	#Run train
 	first_run = 1
+	count_backup_files = 0
 	# perform_train( params_data_file, params_cfg_file, params_pretained_weight )
-	#p = Process(target = perform_train, args = (params_data_file, params_cfg_file, params_pretained_weight,))
-	#p.start()
+	p = Process(target = perform_train, args = (params_data_file, params_cfg_file, params_pretained_weight,), name = "Perform Train")
+	p.start()
+	
+	weights_logged = []
 	#Run test for mAP and F1 score with conditions for stop_flag
 	# backup_path = "/home/anerudh/darknet/backup_guns2_test"
 	print("starting mAP dump on test set!")
 	while(True):
 		if(first_run==1):
-			count_backup_files = int( os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1] )
+			count_backup_files = len(os.listdir(params_backup_path)) #int( os.popen("ls "+params_backup_path+"/*.weights -1 | wc -l").read()[:-1] )
 			first_run = 0
 			csv_filename = 'map_plots_early_stop.csv'
 			f0 = open(csv_filename, 'a+')
@@ -82,58 +87,64 @@ if __name__ == "__main__":
 			csv_write_list.append('mAP')
 			writ.writerow(csv_write_list)
 			f0.close()
-		elif( first_run==0 and count_backup_files < int(os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1]) and int(os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1])>=2 ):
+			print first_run, len(os.listdir(params_backup_path)), count_backup_files
+		elif( first_run==0 and count_backup_files < len(os.listdir(params_backup_path)) and len(os.listdir(params_backup_path))>=2 ):
+			#int(os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1]) and int(os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1])>=2 ):
 			#new weight file create. Check mAP and stopping condition
 			#
-			count_backup_files = int( os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1] )
+			count_backup_files = len(os.listdir(params_backup_path)) #int( os.popen("ls "+params_backup_path+"/*.weights -1 | wc -l").read()[:-1] )
 			#weight_file = sorted(os.popen("ls "+params_backup_path).read().split("\n"))[-1]
 			files = glob.glob(params_backup_path+'/*')
 			files.sort(key=os.path.getmtime)
-			weight_file = files[-2]
+			weight_file = files[-1]
 			
-			#run inference here-
-			print('              ____________________                ')
-			print('             /____________________\               ')
-			print('            /______________________\              ')
-			print('           /________________________\             ')
-			print('          /__________________________\            ')
-			print('         |____________________________|           ')
-			print('         |____________________________|           ')
-			print('         |____________________________|           ')
-			print('         |____________________________|           ')
-			print('         |____________________________|           ')
-			print('         |____________________________|           ')
-			print('         |____________________________|           ')
-			print('         |____________________________|           ')
-			print('          \__________________________/            ')
-			print('           \________________________/             ')
-			print('            \______________________/              ')
-			print('             \____________________/               ')
-			print("running inference")
-			perform_inference(params_data_file, params_cfg_file, params_backup_path, weight_file)
+			print( weight_file.split('.')[0].split("_")[-1] )
+			if(weight_file.split('.')[0].split("_")[-1] == 'last'):
+                        	continue
 			
+			if(weight_file.split('.')[0].split("_")[-1] in weights_logged):
+				continue
+			else:
+				weights_logged.append(weight_file.split('.')[0].split("_")[-1])
+								
 			csv_filename = 'map_plots_early_stop.csv'
 			f0 = open(csv_filename, 'a+')
 			writ = csv.writer(f0, delimiter = ',')
-
-			csv_write_list = []
-			csv_write_list.append(first_run)
-			csv_write_list.append(count_backup_files)
-			csv_write_list.append( int(os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1]) )
-			writ.writerow(csv_write_list)
+			#
+			#csv_write_list = []
+			#csv_write_list.append('running inference: start')
+			#csv_write_list.append( weight_file.split('.')[0].split("_")[-1] )
+			#writ.writerow(csv_write_list)
+			
+			perform_inference(params_data_file, params_cfg_file, weight_file) #params_backup_path, weight_file)
+			
+			#csv_write_list = []
+                        #csv_write_list.append('running inference: done')
+                        #writ.writerow(csv_write_list)
+			
+			#csv_write_list = []
+			#csv_write_list.append('second elif condition reached!')
+			#writ.writerow(csv_write_list)
+			
+			#csv_write_list = []
+			#csv_write_list.append(first_run)
+			#csv_write_list.append(count_backup_files)
+			#csv_write_list.append( int(os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1]) )
+			#writ.writerow(csv_write_list)
 			
 			f1 = open(params_names_file)
 			line = f1.readline()
 			csv_write_list = []
-			if(weight_file.split('.')[0].split("_")[-1] == 'last'):
-				continue
+			#if(weight_file.split('.')[0].split("_")[-1] == 'last'):
+			#	continue
 			csv_write_list.append( weight_file.split('.')[0].split("_")[-1] )
 			while(len(line)):
 				f2 = open(weight_file.split(".")[-2] +".log")
 				line2 = f2.readline()
 				while(len(line2)):
-					if(line[:-1] in line2):
-						csv_write_list.append( line2.split(" ")[line2.split(" ").index(line[:-1]+",") + 3] )
+					if(line[:-1] in line2 and 'ap' in line2):
+						csv_write_list.append( line2.split('\r')[-1].split(' ')[9] )
+						#csv_write_list.append( line2.split(" ")[line2.split(" ").index(line[:-1]+",") + 3] )
 					line2 = f2.readline()
 				line = f1.readline()
 			f2 = open(weight_file.split(".")[-2] +".log")
@@ -148,11 +159,33 @@ if __name__ == "__main__":
 					count = count +1
 				line2 = f2.readline()
 			writ.writerow(csv_write_list)
-
+			
+			#csv_write_list = []
+			#csv_write_list = 'process.pid: ' + str(p.getpid)
+			#writ.writerow(csv_write_list)
+			
 			f0.close()
-
+			
+			csv_filename = 'map_plots_early_stop.csv'
+                        f0 = open(csv_filename, 'a+')
+                        writ = csv.writer(f0, delimiter = ',')
+                        
+                        csv_write_list = []
+                        #csv_write_list.append('running inference: start')
+                        #csv_write_list.append( weight_file.split('.')[0].split("_")[-1] )
+                        #writ.writerow(csv_write_list)
+			
+			#if(len(os.listdir(params_backup_path))>=3):
+			#	stop_flag = 1
+			#	csv_write_list.append('Stop flag:')
+			#	csv_write_list.append(stop_flag)
+			#	csv_write_list.append('Short cut stop!')
+			#	writ.writerow(csv_write_list)
+			#	f0.close()
+			#	break
+						
 			epoch = int( weight_file.split(".")[0].split("_")[-1] )
-			if(len(all_map)>=0):
+			if(len(all_map)>0):
 				if(all_map[-1]>best_map):
 					best_map = all_map[-1]
 					best_map_iter = epoch
@@ -164,13 +197,25 @@ if __name__ == "__main__":
 					epoch_count_baseline = epoch_count_baseline + 1
 					if(epoch_count_baseline>= params_patience and epoch > params_min_epoch):
 						stop_flag = 1
+						csv_write_list.append('Stop flag:')
+						csv_write_list.append(stop_flag)
+						csv_write_list.append('Patience exhausted!')
+						writ.writerow(csv_write_list)
+						f0.close()
 						break
 			if(epoch > params_max_epoch):
 				stop_flag = 1
+				csv_write_list.append('Stop flag:')
+				csv_write_list.append(stop_flag)
+				csv_write_list.append('Max Epochs reached')
+				writ.writerow(csv_write_list)
+				f0.close()
 				break
 			
-			#print(int(os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1]))
-			#print(count_backup_files)
+			f0.close()
+			print(int(os.popen("ls "+params_backup_path+" -1 | wc -l").read()[:-1]))
+			print(count_backup_files)
+			print('inference done')
 			
 		#f0 = open(csv_filename, 'a+')
 		#writ = csv.writer(f0, delimiter = ',')
@@ -184,15 +229,74 @@ if __name__ == "__main__":
 		#print(count_backup_files)
 
 			
-	if(stop_flag):
-		#p.terminate()
-		print('stop condition met')
-
-
+	if (stop_flag):
+		#p.join()
+		#p.kill()
+		#p.shutdown()
+                cmd = ["""sudo nvidia-smi |grep ./darknet"""]
+                p = subprocess.Popen(cmd, shell =True, stdout=subprocess.PIPE)
+                e = p.stdout.read().splitlines()
+                oc = []
+                for i in e:
+                        oc.append(i.split()[2])
+                for ID in oc:
+                        st="sudo kill -9 "+ID
+                        os.system(st)
+		#csv_filename = 'map_plots_early_stop.csv'
+		#f0 = open(csv_filename, 'a+')
+                #writ = csv.writer(f0, delimiter = ',')
+                #csv_write_list = []
+		#if p.is_alive():
+		#	csv_write_list.append("Process is alive , kill it ! ")
+		#	writ.writerow(csv_write_list)
+		#	#writ.writerow(p)
+		#	p.terminate()
+		#	csv_write_list =[]
+		#	csv_write_list.append("KILLED IT ")
+		#	writ.writerow(csv_write_list)
+		#	csv_write_list = []
+                #csv_write_list.append('Stop condition met!!')
+                #writ.writerow(csv_write_list)
+		#os.system('sudo kill '+str(p.getpid))
+		#print('stop condition met')
+		#f0.close()
+	
+	csv_filename = 'map_plots_early_stop.csv'
+        f0 = open(csv_filename, 'a+')
+        writ = csv.writer(f0, delimiter = ',')
+        csv_write_list = []
+        csv_write_list.append('best mAP:')
+	csv_write_list.append(str(best_map))
+	writ.writerow(csv_write_list)
+	csv_write_list = []
+	csv_write_list.append('best mAP iter:')
+	csv_write_list.append(str(best_map_iter))
+	writ.writerow(csv_write_list)
+        csv_write_list = []
+	csv_write_list.append('best mAP epoch:')
+	csv_write_list.append(str( (best_map_iter*params_sub_batch)/params_batch ))
+	writ.writerow(csv_write_list)
+        #os.system('sudo kill '+str(p.getpid))
+        print('stop condition met')
+	f0.close()
+	
 	print("best map: " + str(best_map) )
 	print("best map iter = "+ str(best_map_iter) )
 	print("best map epoch = "+ str(best_map_iter*params_sub_batch/params_batch) )
 
+	if False: #stop_flag:
+		cmd = ["""sudo nvidia-smi |grep ./darknet"""]		
+		p = subprocess.Popen(cmd, shell =True, stdout=subprocess.PIPE)
+		e = p.stdout.read().splitlines()
+		oc = []
+		for i in e:
+			oc.append(i.split()[2])
+		for ID in oc:
+			st="sudo kill -9 "+ID
+			os.system(st)
+	
+	#print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@22 exiting@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+	sys.exit(0)
 
 
 

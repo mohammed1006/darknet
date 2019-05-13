@@ -1,20 +1,7 @@
 #ifndef OPTION_LIST_H
 #define OPTION_LIST_H
+#include "darknet.h"
 #include "list.h"
-
-#ifdef YOLODLL_EXPORTS
-#if defined(_MSC_VER)
-#define YOLODLL_API __declspec(dllexport) 
-#else
-#define YOLODLL_API __attribute__((visibility("default")))
-#endif
-#else
-#if defined(_MSC_VER)
-#define YOLODLL_API
-#else
-#define YOLODLL_API
-#endif
-#endif
 
 typedef struct{
     char *key;
@@ -22,6 +9,9 @@ typedef struct{
     int used;
 } kvp;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 list *read_data_cfg(char *filename);
 int read_option(char *s, list *options);
@@ -34,11 +24,14 @@ float option_find_float(list *l, char *key, float def);
 float option_find_float_quiet(list *l, char *key, float def);
 void option_unused(list *l);
 
-typedef struct {
-	int classes;
-	char **names;
-} metadata;
+//typedef struct {
+//	int classes;
+//	char **names;
+//} metadata;
 
-YOLODLL_API metadata get_metadata(char *file);
+//LIB_API metadata get_metadata(char *file);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

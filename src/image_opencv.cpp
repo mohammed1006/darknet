@@ -309,7 +309,7 @@ cv::Mat image_to_mat(image img)
         for (int x = 0; x < img.w; ++x) {
             for (int c = 0; c < img.c; ++c) {
                 float val = img.data[c*img.h*img.w + y*img.w + x];
-                mat.data[y*step + x*img.c + c] = (unsigned char)(val * 255);
+                mat.data[y*step + x*img.c + img.c-c-1] = (unsigned char)(val * 255);
             }
         }
     }
@@ -332,7 +332,7 @@ image mat_to_image(cv::Mat mat)
                 //uint8_t val = mat.at<Vec3b>(y, x).val[k];
                 //im.data[k*w*h + y*w + x] = val / 255.0f;
 
-                im.data[k*w*h + y*w + x] = data[y*step + x*c + k] / 255.0f;
+                im.data[k*w*h + y*w + x] = data[y*step + x*c + c-k-1] / 255.0f;
             }
         }
     }

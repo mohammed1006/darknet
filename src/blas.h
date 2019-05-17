@@ -1,5 +1,12 @@
 #ifndef BLAS_H
 #define BLAS_H
+#ifdef GPU
+#include "dark_cuda.h"
+#include "tree.h"
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 void flatten(float *x, int size, int layers, int batch, int forward);
 void pm(int M, int N, float *A);
 float *random_matrix(int rows, int cols);
@@ -41,11 +48,10 @@ void softmax_cpu(float *input, int n, int batch, int batch_offset, int groups, i
 void softmax_x_ent_cpu(int n, float *pred, float *truth, float *delta, float *error);
 
 #ifdef GPU
-#include "cuda.h"
-#include "tree.h"
 
 void axpy_ongpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY);
 void axpy_ongpu_offset(int N, float ALPHA, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY);
+void simple_copy_ongpu(int size, float *src, float *dst);
 void copy_ongpu(int N, float * X, int INCX, float * Y, int INCY);
 void copy_ongpu_offset(int N, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY);
 void scal_ongpu(int N, float ALPHA, float * X, int INCX);
@@ -69,6 +75,7 @@ void fast_variance_delta_gpu(float *x, float *delta, float *mean, float *varianc
 void fast_variance_gpu(float *x, float *mean, int batch, int filters, int spatial, float *variance);
 void fast_mean_gpu(float *x, int batch, int filters, int spatial, float *mean);
 void shortcut_gpu(int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float *out);
+void input_shortcut_gpu(float *in, int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float *out);
 void scale_bias_gpu(float *output, float *biases, int batch, int n, int size);
 void backward_scale_gpu(float *x_norm, float *delta, int batch, int n, int size, float *scale_updates);
 void scale_bias_gpu(float *output, float *biases, int batch, int n, int size);
@@ -95,5 +102,11 @@ void upsample_gpu(float *in, int w, int h, int c, int batch, int stride, int for
 
 void softmax_tree_gpu(float *input, int spatial, int batch, int stride, float temp, float *output, tree hier);
 
+void fix_nan_and_inf(float *input, size_t size);
+int is_nan_or_inf(float *input, size_t size);
+
+#endif
+#ifdef __cplusplus
+}
 #endif
 #endif

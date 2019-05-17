@@ -2,10 +2,8 @@
 #include "curand.h"
 #include "cublas_v2.h"
 
-extern "C" {
 #include "maxpool_layer.h"
-#include "cuda.h"
-}
+#include "dark_cuda.h"
 
 __global__ void forward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c, int stride, int size, int pad, float *input, float *output, int *indexes)
 {
@@ -86,6 +84,31 @@ __global__ void backward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_
 
 extern "C" void forward_maxpool_layer_gpu(maxpool_layer layer, network_state state)
 {
+
+#ifdef CUDNN_DISABLED
+    if (!state.train && layer.stride == layer.size) {
+        // cudnnPoolingBackward
+        cudnnStatus_t maxpool_status;
+
+        float alpha = 1, beta = 0;
+        maxpool_status = cudnnPoolingForward(
+            cudnn_handle(),
+            layer.poolingDesc,
+            &alpha,
+            layer.srcTensorDesc,
+            state.input,
+            &beta,
+            layer.dstTensorDesc,
+            layer.output_gpu);
+
+        //maxpool_status = cudnnDestroyPoolingDescriptor(poolingDesc);
+        //cudnnDestroyTensorDescriptor(layer.srcTensorDesc);
+        //cudnnDestroyTensorDescriptor(layer.dstTensorDesc);
+
+        return;
+    }
+#endif
+
     int h = layer.out_h;
     int w = layer.out_w;
     int c = layer.c;
@@ -93,14 +116,13 @@ extern "C" void forward_maxpool_layer_gpu(maxpool_layer layer, network_state sta
     size_t n = h*w*c*layer.batch;
 
     forward_maxpool_layer_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream()>>>(n, layer.h, layer.w, layer.c, layer.stride, layer.size, layer.pad, state.input, layer.output_gpu, layer.indexes_gpu);
-    check_error(cudaPeekAtLastError());
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 
 extern "C" void backward_maxpool_layer_gpu(maxpool_layer layer, network_state state)
 {
     size_t n = layer.h*layer.w*layer.c*layer.batch;
 
-    backward_maxpool_layer_kernel<<<cuda_gridsize(n), BLOCK>>>(n, layer.h, layer.w, layer.c, layer.stride, layer.size, layer.pad, layer.delta_gpu, state.delta, layer.indexes_gpu);
-    check_error(cudaPeekAtLastError());
+    backward_maxpool_layer_kernel<<<cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >>>(n, layer.h, layer.w, layer.c, layer.stride, layer.size, layer.pad, layer.delta_gpu, state.delta, layer.indexes_gpu);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
-

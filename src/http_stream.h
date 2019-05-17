@@ -1,21 +1,19 @@
-#pragma once
 #ifndef HTTP_STREAM_H
 #define HTTP_STREAM_H
+#include "darknet.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 #include "image.h"
+#include <stdint.h>
 
-void send_mjpeg(IplImage* ipl, int port, int timeout, int quality);
-CvCapture* get_capture_webcam(int index);
-CvCapture* get_capture_video_stream(char *path);
-IplImage* get_webcam_frame(CvCapture *cap);
-int get_stream_fps_cpp(CvCapture *cap);
+void send_json(detection *dets, int nboxes, int classes, char **names, long long int frame_id, int port, int timeout);
 
-image image_data_augmentation(IplImage* ipl, int w, int h,
-    int pleft, int ptop, int swidth, int sheight, int flip,
-    float jitter, float dhue, float dsat, float dexp);
+#ifdef OPENCV
+void send_mjpeg(mat_cv* mat, int port, int timeout, int quality);
+
+#endif  // OPENCV
 
 #ifdef __cplusplus
 }

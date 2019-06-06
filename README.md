@@ -166,6 +166,7 @@ mkdir build-release
 cd build-release
 cmake ..
 make
+make install
 ```
 
 ### How to compile on Linux (using `make`)

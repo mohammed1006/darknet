@@ -274,7 +274,7 @@ if(OpenCV_FOUND)
   target_compile_definitions(dark PUBLIC -DOPENCV)
 endif()
 
-if(WIN32 AND OPENMP_FOUND)
+if((WIN32 OR NOT ENABLE_CUDA) AND OPENMP_FOUND)
   target_link_libraries(darknet PUBLIC OpenMP::OpenMP_CXX)
   target_link_libraries(darknet PUBLIC OpenMP::OpenMP_C)
   target_link_libraries(dark PUBLIC OpenMP::OpenMP_CXX)

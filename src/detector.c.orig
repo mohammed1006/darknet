@@ -86,8 +86,13 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         fprintf(stderr, "\n Error: You set incorrect value batch=1 for Training! You should set batch=64 subdivision=64 \n");
         getchar();
     }
-    else if (actual_batch_size < 8) {
+<<<<<<< HEAD
+    else if (actual_batch_size < 64) {
         fprintf(stderr, "\n Warning: You set batch=%d lower than 64! It is recommended to set batch=64 subdivision=64 \n", actual_batch_size);
+=======
+    else if (actual_batch_size < 8) {
+        printf("\n Warning: You set batch=%d lower than 64! It is recommended to set batch=64 subdivision=64 \n", actual_batch_size);
+>>>>>>> e4f6b276e56b4387f0bf6692c2e03282d467c61a
     }
 
     int imgs = net.batch * net.subdivisions * ngpus;
@@ -242,8 +247,13 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         next_map_calc = fmax(next_map_calc, net.burn_in);
         next_map_calc = fmax(next_map_calc, 400);
         if (calc_map) {
+<<<<<<< HEAD
             fprintf(stderr, "\n (next mAP calculation at %d iterations) ", next_map_calc);
+            if (mean_average_precision > 0) fprintf(stderr, "\n Last accuracy mAP@0.5 = %2.2f %% ", mean_average_precision * 100);
+=======
+            printf("\n (next mAP calculation at %d iterations) ", next_map_calc);
             if (mean_average_precision > 0) printf("\n Last accuracy mAP@0.5 = %2.2f %%, best = %2.2f %% ", mean_average_precision * 100, best_map * 100);
+>>>>>>> e4f6b276e56b4387f0bf6692c2e03282d467c61a
         }
 
         if (net.cudnn_half) {
@@ -276,7 +286,10 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
             iter_map = i;
             mean_average_precision = validate_detector_map(datacfg, cfgfile, weightfile, 0.25, 0.5, 0, &net_map);// &net_combined);
+<<<<<<< HEAD
             fprintf(stderr, "\n mean_average_precision (mAP@0.5) = %f \n", mean_average_precision);
+=======
+            printf("\n mean_average_precision (mAP@0.5) = %f \n", mean_average_precision);
             if (mean_average_precision > best_map) {
                 best_map = mean_average_precision;
                 printf("New best mAP!\n");
@@ -285,6 +298,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
                 save_weights(net, buff);
             }
 
+>>>>>>> e4f6b276e56b4387f0bf6692c2e03282d467c61a
             draw_precision = 1;
         }
 #ifdef OPENCV
@@ -1058,10 +1072,17 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     const float cur_precision = (float)tp_for_thresh / ((float)tp_for_thresh + (float)fp_for_thresh);
     const float cur_recall = (float)tp_for_thresh / ((float)tp_for_thresh + (float)(unique_truth_count - tp_for_thresh));
     const float f1_score = 2.F * cur_precision * cur_recall / (cur_precision + cur_recall);
-    fprintf(stderr, "\n for conf_thresh = %1.2f, precision = %1.2f, recall = %1.2f, F1-score = %1.2f \n",
+<<<<<<< HEAD
+    fprintf(stderr, "\n for thresh = %1.2f, precision = %1.2f, recall = %1.2f, F1-score = %1.2f \n",
         thresh_calc_avg_iou, cur_precision, cur_recall, f1_score);
 
-    printf(stderr, " for conf_thresh = %0.2f, TP = %d, FP = %d, FN = %d, average IoU = %2.2f %% \n",
+    fprintf(stderr, " for thresh = %0.2f, TP = %d, FP = %d, FN = %d, average IoU = %2.2f %% \n",
+=======
+    printf("\n for conf_thresh = %1.2f, precision = %1.2f, recall = %1.2f, F1-score = %1.2f \n",
+        thresh_calc_avg_iou, cur_precision, cur_recall, f1_score);
+
+    printf(" for conf_thresh = %0.2f, TP = %d, FP = %d, FN = %d, average IoU = %2.2f %% \n",
+>>>>>>> e4f6b276e56b4387f0bf6692c2e03282d467c61a
         thresh_calc_avg_iou, tp_for_thresh, fp_for_thresh, unique_truth_count - tp_for_thresh, avg_iou * 100);
 
     mean_average_precision = mean_average_precision / classes;

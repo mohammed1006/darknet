@@ -41,8 +41,12 @@ src/version.h
 # Build artifacts
 lib/
 share/
+<<<<<<< HEAD
 
 #Make
 darknet
 uselib
 
+=======
+include/darknet/
+>>>>>>> e4f6b276e56b4387f0bf6692c2e03282d467c61a

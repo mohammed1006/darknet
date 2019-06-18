@@ -998,7 +998,7 @@ void blend_images(image new_img, float alpha, image old_img, float beta)
 
 data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, int use_blur, int use_mixup, float jitter,
     float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int show_imgs, float min_area, int pj_crop,
-    float scale_min, float scale_max))
+    float scale_min, float scale_max)
 {
     const int random_index = random_gen();
     c = c ? c : 3;

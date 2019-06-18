@@ -52,6 +52,10 @@ void train_yolo(char *cfgfile, char *weightfile)
     args.exposure = net.exposure;
     args.saturation = net.saturation;
     args.hue = net.hue;
+    args.min_area = net.min_area;
+    args.pj_crop = net.pj_crop;
+    args.scale_min = net.scale_min;
+    args.scale_max = net.scale_max;
 
     pthread_t load_thread = load_data_in_thread(args);
     clock_t time;

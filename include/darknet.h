@@ -602,6 +602,10 @@ typedef struct network {
     float exposure;
     float saturation;
     float hue;
+    float min_area;
+    int pj_crop;
+    float scale_min;
+    float scale_max;
     int random;
     int track;
     int augment_speed;
@@ -749,6 +753,10 @@ typedef struct load_args {
     int nw;
     int num_boxes;
     int min, max, size;
+    float min_area;
+    int pj_crop;
+    float scale_min;
+    float scale_max;
     int classes;
     int background;
     int scale;

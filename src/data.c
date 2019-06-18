@@ -1100,6 +1100,8 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                 }
                 case 1:
                 { // AlexeyAB
+                    int pright, pbot;
+                    
                     pleft = rand_precalc_random(-dw, dw, r1);
                     pright = rand_precalc_random(-dw, dw, r2);
                     ptop = rand_precalc_random(-dh, dh, r3);

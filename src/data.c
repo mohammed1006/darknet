@@ -1101,7 +1101,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                 case 1:
                 { // AlexeyAB
                     int pright, pbot;
-                    
+
                     pleft = rand_precalc_random(-dw, dw, r1);
                     pright = rand_precalc_random(-dw, dw, r2);
                     ptop = rand_precalc_random(-dh, dh, r3);
@@ -1112,6 +1112,8 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
                     sx = (float)swidth / ow;
                     sy = (float)sheight / oh;
+                    dx = ((float)pleft / ow) / sx;
+                    dy = ((float)ptop / oh) / sy;
 
                 }
             }
@@ -1119,8 +1121,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             // 
             image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
 
-            float dx = ((float)pleft / ow) / sx;
-            float dy = ((float)ptop / oh) / sy;
+            
 
             image sized = resize_image(cropped, w, h);
             if (flip) flip_image(sized);

@@ -27,7 +27,7 @@ float *get_regression_values(char **labels, int n)
     return v;
 }
 
-void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int mjpeg_port, int calc_topk)
+void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int mjpeg_port, int calc_topk, char* chart_png)
 {
     int i;
 
@@ -164,7 +164,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 
         printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images\n", get_current_batch(net), (float)(*net.seen)/ train_images_num, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen);
 #ifdef OPENCV
-        draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches, topk, draw_precision, "top5", dont_show, mjpeg_port);
+        draw_train_loss(img, img_size, avg_loss, max_img_loss, i, net.max_batches, topk, draw_precision, "top5", dont_show, mjpeg_port, chart_png);
 #endif  // OPENCV
 
         if (i >= (iter_save + 1000)) {
@@ -1260,6 +1260,24 @@ void run_classifier(int argc, char **argv)
     }
 
     int dont_show = find_arg(argc, argv, "-dont_show");
+
+    //generate a filename for chart that doesnt exist..
+    char chart_png[100]; 
+    int file_seq = 0;
+    int file_exists = 0;
+    do 
+    {
+        file_exists = 0;
+        file_seq++;
+        sprintf(chart_png, "chart_%d.png\0", file_seq);
+        FILE *infile = fopen(chart_png, "r");
+        if (infile != NULL)
+        {
+            file_exists = 1;
+            fclose(infile);
+        } 
+    } while (file_exists != 0);
+
     int calc_topk = find_arg(argc, argv, "-topk");
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int top = find_int_arg(argc, argv, "-t", 0);
@@ -1272,7 +1290,7 @@ void run_classifier(int argc, char **argv)
     int layer = layer_s ? atoi(layer_s) : -1;
     if(0==strcmp(argv[2], "predict")) predict_classifier(data, cfg, weights, filename, top);
     else if(0==strcmp(argv[2], "try")) try_classifier(data, cfg, weights, filename, atoi(layer_s));
-    else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights, gpus, ngpus, clear, dont_show, mjpeg_port, calc_topk);
+    else if(0==strcmp(argv[2], "train")) train_classifier(data, cfg, weights, gpus, ngpus, clear, dont_show, mjpeg_port, calc_topk, chart_png);
     else if(0==strcmp(argv[2], "demo")) demo_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "gun")) gun_classifier(data, cfg, weights, cam_index, filename);
     else if(0==strcmp(argv[2], "threat")) threat_classifier(data, cfg, weights, cam_index, filename);

@@ -1032,7 +1032,7 @@ mat_cv* draw_train_chart(float max_img_loss, int max_batches, int number_of_line
         char max_batches_buff[100];
         sprintf(max_batches_buff, "in cfg max_batches=%d", max_batches);
         cv::putText(img, max_batches_buff, cv::Point(draw_size - 195, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
-        cv::putText(img, "Press 's' to save : chart.png", cv::Point(5, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
+        cv::putText(img, "Press 's' to save chart", cv::Point(5, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
         if (!dont_show) {
             printf(" If error occurs - run training with flag: -dont_show \n");
             cv::namedWindow("average loss", cv::WINDOW_NORMAL);
@@ -1050,7 +1050,7 @@ mat_cv* draw_train_chart(float max_img_loss, int max_batches, int number_of_line
 // ----------------------------------------
 
 void draw_train_loss(mat_cv* img_src, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches,
-    float precision, int draw_precision, char *accuracy_name, int dont_show, int mjpeg_port)
+    float precision, int draw_precision, char *accuracy_name, int dont_show, int mjpeg_port, char* chart_png)
 {
     try {
         cv::Mat &img = *(cv::Mat*)img_src;
@@ -1105,9 +1105,10 @@ void draw_train_loss(mat_cv* img_src, int img_size, float avg_loss, float max_im
             k = cv::waitKey(20);
         }
         static int old_batch = 0;
-        if (k == 's' || current_batch == (max_batches - 1) || (current_batch / 100 > old_batch / 100)) {
+        if (k == 's' || current_batch == (max_batches - 1) || (current_batch / 100 > old_batch / 100)) 
+        {
             old_batch = current_batch;
-            save_mat_png(img, "chart.png");
+            save_mat_png(img, chart_png);
             cv::putText(img, "- Saved", cv::Point(260, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 0, 0), 1, CV_AA);
         }
         else

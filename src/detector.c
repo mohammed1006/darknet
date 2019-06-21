@@ -73,7 +73,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     FILE *best_weight_file;
     if (best_weight_file = fopen(bw_buff, "r")) {
         fclose(best_weight_file);
-        float last_best_weight = validate_detector_map(datacfg, cfgfile, bw_buff, 0.25, 0.5, 0, NULL);// &net_combined);
+        last_best_weight = validate_detector_map(datacfg, cfgfile, bw_buff, 0.25, 0.5, 0, NULL);// &net_combined);
     }
 
     for (i = 0; i < ngpus; ++i) {

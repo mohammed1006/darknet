@@ -853,9 +853,12 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
             int oh = get_height_mat(src);
             int ow = get_width_mat(src);
+            float dx= 0.0, dy= 0.0;
+            int pleft = 0, ptop = 0;
+            int swidth = ow, sheight = oh;
+            float sx = 0.0, sy = 0.0;
 
             
-
             if (!augmentation_calculated || !track)
             {
                 augmentation_calculated = 1;
@@ -864,10 +867,6 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                 int dh = (oh*jitter);
                 
                 // cropping behaviour
-                float dx, dy;
-                int pleft, ptop;
-                int swidth, sheight;
-                float sx, sy;
               
                 int crop_style = 1; // default to AlexeyAB
                 if (pj_crop == 2){ // random crop
@@ -957,13 +956,13 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                     dx = ((float)pleft / ow) / sx;
                     dy = ((float)ptop / oh) / sy;
                 }
+
+                fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy,
+                    1. / sx, 1. / sy, w, h, min_area);
+
+                image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth,
+                    sheight, flip, dhue, dsat, dexp, blur, boxes, d.y.vals[i]);
             }            
-
-            fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy,
-                 1. / sx, 1. / sy, w, h, min_area);
-
-            image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth,
-                sheight, flip, dhue, dsat, dexp, blur, boxes, d.y.vals[i]);
 
             if (i_mixup) {
                 image old_img = ai;
@@ -1049,7 +1048,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     d.X.cols = h*w*c;
 
     float r1 = 0, r2 = 0, r3 = 0, r4 = 0, r_scale;
-    float dhue = 0, dsat = 0, dexp = 0, flip = 0;
+    float dhue = 0, dsat = 0, dexp = 0, flip = 0, blur = 0;
     int augmentation_calculated = 0;
 
     d.y = make_matrix(n, 5 * boxes);
@@ -1064,45 +1063,33 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
             int oh = orig.h;
             int ow = orig.w;
-
-            int dw = (ow*jitter);
-            int dh = (oh*jitter);
-
-            // cropping behaviour
-            float dx, dy;
-            int pleft, ptop;
-            int swidth, sheight;
-            float sx, sy;
+            float dx= 0.0, dy= 0.0;
+            int pleft = 0, ptop = 0;
+            int swidth = ow, sheight = oh;
+            float sx = 0.0, sy = 0.0;
 
             if (!augmentation_calculated || !track)
             {
                 augmentation_calculated = 1;
-                r1 = random_float();
-                r2 = random_float();
-                r3 = random_float();
-                r4 = random_float();
 
-                r_scale = random_float();
-
-                dhue = rand_uniform_strong(-hue, hue);
-                dsat = rand_scale(saturation);
-                dexp = rand_scale(exposure);
-
-                flip = use_flip ? random_gen() % 2 : 0;
-            }
-
-            int crop_style = 1; // default to AlexeyAB
-            if (pj_crop == 2){ // random crop
-                crop_style = random_gen()%2;
-            }
-            else if (pj_crop == 1){  // pjreddie
-                crop_style = 0;
-            }
-            
-            switch(crop_style){
-                case 0:
+                int dw = (ow*jitter);
+                int dh = (oh*jitter);
+                
+                // cropping behaviour
+                
+              
+                int crop_style = 1; // default to AlexeyAB
+                if (pj_crop == 2){ // random crop
+                    crop_style = random_gen()%2;
+                }
+                else if (pj_crop == 1){  // pjreddie
+                    crop_style = 0;
+                }
+                
+                if (crop_style == 0)
                 { // pjreddie
-                    float new_ar = (ow + rand_uniform(-dw, dw)) / (oh + rand_uniform(-dh, dh));
+                    float new_ar = (ow + rand_uniform(-dw, dw)) / 
+                        (oh + rand_uniform(-dh, dh));
                     float scale = rand_uniform(scale_min, scale_max);
                     
                     float nw, nh;
@@ -1126,8 +1113,22 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                     sx = nw/ow;
                     sy = nh/oh;
                 }
-                case 1:
+                else if (crop_style == 1)
                 { // AlexeyAB
+                    r1 = random_float();
+                    r2 = random_float();
+                    r3 = random_float();
+                    r4 = random_float();
+
+                    r_scale = random_float();
+
+                    dhue = rand_uniform_strong(-hue, hue);
+                    dsat = rand_scale(saturation);
+                    dexp = rand_scale(exposure);
+
+                    flip = use_flip ? random_gen() % 2 : 0;
+                    blur = rand_int(0, 1) ? (use_blur) : 0;
+
                     int pright, pbot;
 
                     pleft = rand_precalc_random(-dw, dw, r1);
@@ -1135,54 +1136,43 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                     ptop = rand_precalc_random(-dh, dh, r3);
                     pbot = rand_precalc_random(-dh, dh, r4);
 
+                    if (letter_box)
+                    {
+                        float img_ar = (float)ow / (float)oh;
+                        float net_ar = (float)w / (float)h;
+                        float result_ar = img_ar / net_ar;
+                        if (result_ar > 1)  // sheight - should be increased
+                        {
+                            float oh_tmp = ow / net_ar;
+                            float delta_h = (oh_tmp - oh)/2;
+                            ptop = ptop - delta_h;
+                            pbot = pbot - delta_h;
+                        }
+                        else  // swidth - should be increased
+                        {
+                            float ow_tmp = oh * net_ar;
+                            float delta_w = (ow_tmp - ow)/2;
+                            pleft = pleft - delta_w;
+                            pright = pright - delta_w;
+                        }
+                    }
+
                     swidth = ow - pleft - pright;
                     sheight = oh - ptop - pbot;
-            float scale = rand_precalc_random(.25, 2, r_scale); // unused currently
-
-            if (letter_box)
-            {
-                float img_ar = (float)ow / (float)oh;
-                float net_ar = (float)w / (float)h;
-                float result_ar = img_ar / net_ar;
-                //printf(" ow = %d, oh = %d, w = %d, h = %d, img_ar = %f, net_ar = %f, result_ar = %f \n", ow, oh, w, h, img_ar, net_ar, result_ar);
-                if (result_ar > 1)  // sheight - should be increased
-                {
-                    float oh_tmp = ow / net_ar;
-                    float delta_h = (oh_tmp - oh) / 2;
-                    ptop = ptop - delta_h;
-                    pbot = pbot - delta_h;
-                    //printf(" result_ar = %f, oh_tmp = %f, delta_h = %d, ptop = %f, pbot = %f \n", result_ar, oh_tmp, delta_h, ptop, pbot);
-                }
-                else  // swidth - should be increased
-                {
-                    float ow_tmp = oh * net_ar;
-                    float delta_w = (ow_tmp - ow) / 2;
-                    pleft = pleft - delta_w;
-                    pright = pright - delta_w;
-                    //printf(" result_ar = %f, ow_tmp = %f, delta_w = %d, pleft = %f, pright = %f \n", result_ar, ow_tmp, delta_w, pleft, pright);
-                }
-            }
-
-            int swidth = ow - pleft - pright;
-            int sheight = oh - ptop - pbot;
 
                     sx = (float)swidth / ow;
                     sy = (float)sheight / oh;
+
                     dx = ((float)pleft / ow) / sx;
                     dy = ((float)ptop / oh) / sy;
-
                 }
-            }
+            }  
 
-            // 
             image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
-
-            
 
             image sized = resize_image(cropped, w, h);
             if (flip) flip_image(sized);
             distort_image(sized, dhue, dsat, dexp);
-            //random_distort_image(sized, hue, saturation, exposure);
 
             fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy, 1. / sx, 1. / sy, w, h, min_area);
 

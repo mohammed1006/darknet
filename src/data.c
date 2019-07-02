@@ -867,7 +867,6 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                 int dh = (oh*jitter);
                 
                 // cropping behaviour
-              
                 int crop_style = 1; // default to AlexeyAB
                 if (pj_crop == 2){ // random crop
                     crop_style = random_gen()%2;
@@ -956,13 +955,13 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                     dx = ((float)pleft / ow) / sx;
                     dy = ((float)ptop / oh) / sy;
                 }
+            }    
 
-                fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy,
+            fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy,
                     1. / sx, 1. / sy, w, h, min_area);
 
-                image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth,
-                    sheight, flip, dhue, dsat, dexp, blur, boxes, d.y.vals[i]);
-            }            
+            image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth,
+                    sheight, flip, dhue, dsat, dexp, blur, boxes, d.y.vals[i]);        
 
             if (i_mixup) {
                 image old_img = ai;

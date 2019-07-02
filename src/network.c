@@ -318,6 +318,7 @@ void backward_network(network net, network_state state)
         }
         layer l = net.layers[i];
         if (l.stopbackward) break;
+        if (l.onlyforward) continue;
         l.backward(l, state);
     }
 }
@@ -835,6 +836,24 @@ float *network_predict_image(network *net, image im)
     else {
         // Need to resize image to the desired size for the net
         image imr = resize_image(im, net->w, net->h);
+        p = network_predict(*net, imr.data);
+        free_image(imr);
+    }
+    return p;
+}
+
+float *network_predict_image_letterbox(network *net, image im)
+{
+    //image imr = letterbox_image(im, net->w, net->h);
+    float *p;
+    if (net->batch != 1) set_batch_network(net, 1);
+    if (im.w == net->w && im.h == net->h) {
+        // Input image is the same size as our net, predict on that image
+        p = network_predict(*net, im.data);
+    }
+    else {
+        // Need to resize image to the desired size for the net
+        image imr = letterbox_image(im, net->w, net->h);
         p = network_predict(*net, imr.data);
         free_image(imr);
     }

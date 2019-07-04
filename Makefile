@@ -107,7 +107,6 @@ endif
 
 ifeq ($(CUDNN), 1)
 COMMON+= -DCUDNN
-ifeq ($(OS),Darwin) #MAC
 CFLAGS+= -DCUDNN -I${CUDNN_INC}
 LDFLAGS+= -L${CUDNN_LIBS} -lcudnn
 endif

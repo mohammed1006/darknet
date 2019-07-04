@@ -11,6 +11,20 @@ ZED_CAMERA=0
 # set CUDNN_HALF=1 to further speedup 3 x times (Mixed-precision on Tensor Cores) GPU: Volta, Xavier, Turing and higher
 # set AVX=1 and OPENMP=1 to speedup on CPU (if error occurs then set AVX=0)
 
+# absolute paths to CUDA and CUDNN libs and headers
+# You need to have `libcudnn.so` in $CUDA_LIBS:`-lcudnn` will not see `libcudnn.so.7.5.0` e.g.
+ifeq ($(OS),Darwin)  #MAC
+CUDA_LIBS=/usr/local/cuda/lib
+CUDA_INC=/usr/local/cuda/include
+CUDNN_LIBS=${CUDA_LIBS}
+CUDNN_INC=${CUDA_INC}
+else
+CUDA_LIBS=/usr/local/cuda/lib64
+CUDA_INC=/usr/local/cuda/include
+CUDNN_LIBS=/usr/local/cudnn/lib64
+CUDNN_INC=/usr/local/cudnn/include
+endif
+
 DEBUG=0
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
@@ -86,24 +100,16 @@ LDFLAGS+= -lgomp
 endif
 
 ifeq ($(GPU), 1)
-COMMON+= -DGPU -I/usr/local/cuda/include/
+COMMON+= -DGPU -I${CUDA_INC}
 CFLAGS+= -DGPU
-ifeq ($(OS),Darwin) #MAC
-LDFLAGS+= -L/usr/local/cuda/lib -lcuda -lcudart -lcublas -lcurand
-else
-LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
-endif
+LDFLAGS+= -L${CUDA_LIBS} -lcuda -lcudart -lcublas -lcurand
 endif
 
 ifeq ($(CUDNN), 1)
 COMMON+= -DCUDNN
 ifeq ($(OS),Darwin) #MAC
-CFLAGS+= -DCUDNN -I/usr/local/cuda/include
-LDFLAGS+= -L/usr/local/cuda/lib -lcudnn
-else
-CFLAGS+= -DCUDNN -I/usr/local/cudnn/include
-LDFLAGS+= -L/usr/local/cudnn/lib64 -lcudnn
-endif
+CFLAGS+= -DCUDNN -I${CUDNN_INC}
+LDFLAGS+= -L${CUDNN_LIBS} -lcudnn
 endif
 
 ifeq ($(CUDNN_HALF), 1)

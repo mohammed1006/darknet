@@ -5,8 +5,8 @@ bypass_vcpkg=true
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
   if [[ "$1" == "gcc" ]]; then
-    export CC="/usr/local/bin/gcc-8"
-    export CXX="/usr/local/bin/g++-8"
+    export CC="/usr/local/bin/gcc-9"
+    export CXX="/usr/local/bin/g++-9"
   fi
   vcpkg_triplet="x64-osx"
 else

@@ -9,7 +9,6 @@
 #include "demo.h"
 #ifdef WIN32
 #include <time.h>
-#include <winsock.h>
 #include <stdlib.h>
 #include "gettimeofday.h"
 #else

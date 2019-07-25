@@ -305,9 +305,6 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     free(avg);
     for (j = 0; j < NFRAMES; ++j) free(predictions[j]);
     for (j = 0; j < NFRAMES; ++j) free_image(images[j]);
-    for (j = 0; j < l.w*l.h*l.n; ++j) free(probs[j]);
-    free(boxes);
-    free(probs);
   
     free_ptrs((void **)names, net.layers[net.n - 1].classes);
     free_alphabet(alphabet);

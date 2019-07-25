@@ -25,12 +25,14 @@
 #include "batchnorm_layer.h"
 #include "maxpool_layer.h"
 #include "reorg_layer.h"
+#include "reorg_old_layer.h"
 #include "avgpool_layer.h"
 #include "cost_layer.h"
 #include "softmax_layer.h"
 #include "dropout_layer.h"
 #include "route_layer.h"
 #include "shortcut_layer.h"
+#include "scale_channels_layer.h"
 #include "yolo_layer.h"
 #include "upsample_layer.h"
 #include "parser.h"
@@ -104,6 +106,8 @@ float get_current_seq_subdivisions(network net)
             sequence_subdivisions *= net.seq_scales[i];
         }
     }
+    if (sequence_subdivisions < 1) sequence_subdivisions = 1;
+    if (sequence_subdivisions > net.subdivisions) sequence_subdivisions = net.subdivisions;
     return sequence_subdivisions;
 }
 
@@ -315,6 +319,7 @@ void backward_network(network net, network_state state)
         }
         layer l = net.layers[i];
         if (l.stopbackward) break;
+        if (l.onlyforward) continue;
         l.backward(l, state);
     }
 }
@@ -505,6 +510,8 @@ int resize_network(network *net, int w, int h)
         }
         else if (l.type == CRNN) {
             resize_crnn_layer(&l, w, h);
+        }else if (l.type == CONV_LSTM) {
+            resize_conv_lstm_layer(&l, w, h);
         }else if(l.type == CROP){
             resize_crop_layer(&l, w, h);
         }else if(l.type == MAXPOOL){
@@ -517,10 +524,14 @@ int resize_network(network *net, int w, int h)
             resize_route_layer(&l, net);
         }else if (l.type == SHORTCUT) {
             resize_shortcut_layer(&l, w, h);
+        }else if (l.type == SCALE_CHANNELS) {
+            resize_scale_channels_layer(&l, w, h);
         }else if (l.type == UPSAMPLE) {
             resize_upsample_layer(&l, w, h);
         }else if(l.type == REORG){
             resize_reorg_layer(&l, w, h);
+        } else if (l.type == REORG_OLD) {
+            resize_reorg_old_layer(&l, w, h);
         }else if(l.type == AVGPOOL){
             resize_avgpool_layer(&l, w, h);
         }else if(l.type == NORMALIZATION){
@@ -834,6 +845,24 @@ float *network_predict_image(network *net, image im)
     return p;
 }
 
+float *network_predict_image_letterbox(network *net, image im)
+{
+    //image imr = letterbox_image(im, net->w, net->h);
+    float *p;
+    if (net->batch != 1) set_batch_network(net, 1);
+    if (im.w == net->w && im.h == net->h) {
+        // Input image is the same size as our net, predict on that image
+        p = network_predict(*net, im.data);
+    }
+    else {
+        // Need to resize image to the desired size for the net
+        image imr = letterbox_image(im, net->w, net->h);
+        p = network_predict(*net, imr.data);
+        free_image(imr);
+    }
+    return p;
+}
+
 int network_width(network *net) { return net->w; }
 int network_height(network *net) { return net->h; }
 
@@ -1004,14 +1033,16 @@ void fuse_conv_batchnorm(network net)
                 int f;
                 for (f = 0; f < l->n; ++f)
                 {
-                    l->biases[f] = l->biases[f] - (double)l->scales[f] * l->rolling_mean[f] / (sqrt((double)l->rolling_variance[f]) + .000001f);
+                    //l->biases[f] = l->biases[f] - (double)l->scales[f] * l->rolling_mean[f] / (sqrt((double)l->rolling_variance[f]) + .000001f);
+                    l->biases[f] = l->biases[f] - (double)l->scales[f] * l->rolling_mean[f] / (sqrt((double)l->rolling_variance[f] + .000001));
 
                     const size_t filter_size = l->size*l->size*l->c / l->groups;
                     int i;
                     for (i = 0; i < filter_size; ++i) {
                         int w_index = f*filter_size + i;
 
-                        l->weights[w_index] = (double)l->weights[w_index] * l->scales[f] / (sqrt((double)l->rolling_variance[f]) + .000001f);
+                        //l->weights[w_index] = (double)l->weights[w_index] * l->scales[f] / (sqrt((double)l->rolling_variance[f]) + .000001f);
+                        l->weights[w_index] = (double)l->weights[w_index] * l->scales[f] / (sqrt((double)l->rolling_variance[f] + .000001));
                     }
                 }
 

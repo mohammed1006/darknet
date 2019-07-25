@@ -32,7 +32,7 @@ static void increment_layer(layer *l, int steps)
 }
 
 
-layer make_conv_lstm_layer(int batch, int h, int w, int c, int output_filters, int groups, int steps, int size, int stride, int pad, ACTIVATION activation, int batch_normalize, int peephole, int xnor)
+layer make_conv_lstm_layer(int batch, int h, int w, int c, int output_filters, int groups, int steps, int size, int stride, int dilation, int pad, ACTIVATION activation, int batch_normalize, int peephole, int xnor)
 {
     fprintf(stderr, "CONV_LSTM Layer: %d x %d x %d image, %d filters\n", h, w, c, output_filters);
     /*
@@ -53,6 +53,7 @@ layer make_conv_lstm_layer(int batch, int h, int w, int c, int output_filters, i
     l.steps = steps;
     l.size = size;
     l.stride = stride;
+    l.dilation = dilation;
     l.pad = pad;
     l.h = h;
     l.w = w;
@@ -65,44 +66,44 @@ layer make_conv_lstm_layer(int batch, int h, int w, int c, int output_filters, i
 
     // U
     l.uf = (layer*)calloc(1, sizeof(layer));
-    *(l.uf) = make_convolutional_layer(batch, steps, h, w, c, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
+    *(l.uf) = make_convolutional_layer(batch, steps, h, w, c, output_filters, groups, size, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, NULL);
     l.uf->batch = batch;
     if (l.workspace_size < l.uf->workspace_size) l.workspace_size = l.uf->workspace_size;
 
     l.ui = (layer*)calloc(1, sizeof(layer));
-    *(l.ui) = make_convolutional_layer(batch, steps, h, w, c, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
+    *(l.ui) = make_convolutional_layer(batch, steps, h, w, c, output_filters, groups, size, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, NULL);
     l.ui->batch = batch;
     if (l.workspace_size < l.ui->workspace_size) l.workspace_size = l.ui->workspace_size;
 
     l.ug = (layer*)calloc(1, sizeof(layer));
-    *(l.ug) = make_convolutional_layer(batch, steps, h, w, c, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
+    *(l.ug) = make_convolutional_layer(batch, steps, h, w, c, output_filters, groups, size, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, NULL);
     l.ug->batch = batch;
     if (l.workspace_size < l.ug->workspace_size) l.workspace_size = l.ug->workspace_size;
 
     l.uo = (layer*)calloc(1, sizeof(layer));
-    *(l.uo) = make_convolutional_layer(batch, steps, h, w, c, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
+    *(l.uo) = make_convolutional_layer(batch, steps, h, w, c, output_filters, groups, size, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, NULL);
     l.uo->batch = batch;
     if (l.workspace_size < l.uo->workspace_size) l.workspace_size = l.uo->workspace_size;
 
 
     // W
     l.wf = (layer*)calloc(1, sizeof(layer));
-    *(l.wf) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
+    *(l.wf) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, NULL);
     l.wf->batch = batch;
     if (l.workspace_size < l.wf->workspace_size) l.workspace_size = l.wf->workspace_size;
 
     l.wi = (layer*)calloc(1, sizeof(layer));
-    *(l.wi) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
+    *(l.wi) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, NULL);
     l.wi->batch = batch;
     if (l.workspace_size < l.wi->workspace_size) l.workspace_size = l.wi->workspace_size;
 
     l.wg = (layer*)calloc(1, sizeof(layer));
-    *(l.wg) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
+    *(l.wg) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, NULL);
     l.wg->batch = batch;
     if (l.workspace_size < l.wg->workspace_size) l.workspace_size = l.wg->workspace_size;
 
     l.wo = (layer*)calloc(1, sizeof(layer));
-    *(l.wo) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
+    *(l.wo) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, NULL);
     l.wo->batch = batch;
     if (l.workspace_size < l.wo->workspace_size) l.workspace_size = l.wo->workspace_size;
 
@@ -110,21 +111,21 @@ layer make_conv_lstm_layer(int batch, int h, int w, int c, int output_filters, i
     // V
     l.vf = (layer*)calloc(1, sizeof(layer));
     if (l.peephole) {
-        *(l.vf) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
+        *(l.vf) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, NULL);
         l.vf->batch = batch;
         if (l.workspace_size < l.vf->workspace_size) l.workspace_size = l.vf->workspace_size;
     }
 
     l.vi = (layer*)calloc(1, sizeof(layer));
     if (l.peephole) {
-        *(l.vi) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
+        *(l.vi) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, NULL);
         l.vi->batch = batch;
         if (l.workspace_size < l.vi->workspace_size) l.workspace_size = l.vi->workspace_size;
     }
 
     l.vo = (layer*)calloc(1, sizeof(layer));
     if (l.peephole) {
-        *(l.vo) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, pad, activation, batch_normalize, 0, xnor, 0, 0, 0);
+        *(l.vo) = make_convolutional_layer(batch, steps, h, w, output_filters, output_filters, groups, size, stride, dilation, pad, activation, batch_normalize, 0, xnor, 0, 0, 0, NULL);
         l.vo->batch = batch;
         if (l.workspace_size < l.vo->workspace_size) l.workspace_size = l.vo->workspace_size;
     }
@@ -200,6 +201,9 @@ layer make_conv_lstm_layer(int batch, int h, int w, int c, int output_filters, i
     l.bflops = l.uf->bflops + l.ui->bflops + l.ug->bflops + l.uo->bflops +
         l.wf->bflops + l.wi->bflops + l.wg->bflops + l.wo->bflops +
         l.vf->bflops + l.vi->bflops + l.vo->bflops;
+
+    if(l.peephole) l.bflops += 12 * l.outputs*l.batch / 1000000000.;
+    else l.bflops += 9 * l.outputs*l.batch / 1000000000.;
 
     return l;
 }
@@ -429,22 +433,23 @@ void forward_conv_lstm_layer(layer l, network_state state)
     layer ug = *(l.ug);
     layer uo = *(l.uo);
 
-    if (l.peephole) {
-        fill_cpu(l.outputs * l.batch * l.steps, 0, vf.delta, 1);
-        fill_cpu(l.outputs * l.batch * l.steps, 0, vi.delta, 1);
-        fill_cpu(l.outputs * l.batch * l.steps, 0, vo.delta, 1);
-    }
-
-    fill_cpu(l.outputs * l.batch * l.steps, 0, wf.delta, 1);
-    fill_cpu(l.outputs * l.batch * l.steps, 0, wi.delta, 1);
-    fill_cpu(l.outputs * l.batch * l.steps, 0, wg.delta, 1);
-    fill_cpu(l.outputs * l.batch * l.steps, 0, wo.delta, 1);
-
-    fill_cpu(l.outputs * l.batch * l.steps, 0, uf.delta, 1);
-    fill_cpu(l.outputs * l.batch * l.steps, 0, ui.delta, 1);
-    fill_cpu(l.outputs * l.batch * l.steps, 0, ug.delta, 1);
-    fill_cpu(l.outputs * l.batch * l.steps, 0, uo.delta, 1);
     if (state.train) {
+        if (l.peephole) {
+            fill_cpu(l.outputs * l.batch * l.steps, 0, vf.delta, 1);
+            fill_cpu(l.outputs * l.batch * l.steps, 0, vi.delta, 1);
+            fill_cpu(l.outputs * l.batch * l.steps, 0, vo.delta, 1);
+        }
+
+        fill_cpu(l.outputs * l.batch * l.steps, 0, wf.delta, 1);
+        fill_cpu(l.outputs * l.batch * l.steps, 0, wi.delta, 1);
+        fill_cpu(l.outputs * l.batch * l.steps, 0, wg.delta, 1);
+        fill_cpu(l.outputs * l.batch * l.steps, 0, wo.delta, 1);
+
+        fill_cpu(l.outputs * l.batch * l.steps, 0, uf.delta, 1);
+        fill_cpu(l.outputs * l.batch * l.steps, 0, ui.delta, 1);
+        fill_cpu(l.outputs * l.batch * l.steps, 0, ug.delta, 1);
+        fill_cpu(l.outputs * l.batch * l.steps, 0, uo.delta, 1);
+
         fill_cpu(l.outputs * l.batch * l.steps, 0, l.delta, 1);
     }
 
@@ -466,6 +471,9 @@ void forward_conv_lstm_layer(layer l, network_state state)
         forward_convolutional_layer(wi, s);
         forward_convolutional_layer(wg, s);
         forward_convolutional_layer(wo, s);
+
+        assert(l.inputs == uf.w * uf.h * uf.c);
+        assert(uf.c == l.c && ui.c == l.c && ug.c == l.c && uo.c == l.c);
 
         s.input = state.input;
         forward_convolutional_layer(uf, s);
@@ -498,8 +506,10 @@ void forward_conv_lstm_layer(layer l, network_state state)
         axpy_cpu(l.outputs*l.batch, 1, l.temp_cpu, 1, l.c_cpu, 1);
 
         // o = wo + uo + vo(c_new)
-        s.input = l.c_cpu;
-        if (l.peephole) forward_convolutional_layer(vo, s);
+        if (l.peephole) {
+            s.input = l.c_cpu;
+            forward_convolutional_layer(vo, s);
+        }
         copy_cpu(l.outputs*l.batch, wo.output, 1, l.o_cpu, 1);
         axpy_cpu(l.outputs*l.batch, 1, uo.output, 1, l.o_cpu, 1);
         if (l.peephole) axpy_cpu(l.outputs*l.batch, 1, vo.output, 1, l.o_cpu, 1);
@@ -509,6 +519,10 @@ void forward_conv_lstm_layer(layer l, network_state state)
         copy_cpu(l.outputs*l.batch, l.c_cpu, 1, l.h_cpu, 1);
         activate_array(l.h_cpu, l.outputs*l.batch, TANH);
         mul_cpu(l.outputs*l.batch, l.o_cpu, 1, l.h_cpu, 1);
+
+        if (l.state_constrain) constrain_cpu(l.outputs*l.batch, l.state_constrain, l.c_cpu);
+        fix_nan_and_inf_cpu(l.c_cpu, l.outputs*l.batch);
+        fix_nan_and_inf_cpu(l.h_cpu, l.outputs*l.batch);
 
         copy_cpu(l.outputs*l.batch, l.c_cpu, 1, l.cell_cpu, 1);
         copy_cpu(l.outputs*l.batch, l.h_cpu, 1, l.output, 1);
@@ -621,7 +635,7 @@ void backward_conv_lstm_layer(layer l, network_state state)
         gradient_array(l.temp_cpu, l.outputs*l.batch, TANH, l.temp2_cpu);
         axpy_cpu(l.outputs*l.batch, 1, l.dc_cpu, 1, l.temp2_cpu, 1);
         // temp  = tanh(c)
-        // temp2 = delta * o * grad_tanh(tahc(c))
+        // temp2 = delta * o * grad_tanh(tanh(c))
         // temp3 = delta
 
         copy_cpu(l.outputs*l.batch, l.c_cpu, 1, l.temp_cpu, 1);
@@ -629,7 +643,7 @@ void backward_conv_lstm_layer(layer l, network_state state)
         mul_cpu(l.outputs*l.batch, l.temp3_cpu, 1, l.temp_cpu, 1);
         gradient_array(l.o_cpu, l.outputs*l.batch, LOGISTIC, l.temp_cpu);
         // delta for o(w,u,v):       temp  = delta * tanh(c) * grad_logistic(o)
-        // delta for c,f,i,g(w,u,v): temp2 = delta * o * grad_tanh(tahc(c)) + delta_c(???)
+        // delta for c,f,i,g(w,u,v): temp2 = delta * o * grad_tanh(tanh(c)) + delta_c(???)
         // delta for output:         temp3 = delta
 
         // o
@@ -655,7 +669,7 @@ void backward_conv_lstm_layer(layer l, network_state state)
         copy_cpu(l.outputs*l.batch, l.temp2_cpu, 1, l.temp_cpu, 1);
         mul_cpu(l.outputs*l.batch, l.i_cpu, 1, l.temp_cpu, 1);
         gradient_array(l.g_cpu, l.outputs*l.batch, TANH, l.temp_cpu);
-        // delta for c,f,i,g(w,u,v): temp2 = (delta * o * grad_tanh(tahc(c)) + delta_c(???)) * g * grad_logistic(i)
+        // delta for c,f,i,g(w,u,v): temp2 = (delta * o * grad_tanh(tanh(c)) + delta_c(???)) * g * grad_logistic(i)
 
         copy_cpu(l.outputs*l.batch, l.temp_cpu, 1, wg.delta, 1);
         s.input = l.prev_state_cpu;
@@ -671,7 +685,7 @@ void backward_conv_lstm_layer(layer l, network_state state)
         copy_cpu(l.outputs*l.batch, l.temp2_cpu, 1, l.temp_cpu, 1);
         mul_cpu(l.outputs*l.batch, l.g_cpu, 1, l.temp_cpu, 1);
         gradient_array(l.i_cpu, l.outputs*l.batch, LOGISTIC, l.temp_cpu);
-        // delta for c,f,i,g(w,u,v): temp2 = (delta * o * grad_tanh(tahc(c)) + delta_c(???)) * g * grad_logistic(i)
+        // delta for c,f,i,g(w,u,v): temp2 = (delta * o * grad_tanh(tanh(c)) + delta_c(???)) * g * grad_logistic(i)
 
         if (l.peephole) {
             copy_cpu(l.outputs*l.batch, l.temp_cpu, 1, vi.delta, 1);
@@ -694,7 +708,7 @@ void backward_conv_lstm_layer(layer l, network_state state)
         copy_cpu(l.outputs*l.batch, l.temp2_cpu, 1, l.temp_cpu, 1);
         mul_cpu(l.outputs*l.batch, l.prev_cell_cpu, 1, l.temp_cpu, 1);
         gradient_array(l.f_cpu, l.outputs*l.batch, LOGISTIC, l.temp_cpu);
-        // delta for c,f,i,g(w,u,v): temp2 = (delta * o * grad_tanh(tahc(c)) + delta_c(???)) * c * grad_logistic(f)
+        // delta for c,f,i,g(w,u,v): temp2 = (delta * o * grad_tanh(tanh(c)) + delta_c(???)) * c * grad_logistic(f)
 
         if (l.peephole) {
             copy_cpu(l.outputs*l.batch, l.temp_cpu, 1, vf.delta, 1);
@@ -864,52 +878,55 @@ void forward_conv_lstm_layer_gpu(layer l, network_state state)
         forward_convolutional_layer_gpu(uo, s);
 
         // f = wf + uf + vf
-        copy_ongpu(l.outputs*l.batch, wf.output_gpu, 1, l.f_gpu, 1);
-        axpy_ongpu(l.outputs*l.batch, 1, uf.output_gpu, 1, l.f_gpu, 1);
-        if (l.peephole) axpy_ongpu(l.outputs*l.batch, 1, vf.output_gpu, 1, l.f_gpu, 1);
+        add_3_arrays_activate(wf.output_gpu, uf.output_gpu, (l.peephole)?vf.output_gpu:NULL, l.outputs*l.batch, LOGISTIC, l.f_gpu);
+        //copy_ongpu(l.outputs*l.batch, wf.output_gpu, 1, l.f_gpu, 1);
+        //axpy_ongpu(l.outputs*l.batch, 1, uf.output_gpu, 1, l.f_gpu, 1);
+        //if (l.peephole) axpy_ongpu(l.outputs*l.batch, 1, vf.output_gpu, 1, l.f_gpu, 1);
+        //activate_array_ongpu(l.f_gpu, l.outputs*l.batch, LOGISTIC);
 
         // i = wi + ui + vi
-        copy_ongpu(l.outputs*l.batch, wi.output_gpu, 1, l.i_gpu, 1);
-        axpy_ongpu(l.outputs*l.batch, 1, ui.output_gpu, 1, l.i_gpu, 1);
-        if (l.peephole) axpy_ongpu(l.outputs*l.batch, 1, vi.output_gpu, 1, l.i_gpu, 1);
+        add_3_arrays_activate(wi.output_gpu, ui.output_gpu, (l.peephole) ? vi.output_gpu : NULL, l.outputs*l.batch, LOGISTIC, l.i_gpu);
+        //copy_ongpu(l.outputs*l.batch, wi.output_gpu, 1, l.i_gpu, 1);
+        //axpy_ongpu(l.outputs*l.batch, 1, ui.output_gpu, 1, l.i_gpu, 1);
+        //if (l.peephole) axpy_ongpu(l.outputs*l.batch, 1, vi.output_gpu, 1, l.i_gpu, 1);
+        //activate_array_ongpu(l.i_gpu, l.outputs*l.batch, LOGISTIC);
 
         // g = wg + ug
-        copy_ongpu(l.outputs*l.batch, wg.output_gpu, 1, l.g_gpu, 1);
-        axpy_ongpu(l.outputs*l.batch, 1, ug.output_gpu, 1, l.g_gpu, 1);
-
-        activate_array_ongpu(l.f_gpu, l.outputs*l.batch, LOGISTIC);
-        activate_array_ongpu(l.i_gpu, l.outputs*l.batch, LOGISTIC);
-        activate_array_ongpu(l.g_gpu, l.outputs*l.batch, TANH);
+        add_3_arrays_activate(wg.output_gpu, ug.output_gpu, NULL, l.outputs*l.batch, TANH, l.g_gpu);
+        //copy_ongpu(l.outputs*l.batch, wg.output_gpu, 1, l.g_gpu, 1);
+        //axpy_ongpu(l.outputs*l.batch, 1, ug.output_gpu, 1, l.g_gpu, 1);
+        //activate_array_ongpu(l.g_gpu, l.outputs*l.batch, TANH);
 
         // c = f*c + i*g
-        copy_ongpu(l.outputs*l.batch, l.i_gpu, 1, l.temp_gpu, 1);
-        mul_ongpu(l.outputs*l.batch, l.g_gpu, 1, l.temp_gpu, 1);
-        mul_ongpu(l.outputs*l.batch, l.f_gpu, 1, l.c_gpu, 1);
-        axpy_ongpu(l.outputs*l.batch, 1, l.temp_gpu, 1, l.c_gpu, 1);
+        sum_of_mults(l.f_gpu, l.c_gpu, l.i_gpu, l.g_gpu, l.outputs*l.batch, l.c_gpu);   // decreases mAP???
+        //copy_ongpu(l.outputs*l.batch, l.i_gpu, 1, l.temp_gpu, 1);
+        //mul_ongpu(l.outputs*l.batch, l.g_gpu, 1, l.temp_gpu, 1);
+        //mul_ongpu(l.outputs*l.batch, l.f_gpu, 1, l.c_gpu, 1);
+        //axpy_ongpu(l.outputs*l.batch, 1, l.temp_gpu, 1, l.c_gpu, 1);
 
         // o = wo + uo + vo(c_new)
         if (l.peephole) {
             s.input = l.c_gpu;
             forward_convolutional_layer_gpu(vo, s);
         }
-        copy_ongpu(l.outputs*l.batch, wo.output_gpu, 1, l.o_gpu, 1);
-        axpy_ongpu(l.outputs*l.batch, 1, uo.output_gpu, 1, l.o_gpu, 1);
-        if (l.peephole) axpy_ongpu(l.outputs*l.batch, 1, vo.output_gpu, 1, l.o_gpu, 1);
-        activate_array_ongpu(l.o_gpu, l.outputs*l.batch, LOGISTIC);
+        add_3_arrays_activate(wo.output_gpu, uo.output_gpu, (l.peephole) ? vo.output_gpu : NULL, l.outputs*l.batch, LOGISTIC, l.o_gpu);
+        //copy_ongpu(l.outputs*l.batch, wo.output_gpu, 1, l.o_gpu, 1);
+        //axpy_ongpu(l.outputs*l.batch, 1, uo.output_gpu, 1, l.o_gpu, 1);
+        //if (l.peephole) axpy_ongpu(l.outputs*l.batch, 1, vo.output_gpu, 1, l.o_gpu, 1);
+        //activate_array_ongpu(l.o_gpu, l.outputs*l.batch, LOGISTIC);
 
         // h = o * tanh(c)
-        copy_ongpu(l.outputs*l.batch, l.c_gpu, 1, l.h_gpu, 1);
-        activate_array_ongpu(l.h_gpu, l.outputs*l.batch, TANH);
-        mul_ongpu(l.outputs*l.batch, l.o_gpu, 1, l.h_gpu, 1);
+        activate_and_mult(l.c_gpu, l.o_gpu, l.outputs*l.batch, TANH, l.h_gpu);
+        //simple_copy_ongpu(l.outputs*l.batch, l.c_gpu, l.h_gpu);
+        //activate_array_ongpu(l.h_gpu, l.outputs*l.batch, TANH);
+        //mul_ongpu(l.outputs*l.batch, l.o_gpu, 1, l.h_gpu, 1);
 
-        if(l.state_constrain) constrain_ongpu(l.outputs*l.batch, l.state_constrain, l.c_gpu, 1);
-        //constrain_ongpu(l.outputs*l.batch, 1, l.c_gpu, 1);
-        //constrain_ongpu(l.outputs*l.batch, 1, l.h_gpu, 1);
         fix_nan_and_inf(l.c_gpu, l.outputs*l.batch);
         fix_nan_and_inf(l.h_gpu, l.outputs*l.batch);
+        if (l.state_constrain) constrain_ongpu(l.outputs*l.batch, l.state_constrain, l.c_gpu, 1);
 
-        copy_ongpu(l.outputs*l.batch, l.c_gpu, 1, l.cell_gpu, 1);
-        copy_ongpu(l.outputs*l.batch, l.h_gpu, 1, l.output_gpu, 1); // is required for both Detection and Training
+        if(state.train) simple_copy_ongpu(l.outputs*l.batch, l.c_gpu, l.cell_gpu);
+        simple_copy_ongpu(l.outputs*l.batch, l.h_gpu, l.output_gpu); // is required for both Detection and Training
 
         state.input += l.inputs*l.batch;
         l.output_gpu    += l.outputs*l.batch;
@@ -980,160 +997,163 @@ void backward_conv_lstm_layer_gpu(layer l, network_state state)
     l.cell_gpu += l.outputs*l.batch*(l.steps - 1);
     l.delta_gpu += l.outputs*l.batch*(l.steps - 1);
 
-    fix_nan_and_inf(l.dc_gpu, l.outputs*l.batch);
     //fill_ongpu(l.outputs * l.batch, 0, l.dc_gpu, 1);   //  dont use
     const int sequence = get_sequence_value(state.net);
 
     for (i = l.steps - 1; i >= 0; --i) {
-        if (i != 0) copy_ongpu(l.outputs*l.batch, l.cell_gpu - l.outputs*l.batch, 1, l.prev_cell_gpu, 1);
+        if (i != 0) simple_copy_ongpu(l.outputs*l.batch, l.cell_gpu - l.outputs*l.batch, l.prev_cell_gpu);
         //else fill_ongpu(l.outputs * l.batch, 0, l.prev_cell_gpu, 1);   //  dont use
-        else if (state.net.current_subdivision % sequence != 0) copy_ongpu(l.outputs*l.batch, l.last_prev_cell_gpu, 1, l.prev_cell_gpu, 1);
+        else if (state.net.current_subdivision % sequence != 0) simple_copy_ongpu(l.outputs*l.batch, l.last_prev_cell_gpu, l.prev_cell_gpu);
 
-        copy_ongpu(l.outputs*l.batch, l.cell_gpu, 1, l.c_gpu, 1);
+        simple_copy_ongpu(l.outputs*l.batch, l.cell_gpu, l.c_gpu);
 
-        if (i != 0) copy_ongpu(l.outputs*l.batch, l.output_gpu - l.outputs*l.batch, 1, l.prev_state_gpu, 1);
+        if (i != 0) simple_copy_ongpu(l.outputs*l.batch, l.output_gpu - l.outputs*l.batch, l.prev_state_gpu);
         //else fill_ongpu(l.outputs * l.batch, 0, l.prev_state_gpu, 1);   //  dont use
-        else if(state.net.current_subdivision % sequence != 0) copy_ongpu(l.outputs*l.batch, l.last_prev_state_gpu, 1, l.prev_state_gpu, 1);
+        else if(state.net.current_subdivision % sequence != 0) simple_copy_ongpu(l.outputs*l.batch, l.last_prev_state_gpu, l.prev_state_gpu);
 
-        copy_ongpu(l.outputs*l.batch, l.output_gpu, 1, l.h_gpu, 1);
+        simple_copy_ongpu(l.outputs*l.batch, l.output_gpu, l.h_gpu);
 
         l.dh_gpu = (i == 0) ? 0 : l.delta_gpu - l.outputs*l.batch;
 
         // f = wf + uf + vf
-        copy_ongpu(l.outputs*l.batch, wf.output_gpu, 1, l.f_gpu, 1);
-        axpy_ongpu(l.outputs*l.batch, 1, uf.output_gpu, 1, l.f_gpu, 1);
-        if (l.peephole) axpy_ongpu(l.outputs*l.batch, 1, vf.output_gpu, 1, l.f_gpu, 1);
+        add_3_arrays_activate(wf.output_gpu, uf.output_gpu, (l.peephole) ? vf.output_gpu : NULL, l.outputs*l.batch, LOGISTIC, l.f_gpu);
+        //copy_ongpu(l.outputs*l.batch, wf.output_gpu, 1, l.f_gpu, 1);
+        //axpy_ongpu(l.outputs*l.batch, 1, uf.output_gpu, 1, l.f_gpu, 1);
+        //if (l.peephole) axpy_ongpu(l.outputs*l.batch, 1, vf.output_gpu, 1, l.f_gpu, 1);
+        //activate_array_ongpu(l.f_gpu, l.outputs*l.batch, LOGISTIC);
 
         // i = wi + ui + vi
-        copy_ongpu(l.outputs*l.batch, wi.output_gpu, 1, l.i_gpu, 1);
-        axpy_ongpu(l.outputs*l.batch, 1, ui.output_gpu, 1, l.i_gpu, 1);
-        if (l.peephole) axpy_ongpu(l.outputs*l.batch, 1, vi.output_gpu, 1, l.i_gpu, 1);
+        add_3_arrays_activate(wi.output_gpu, ui.output_gpu, (l.peephole) ? vi.output_gpu : NULL, l.outputs*l.batch, LOGISTIC, l.i_gpu);
+        //copy_ongpu(l.outputs*l.batch, wi.output_gpu, 1, l.i_gpu, 1);
+        //axpy_ongpu(l.outputs*l.batch, 1, ui.output_gpu, 1, l.i_gpu, 1);
+        //if (l.peephole) axpy_ongpu(l.outputs*l.batch, 1, vi.output_gpu, 1, l.i_gpu, 1);
+        //activate_array_ongpu(l.i_gpu, l.outputs*l.batch, LOGISTIC);
 
         // g = wg + ug
-        copy_ongpu(l.outputs*l.batch, wg.output_gpu, 1, l.g_gpu, 1);
-        axpy_ongpu(l.outputs*l.batch, 1, ug.output_gpu, 1, l.g_gpu, 1);
+        add_3_arrays_activate(wg.output_gpu, ug.output_gpu, NULL, l.outputs*l.batch, TANH, l.g_gpu);
+        //copy_ongpu(l.outputs*l.batch, wg.output_gpu, 1, l.g_gpu, 1);
+        //axpy_ongpu(l.outputs*l.batch, 1, ug.output_gpu, 1, l.g_gpu, 1);
+        //activate_array_ongpu(l.g_gpu, l.outputs*l.batch, TANH);
 
         // o = wo + uo + vo
-        copy_ongpu(l.outputs*l.batch, wo.output_gpu, 1, l.o_gpu, 1);
-        axpy_ongpu(l.outputs*l.batch, 1, uo.output_gpu, 1, l.o_gpu, 1);
-        if (l.peephole) axpy_ongpu(l.outputs*l.batch, 1, vo.output_gpu, 1, l.o_gpu, 1);
-
-        activate_array_ongpu(l.f_gpu, l.outputs*l.batch, LOGISTIC);
-        activate_array_ongpu(l.i_gpu, l.outputs*l.batch, LOGISTIC);
-        activate_array_ongpu(l.g_gpu, l.outputs*l.batch, TANH);
-        activate_array_ongpu(l.o_gpu, l.outputs*l.batch, LOGISTIC);
+        add_3_arrays_activate(wo.output_gpu, uo.output_gpu, (l.peephole) ? vo.output_gpu : NULL, l.outputs*l.batch, LOGISTIC, l.o_gpu);
+        //copy_ongpu(l.outputs*l.batch, wo.output_gpu, 1, l.o_gpu, 1);
+        //axpy_ongpu(l.outputs*l.batch, 1, uo.output_gpu, 1, l.o_gpu, 1);
+        //if (l.peephole) axpy_ongpu(l.outputs*l.batch, 1, vo.output_gpu, 1, l.o_gpu, 1);
+        //activate_array_ongpu(l.o_gpu, l.outputs*l.batch, LOGISTIC);
 
 
-        copy_ongpu(l.outputs*l.batch, l.delta_gpu, 1, l.temp3_gpu, 1);  // temp3 = delta
+        simple_copy_ongpu(l.outputs*l.batch, l.delta_gpu, l.temp3_gpu);  // temp3 = delta
 
-        copy_ongpu(l.outputs*l.batch, l.c_gpu, 1, l.temp_gpu, 1);
+        simple_copy_ongpu(l.outputs*l.batch, l.c_gpu, l.temp_gpu);
         activate_array_ongpu(l.temp_gpu, l.outputs*l.batch, TANH);  // temp  = tanh(c)
 
-        copy_ongpu(l.outputs*l.batch, l.temp3_gpu, 1, l.temp2_gpu, 1);
+        simple_copy_ongpu(l.outputs*l.batch, l.temp3_gpu, l.temp2_gpu);
         mul_ongpu(l.outputs*l.batch, l.o_gpu, 1, l.temp2_gpu, 1);   // temp2 = delta * o
 
-        gradient_array_ongpu(l.temp_gpu, l.outputs*l.batch, TANH, l.temp2_gpu); // temp2 = delta * o * grad_tanh(tahc(c))
+        gradient_array_ongpu(l.temp_gpu, l.outputs*l.batch, TANH, l.temp2_gpu); // temp2 = delta * o * grad_tanh(tanh(c))
         //???
-        axpy_ongpu(l.outputs*l.batch, 1, l.dc_gpu, 1, l.temp2_gpu, 1);          // temp2 = delta * o * grad_tanh(tahc(c)) + delta_c(???)
+        axpy_ongpu(l.outputs*l.batch, 1, l.dc_gpu, 1, l.temp2_gpu, 1);          // temp2 = delta * o * grad_tanh(tanh(c)) + delta_c(???)
         // temp  = tanh(c)
-        // temp2 = delta * o * grad_tanh(tahc(c)) + delta_c(???)
+        // temp2 = delta * o * grad_tanh(tanh(c)) + delta_c(???)
         // temp3 = delta
 
-        copy_ongpu(l.outputs*l.batch, l.c_gpu, 1, l.temp_gpu, 1);
+        simple_copy_ongpu(l.outputs*l.batch, l.c_gpu, l.temp_gpu);
         activate_array_ongpu(l.temp_gpu, l.outputs*l.batch, TANH);    // temp  = tanh(c)
 
         mul_ongpu(l.outputs*l.batch, l.temp3_gpu, 1, l.temp_gpu, 1);  // temp  = delta * tanh(c)
         gradient_array_ongpu(l.o_gpu, l.outputs*l.batch, LOGISTIC, l.temp_gpu);  // temp  = delta * tanh(c) * grad_logistic(o)
         // delta for o(w,u,v):       temp  = delta * tanh(c) * grad_logistic(o)
-        // delta for c,f,i,g(w,u,v): temp2 = delta * o * grad_tanh(tahc(c)) + delta_c(???)
+        // delta for c,f,i,g(w,u,v): temp2 = delta * o * grad_tanh(tanh(c)) + delta_c(???)
         // delta for output:         temp3 = delta
 
         // o
         // delta for O(w,u,v):     temp  = delta * tanh(c) * grad_logistic(o)
         if (l.peephole) {
-            copy_ongpu(l.outputs*l.batch, l.temp_gpu, 1, vo.delta_gpu, 1);
+            simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, vo.delta_gpu);
             s.input = l.cell_gpu;
             //s.delta = l.dc_gpu;
             backward_convolutional_layer_gpu(vo, s);
         }
 
-        copy_ongpu(l.outputs*l.batch, l.temp_gpu, 1, wo.delta_gpu, 1);
+        simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, wo.delta_gpu);
         s.input = l.prev_state_gpu;
         //s.delta = l.dh_gpu;
         backward_convolutional_layer_gpu(wo, s);
 
-        copy_ongpu(l.outputs*l.batch, l.temp_gpu, 1, uo.delta_gpu, 1);
+        simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, uo.delta_gpu);
         s.input = state.input;
         s.delta = state.delta;
         backward_convolutional_layer_gpu(uo, s);
 
         // g
-        copy_ongpu(l.outputs*l.batch, l.temp2_gpu, 1, l.temp_gpu, 1);
+        simple_copy_ongpu(l.outputs*l.batch, l.temp2_gpu, l.temp_gpu);
         mul_ongpu(l.outputs*l.batch, l.i_gpu, 1, l.temp_gpu, 1);
         gradient_array_ongpu(l.g_gpu, l.outputs*l.batch, TANH, l.temp_gpu);
-        // delta for c,f,i,g(w,u,v): temp = (delta * o * grad_tanh(tahc(c)) + delta_c(???)) * i * grad_tanh(g)
+        // delta for c,f,i,g(w,u,v): temp = (delta * o * grad_tanh(tanh(c)) + delta_c(???)) * i * grad_tanh(g)
 
-        copy_ongpu(l.outputs*l.batch, l.temp_gpu, 1, wg.delta_gpu, 1);
+        simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, wg.delta_gpu);
         s.input = l.prev_state_gpu;
         //s.delta = l.dh_gpu;
         backward_convolutional_layer_gpu(wg, s);
 
-        copy_ongpu(l.outputs*l.batch, l.temp_gpu, 1, ug.delta_gpu, 1);
+        simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, ug.delta_gpu);
         s.input = state.input;
         s.delta = state.delta;
         backward_convolutional_layer_gpu(ug, s);
 
         // i
-        copy_ongpu(l.outputs*l.batch, l.temp2_gpu, 1, l.temp_gpu, 1);
+        simple_copy_ongpu(l.outputs*l.batch, l.temp2_gpu, l.temp_gpu);
         mul_ongpu(l.outputs*l.batch, l.g_gpu, 1, l.temp_gpu, 1);
         gradient_array_ongpu(l.i_gpu, l.outputs*l.batch, LOGISTIC, l.temp_gpu);
-        // delta for c,f,i,g(w,u,v): temp = (delta * o * grad_tanh(tahc(c)) + delta_c(???)) * g * grad_logistic(i)
+        // delta for c,f,i,g(w,u,v): temp = (delta * o * grad_tanh(tanh(c)) + delta_c(???)) * g * grad_logistic(i)
 
         if (l.peephole) {
-            copy_ongpu(l.outputs*l.batch, l.temp_gpu, 1, vi.delta_gpu, 1);
+            simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, vi.delta_gpu);
             s.input = l.prev_cell_gpu;
             //s.delta = l.dc_gpu;
             backward_convolutional_layer_gpu(vi, s);
         }
 
-        copy_ongpu(l.outputs*l.batch, l.temp_gpu, 1, wi.delta_gpu, 1);
+        simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, wi.delta_gpu);
         s.input = l.prev_state_gpu;
         //s.delta = l.dh_gpu;
         backward_convolutional_layer_gpu(wi, s);
 
-        copy_ongpu(l.outputs*l.batch, l.temp_gpu, 1, ui.delta_gpu, 1);
+        simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, ui.delta_gpu);
         s.input = state.input;
         s.delta = state.delta;
         backward_convolutional_layer_gpu(ui, s);
 
         // f
-        copy_ongpu(l.outputs*l.batch, l.temp2_gpu, 1, l.temp_gpu, 1);
+        simple_copy_ongpu(l.outputs*l.batch, l.temp2_gpu, l.temp_gpu);
         mul_ongpu(l.outputs*l.batch, l.prev_cell_gpu, 1, l.temp_gpu, 1);
         gradient_array_ongpu(l.f_gpu, l.outputs*l.batch, LOGISTIC, l.temp_gpu);
-        // delta for c,f,i,g(w,u,v): temp = (delta * o * grad_tanh(tahc(c)) + delta_c(???)) * c * grad_logistic(f)
+        // delta for c,f,i,g(w,u,v): temp = (delta * o * grad_tanh(tanh(c)) + delta_c(???)) * c * grad_logistic(f)
 
         if (l.peephole) {
-            copy_ongpu(l.outputs*l.batch, l.temp_gpu, 1, vf.delta_gpu, 1);
+            simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, vf.delta_gpu);
             s.input = l.prev_cell_gpu;
             //s.delta = l.dc_gpu;
             backward_convolutional_layer_gpu(vf, s);
         }
 
-        copy_ongpu(l.outputs*l.batch, l.temp_gpu, 1, wf.delta_gpu, 1);
+        simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, wf.delta_gpu);
         s.input = l.prev_state_gpu;
         //s.delta = l.dh_gpu;
         backward_convolutional_layer_gpu(wf, s);
 
-        copy_ongpu(l.outputs*l.batch, l.temp_gpu, 1, uf.delta_gpu, 1);
+        simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, uf.delta_gpu);
         s.input = state.input;
         s.delta = state.delta;
         backward_convolutional_layer_gpu(uf, s);
 
         // c
-        copy_ongpu(l.outputs*l.batch, l.temp2_gpu, 1, l.temp_gpu, 1);
+        simple_copy_ongpu(l.outputs*l.batch, l.temp2_gpu, l.temp_gpu);
         mul_ongpu(l.outputs*l.batch, l.f_gpu, 1, l.temp_gpu, 1);
-        copy_ongpu(l.outputs*l.batch, l.temp_gpu, 1, l.dc_gpu, 1);
-        // delta for c,f,i,g(w,u,v): delta_c = temp = (delta * o * grad_tanh(tahc(c)) + delta_c(???)) * f    // (grad_linear(c)==1)
+        simple_copy_ongpu(l.outputs*l.batch, l.temp_gpu, l.dc_gpu);
+        fix_nan_and_inf(l.dc_gpu, l.outputs*l.batch);
+        // delta for c,f,i,g(w,u,v): delta_c = temp = (delta * o * grad_tanh(tanh(c)) + delta_c(???)) * f    // (grad_linear(c)==1)
 
         state.input -= l.inputs*l.batch;
         if (state.delta) state.delta -= l.inputs*l.batch;   // new delta: state.delta = prev_layer.delta_gpu;
@@ -1158,8 +1178,8 @@ void backward_conv_lstm_layer_gpu(layer l, network_state state)
         increment_layer(&uo, -1);
     }
 
-    copy_ongpu(l.outputs*l.batch, last_output, 1, l.last_prev_state_gpu, 1);
-    copy_ongpu(l.outputs*l.batch, last_cell, 1, l.last_prev_cell_gpu, 1);
+    simple_copy_ongpu(l.outputs*l.batch, last_output, l.last_prev_state_gpu);
+    simple_copy_ongpu(l.outputs*l.batch, last_cell, l.last_prev_cell_gpu);
 
     // free state after each 100 iterations
     //if (get_current_batch(state.net) % 100) free_state_conv_lstm(l);  // dont use

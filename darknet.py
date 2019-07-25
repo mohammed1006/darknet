@@ -75,16 +75,17 @@ class METADATA(Structure):
 
 
 #lib = CDLL("/home/pjreddie/documents/darknet/libdarknet.so", RTLD_GLOBAL)
-#lib = CDLL("darknet.so", RTLD_GLOBAL)
+#lib = CDLL("libdarknet.so", RTLD_GLOBAL)
 hasGPU = True
 if os.name == "nt":
-    winGPUdll = "yolo_cpp_dll.dll"
-    winNoGPUdll = "yolo_cpp_dll_nogpu.dll"
+    cwd = os.path.dirname(__file__)
+    os.environ['PATH'] = cwd + ';' + os.environ['PATH']
+    winGPUdll = os.path.join(cwd, "yolo_cpp_dll.dll")
+    winNoGPUdll = os.path.join(cwd, "yolo_cpp_dll_nogpu.dll")
     envKeys = list()
     for k, v in os.environ.items():
         envKeys.append(k)
     try:
-        tmp = os.environ["CUDA_HOME"]
         try:
             tmp = os.environ["FORCE_CPU"].lower()
             if tmp in ["1", "true", "yes", "on"]:
@@ -124,7 +125,16 @@ lib.network_width.restype = c_int
 lib.network_height.argtypes = [c_void_p]
 lib.network_height.restype = c_int
 
-predict = lib.network_predict
+copy_image_from_bytes = lib.copy_image_from_bytes
+copy_image_from_bytes.argtypes = [IMAGE,c_char_p]
+
+def network_width(net):
+    return lib.network_width(net)
+
+def network_height(net):
+    return lib.network_height(net)
+
+predict = lib.network_predict_ptr
 predict.argtypes = [c_void_p, POINTER(c_float)]
 predict.restype = POINTER(c_float)
 
@@ -150,7 +160,7 @@ free_detections.argtypes = [POINTER(DETECTION), c_int]
 free_ptrs = lib.free_ptrs
 free_ptrs.argtypes = [POINTER(c_void_p), c_int]
 
-network_predict = lib.network_predict
+network_predict = lib.network_predict_ptr
 network_predict.argtypes = [c_void_p, POINTER(c_float)]
 
 reset_rnn = lib.reset_rnn
@@ -159,6 +169,10 @@ reset_rnn.argtypes = [c_void_p]
 load_net = lib.load_network
 load_net.argtypes = [c_char_p, c_char_p, c_int]
 load_net.restype = c_void_p
+
+load_net_custom = lib.load_network_custom
+load_net_custom.argtypes = [c_char_p, c_char_p, c_int, c_int]
+load_net_custom.restype = c_void_p
 
 do_nms_obj = lib.do_nms_obj
 do_nms_obj.argtypes = [POINTER(DETECTION), c_int, c_int, c_float]
@@ -188,6 +202,22 @@ predict_image = lib.network_predict_image
 predict_image.argtypes = [c_void_p, IMAGE]
 predict_image.restype = POINTER(c_float)
 
+predict_image_letterbox = lib.network_predict_image_letterbox
+predict_image_letterbox.argtypes = [c_void_p, IMAGE]
+predict_image_letterbox.restype = POINTER(c_float)
+
+def array_to_image(arr):
+    import numpy as np
+    # need to return old values to avoid python freeing memory
+    arr = arr.transpose(2,0,1)
+    c = arr.shape[0]
+    h = arr.shape[1]
+    w = arr.shape[2]
+    arr = np.ascontiguousarray(arr.flat, dtype=np.float32) / 255.0
+    data = arr.ctypes.data_as(POINTER(c_float))
+    im = IMAGE(w,h,c,data)
+    return im, arr
+
 def classify(net, meta, im):
     out = predict_image(net, im)
     res = []
@@ -207,13 +237,30 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
     #pylint: disable= C0321
     im = load_image(image, 0, 0)
     if debug: print("Loaded image")
+    ret = detect_image(net, meta, im, thresh, hier_thresh, nms, debug)
+    free_image(im)
+    if debug: print("freed image")
+    return ret
+
+def detect_image(net, meta, im, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
+    #import cv2
+    #custom_image_bgr = cv2.imread(image) # use: detect(,,imagePath,)
+    #custom_image = cv2.cvtColor(custom_image_bgr, cv2.COLOR_BGR2RGB)
+    #custom_image = cv2.resize(custom_image,(lib.network_width(net), lib.network_height(net)), interpolation = cv2.INTER_LINEAR)
+    #import scipy.misc
+    #custom_image = scipy.misc.imread(image)
+    #im, arr = array_to_image(custom_image)		# you should comment line below: free_image(im)
     num = c_int(0)
     if debug: print("Assigned num")
     pnum = pointer(num)
     if debug: print("Assigned pnum")
     predict_image(net, im)
+    letter_box = 0
+    #predict_image_letterbox(net, im)
+    #letter_box = 1
     if debug: print("did prediction")
-    dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, None, 0, pnum, 1)
+    #dets = get_network_boxes(net, custom_image_bgr.shape[1], custom_image_bgr.shape[0], thresh, hier_thresh, None, 0, pnum, letter_box) # OpenCV
+    dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, None, 0, pnum, letter_box)
     if debug: print("Got dets")
     num = pnum[0]
     if debug: print("got zeroth index of pnum")
@@ -242,8 +289,6 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
     if debug: print("did range")
     res = sorted(res, key=lambda x: -x[1])
     if debug: print("did sort")
-    free_image(im)
-    if debug: print("freed image")
     free_detections(dets, num)
     if debug: print("freed detections")
     return res
@@ -253,7 +298,7 @@ netMain = None
 metaMain = None
 altNames = None
 
-def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yolov3.cfg", weightPath = "yolov3.weights", metaPath= "./data/coco.data", showImage= True, makeImageOnly = False, initOnly= False):
+def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yolov3.cfg", weightPath = "yolov3.weights", metaPath= "./cfg/coco.data", showImage= True, makeImageOnly = False, initOnly= False):
     """
     Convenience function to handle the detection and returns of objects.
 
@@ -310,7 +355,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
     if not os.path.exists(metaPath):
         raise ValueError("Invalid data file path `"+os.path.abspath(metaPath)+"`")
     if netMain is None:
-        netMain = load_net(configPath.encode("ascii"), weightPath.encode("ascii"), 0)
+        netMain = load_net_custom(configPath.encode("ascii"), weightPath.encode("ascii"), 0, 1)  # batch size = 1
     if metaMain is None:
         metaMain = load_meta(metaPath.encode("ascii"))
     if altNames is None:
@@ -340,6 +385,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
     if not os.path.exists(imagePath):
         raise ValueError("Invalid image path `"+os.path.abspath(imagePath)+"`")
     # Do the detection
+    #detections = detect(netMain, metaMain, imagePath, thresh)	# if is used cv2.imread(image)
     detections = detect(netMain, metaMain, imagePath.encode("ascii"), thresh)
     if showImage:
         try:

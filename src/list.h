@@ -13,6 +13,9 @@ typedef struct list{
     node *back;
 } list;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 list *make_list();
 int list_find(list *l, void *val);
 
@@ -22,5 +25,9 @@ void **list_to_array(list *l);
 
 void free_list(list *l);
 void free_list_contents(list *l);
+void free_list_contents_kvp(list *l);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

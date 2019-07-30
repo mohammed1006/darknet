@@ -1,5 +1,5 @@
 #include "shortcut_layer.h"
-#include "cuda.h"
+#include "dark_cuda.h"
 #include "blas.h"
 #include <stdio.h>
 #include <assert.h>
@@ -18,6 +18,8 @@ layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int
     l.out_c = c;
     l.outputs = w*h*c;
     l.inputs = l.outputs;
+
+    if(w != w2 || h != h2 || c != c) fprintf(stderr, " w = %d, w2 = %d, h = %d, h2 = %d, c = %d, c2 = %d \n", w, w2, h, h2, c, c2);
 
     l.index = index;
 

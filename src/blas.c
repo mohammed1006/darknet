@@ -169,6 +169,12 @@ void scal_cpu(int N, float ALPHA, float *X, int INCX)
     for(i = 0; i < N; ++i) X[i*INCX] *= ALPHA;
 }
 
+void scal_add_cpu(int N, float ALPHA, float BETA, float *X, int INCX)
+{
+    int i;
+    for (i = 0; i < N; ++i) X[i*INCX] = X[i*INCX] * ALPHA + BETA;
+}
+
 void fill_cpu(int N, float ALPHA, float *X, int INCX)
 {
     int i;
@@ -234,7 +240,7 @@ void smooth_l1_cpu(int n, float *pred, float *truth, float *delta, float *error)
         }
         else {
             error[i] = 2*abs_val - 1;
-            delta[i] = (diff < 0) ? 1 : -1;
+            delta[i] = (diff > 0) ? 1 : -1;
         }
     }
 }
@@ -332,5 +338,24 @@ void upsample_cpu(float *in, int w, int h, int c, int batch, int stride, int for
                 }
             }
         }
+    }
+}
+
+
+void constrain_cpu(int size, float ALPHA, float *X)
+{
+    int i;
+    for (i = 0; i < size; ++i) {
+        X[i] = fminf(ALPHA, fmaxf(-ALPHA, X[i]));
+    }
+}
+
+void fix_nan_and_inf_cpu(float *input, size_t size)
+{
+    int i;
+    for (i = 0; i < size; ++i) {
+        float val = input[i];
+        if (isnan(val) || isinf(val))
+            input[i] = 1.0f / i;  // pseudo random value
     }
 }

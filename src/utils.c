@@ -252,6 +252,18 @@ void replace_image_to_label(const char* input_path, char* output_path)
     find_replace_extension(output_path, ".BMP", ".txt", output_path);
     find_replace_extension(output_path, ".ppm", ".txt", output_path);
     find_replace_extension(output_path, ".PPM", ".txt", output_path);
+    find_replace_extension(output_path, ".tiff", ".txt", output_path);
+    find_replace_extension(output_path, ".TIFF", ".txt", output_path);
+
+    // Check file ends with txt:
+    if(strlen(output_path) > 4) {
+        char *output_path_ext = output_path + strlen(output_path) - 4;
+        if( strcmp(".txt", output_path_ext) != 0){
+            fprintf(stderr, "Failed to infer label file name (check image extension is supported): %s \n", output_path);
+        }
+    }else{
+        fprintf(stderr, "Label file name is too short: %s \n", output_path);
+    }
 }
 
 float sec(clock_t clocks)
@@ -609,6 +621,19 @@ float mag_array(float *a, int n)
     return sqrt(sum);
 }
 
+// indicies to skip is a bit array
+float mag_array_skip(float *a, int n, int * indices_to_skip)
+{
+    int i;
+    float sum = 0;
+    for (i = 0; i < n; ++i) {
+        if (indices_to_skip[i] != 1) {
+            sum += a[i] * a[i];
+        }
+    }
+    return sqrt(sum);
+}
+
 void scale_array(float *a, int n, float s)
 {
     int i;
@@ -756,13 +781,12 @@ float rand_uniform(float min, float max)
         max = swap;
     }
 
-    if (RAND_MAX < 65536) {
+#if (RAND_MAX < 65536)
         int rnd = rand()*(RAND_MAX + 1) + rand();
         return ((float)rnd / (RAND_MAX*RAND_MAX) * (max - min)) + min;
-    }
-    else {
+#else
         return ((float)rand() / RAND_MAX * (max - min)) + min;
-    }
+#endif
     //return (random_float() * (max - min)) + min;
 }
 
@@ -790,12 +814,12 @@ unsigned int random_gen()
     unsigned int rnd = 0;
 #ifdef WIN32
     rand_s(&rnd);
-#else
+#else   // WIN32
     rnd = rand();
-    if (RAND_MAX < 65536) {
+#if (RAND_MAX < 65536)
         rnd = rand()*(RAND_MAX + 1) + rnd;
-    }
-#endif
+#endif  //(RAND_MAX < 65536)
+#endif  // WIN32
     return rnd;
 }
 
@@ -860,4 +884,34 @@ int check_array_is_inf(float *arr, int size)
         if (isinf(arr[i])) return 1;
     }
     return 0;
+}
+
+int *random_index_order(int min, int max)
+{
+    int *inds = (int *)calloc(max - min, sizeof(int));
+    int i;
+    for (i = min; i < max; ++i) {
+        inds[i - min] = i;
+    }
+    for (i = min; i < max - 1; ++i) {
+        int swap = inds[i - min];
+        int index = i + rand() % (max - i);
+        inds[i - min] = inds[index - min];
+        inds[index - min] = swap;
+    }
+    return inds;
+}
+
+int max_int_index(int *a, int n)
+{
+    if (n <= 0) return -1;
+    int i, max_i = 0;
+    int max = a[0];
+    for (i = 1; i < n; ++i) {
+        if (a[i] > max) {
+            max = a[i];
+            max_i = i;
+        }
+    }
+    return max_i;
 }

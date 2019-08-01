@@ -19,7 +19,6 @@ height_in_cfg_file = 416.
 
 def IOU(x,centroids):
     similarities = []
-    k = len(centroids)
     for centroid in centroids:
         c_w,c_h = centroid
         w,h = x

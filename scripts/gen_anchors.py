@@ -125,7 +125,6 @@ def main(argv):
     
     annotation_dims = []
 
-    size = np.zeros((1,1,3))
     for line in lines:
                     
         #line = line.replace('images','labels')

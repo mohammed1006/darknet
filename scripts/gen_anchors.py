@@ -69,7 +69,6 @@ def write_anchors_to_file(centroids,X,anchor_file):
 def kmeans(X,centroids,eps,anchor_file):
     
     N = X.shape[0]
-    iterations = 0
     k,dim = centroids.shape
     prev_assignments = np.ones(N)*(-1)    
     iter = 0

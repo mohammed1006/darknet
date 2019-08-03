@@ -542,7 +542,7 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
     * `train_network_width * train_obj_width / train_image_width ~= detection_network_width * detection_obj_width / detection_image_width`
     * `train_network_height * train_obj_height / train_image_height ~= detection_network_height * detection_obj_height / detection_image_height`
     
-    I.e. for each object from Test dataset there must be at least 1 object in the Training dataset with the same class_id and about the same relative size:
+    i.e. for each object from Test dataset there must be at least 1 object in the Training dataset with the same class_id and about the same relative size:
 
     `object width in percent from Training dataset` ~= `object width in percent from Test dataset` 
    

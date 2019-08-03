@@ -74,6 +74,31 @@ extern "C" {
 #endif	// GPU
     }
 
+bool built_with_cuda(){
+#ifdef GPU
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool built_with_cudnn(){
+#ifdef CUDNN
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool built_with_opencv(){
+#ifdef OPENCV
+    return true;
+#else
+    return false;
+#endif
+}
+
+
     LIB_API int get_device_name(int gpu, char* deviceName) {
 #ifdef GPU
         cudaDeviceProp prop;

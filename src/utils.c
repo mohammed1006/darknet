@@ -621,6 +621,19 @@ float mag_array(float *a, int n)
     return sqrt(sum);
 }
 
+// indicies to skip is a bit array
+float mag_array_skip(float *a, int n, int * indices_to_skip)
+{
+    int i;
+    float sum = 0;
+    for (i = 0; i < n; ++i) {
+        if (indices_to_skip[i] != 1) {
+            sum += a[i] * a[i];
+        }
+    }
+    return sqrt(sum);
+}
+
 void scale_array(float *a, int n, float s)
 {
     int i;
@@ -871,4 +884,34 @@ int check_array_is_inf(float *arr, int size)
         if (isinf(arr[i])) return 1;
     }
     return 0;
+}
+
+int *random_index_order(int min, int max)
+{
+    int *inds = (int *)calloc(max - min, sizeof(int));
+    int i;
+    for (i = min; i < max; ++i) {
+        inds[i - min] = i;
+    }
+    for (i = min; i < max - 1; ++i) {
+        int swap = inds[i - min];
+        int index = i + rand() % (max - i);
+        inds[i - min] = inds[index - min];
+        inds[index - min] = swap;
+    }
+    return inds;
+}
+
+int max_int_index(int *a, int n)
+{
+    if (n <= 0) return -1;
+    int i, max_i = 0;
+    int max = a[0];
+    for (i = 1; i < n; ++i) {
+        if (a[i] > max) {
+            max = a[i];
+            max_i = i;
+        }
+    }
+    return max_i;
 }

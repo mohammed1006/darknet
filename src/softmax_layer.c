@@ -70,7 +70,7 @@ void forward_softmax_layer(const softmax_layer l, network_state net)
     }
 
     if(net.truth && !l.noloss){
-        softmax_x_ent_cpu(l.batch*l.inputs, l.output, net.truth, l.delta, l.loss);
+        softmax_x_ent_cpu(l.batch*l.inputs, l.output, net.truth, l.delta, l.loss, l.start_idx);
         l.cost[0] = sum_array(l.loss, l.batch*l.inputs);
     }
 }

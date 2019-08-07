@@ -255,11 +255,11 @@ void l1_cpu(int n, float *pred, float *truth, float *delta, float *error)
     }
 }
 
-void softmax_x_ent_cpu(int n, float *pred, float *truth, float *delta, float *error)
+void softmax_x_ent_cpu(int n, float *pred, float *truth, float *delta, float *error, int start_idx)
 {
     int i;
     for(i = 0; i < n; ++i){
-        float t = truth[i];
+        float t = truth[i + start_idx];
         float p = pred[i];
         error[i] = (t) ? -log(p) : 0;
         delta[i] = t-p;

@@ -202,6 +202,7 @@ struct layer {
     int n;
     int max_boxes;
     int groups;
+    int start_idx;
     int size;
     int side;
     int stride;

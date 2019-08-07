@@ -492,7 +492,7 @@ void fill_truth(char *path, char **labels, int k, float *truth)
             ++count;
         }
     }
-    if(count != 1) printf("Too many or too few labels: %d, %s\n", count, path);
+    // if(count != 1) printf("Too many or too few labels: %d, %s\n", count, path);
 }
 
 void fill_hierarchy(float *truth, int k, tree *hierarchy)

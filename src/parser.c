@@ -291,7 +291,9 @@ connected_layer parse_connected(list *options, size_params params)
 softmax_layer parse_softmax(list *options, size_params params)
 {
 	int groups = option_find_int_quiet(options, "groups", 1);
-	softmax_layer layer = make_softmax_layer(params.batch, params.inputs, groups);
+    int classes = option_find_int_quiet(options, "classes", params.inputs);
+    int start_idx = option_find_int_quiet(options, "start_idx", 0);
+    softmax_layer layer = make_softmax_layer(params.batch, classes, groups, start_idx);
 	layer.temperature = option_find_float_quiet(options, "temperature", 1);
 	char *tree_file = option_find_str(options, "tree", 0);
 	if (tree_file) layer.softmax_tree = read_tree(tree_file);

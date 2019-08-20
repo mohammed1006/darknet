@@ -219,6 +219,8 @@ install:
   - cd vcpkg
   - git pull
   - if [ "${USE_VCPKG}" = true ] ; then ./bootstrap-vcpkg.sh ; fi
+  - if [ "${USE_VCPKG}" = true ] ; then echo "set(VCPKG_BUILD_TYPE release)" >> triplets/x64-osx.cmake ; fi
+  - if [ "${USE_VCPKG}" = true ] ; then echo "set(VCPKG_BUILD_TYPE release)" >> triplets/x64-linux.cmake ; fi
   - if [ "${USE_VCPKG}" = true ] ; then travis_wait ./vcpkg install stb pthreads --recurse; fi
   - if [ "${USE_VCPKG}" = true ] ; then travis_wait 45 ./vcpkg install ffmpeg --recurse; fi
   #- if [ "${USE_VCPKG}" = true ] && [[ ! -z "${CUDACXX}" ]] ; then travis_wait 45 ./vcpkg install opencv[ffmpeg,cuda] --recurse; fi
@@ -227,15 +229,10 @@ install:
   - popd
 
 before_script:
-  - mkdir build_debug
-  - cd build_debug
-  - cmake .. -DCMAKE_BUILD_TYPE="Debug" ${VCPKG_DEFINES} ${additional_defines}
-  - cd ..
   - mkdir build_release
   - cd build_release
   - cmake .. -DCMAKE_BUILD_TYPE="Release" ${VCPKG_DEFINES} ${additional_defines}
   - cd ..
 
 script:
-  - cd build_debug   && cmake --build . --target install -- -j8 && cd ..
   - cd build_release && cmake --build . --target install -- -j8 && cd ..

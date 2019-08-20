@@ -79,7 +79,7 @@ matrix:
       osx_image: xcode10.1
       env:
         - additional_defines=""
-        - MATRIX_EVAL="brew install gcc && unset CC && unset CXX"
+        - MATRIX_EVAL="brew install gcc && brew install yasm && unset CC && unset CXX"
         - USE_VCPKG=true
         - VCPKG_DEFINES="-DCMAKE_TOOLCHAIN_FILE=$HOME/vcpkg/scripts/buildsystems/vcpkg.cmake"
 
@@ -111,6 +111,11 @@ matrix:
       compiler: gcc
       dist: bionic
       name: ubuntu 18.04 - gcc - vcpkg
+      addons:
+        apt:
+          update: true
+          packages:
+            - yasm
       env:
         - additional_defines=""
         - USE_VCPKG=true
@@ -181,6 +186,11 @@ matrix:
       compiler: gcc
       dist: bionic
       name: ubuntu 18.04 - gcc - CUDA 10 - vcpkg
+      addons:
+        apt:
+          update: true
+          packages:
+            - yasm
       env:
         - additional_defines=""
         - USE_VCPKG=true

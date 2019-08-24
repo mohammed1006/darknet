@@ -185,6 +185,7 @@ convolutional_layer parse_convolutional(list *options, size_params params, netwo
     convolutional_layer layer = make_convolutional_layer(batch,1,h,w,c,n,groups,size,stride,dilation,padding,activation, batch_normalize, binary, xnor, params.net.adam, use_bin_output, params.index, share_layer);
     layer.flipped = option_find_int_quiet(options, "flipped", 0);
     layer.dot = option_find_float_quiet(options, "dot", 0);
+    layer.assisted_excitation = option_find_float_quiet(options, "assisted_excitation", 0);
 
     if(params.net.adam){
         layer.B1 = params.net.B1;
@@ -633,7 +634,7 @@ layer parse_sam(list *options, size_params params, network net)
     int batch = params.batch;
     layer from = net.layers[index];
 
-    layer s = make_scale_channels_layer(batch, index, params.w, params.h, params.c, from.out_w, from.out_h, from.out_c);
+    layer s = make_sam_layer(batch, index, params.w, params.h, params.c, from.out_w, from.out_h, from.out_c);
 
     char *activation_s = option_find_str_quiet(options, "activation", "linear");
     ACTIVATION activation = get_activation(activation_s);

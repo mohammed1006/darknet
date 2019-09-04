@@ -135,6 +135,10 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.exposure = net.exposure;
     args.saturation = net.saturation;
     args.hue = net.hue;
+    args.min_area = net.min_area;
+    args.pj_crop = net.pj_crop;
+    args.scale_min = net.scale_min;
+    args.scale_max = net.scale_max;
     args.letter_box = net.letter_box;
     if (dont_show && show_imgs) show_imgs = 2;
     args.show_imgs = show_imgs;

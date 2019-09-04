@@ -344,7 +344,7 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
 }
 
 void fill_truth_detection(const char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy,
-    int net_w, int net_h)
+    int net_w, int net_h, float min_area)
 {
     char labelpath[4096];
     replace_image_to_label(path, labelpath);
@@ -360,6 +360,7 @@ void fill_truth_detection(const char *path, int num_boxes, float *truth, int cla
     float x, y, w, h;
     int id;
     int sub = 0;
+    float area;
 
     for (i = 0; i < count; ++i) {
         x = boxes[i].x;
@@ -367,6 +368,7 @@ void fill_truth_detection(const char *path, int num_boxes, float *truth, int cla
         w = boxes[i].w;
         h = boxes[i].h;
         id = boxes[i].id;
+        area = w*h;
 
         // not detect small objects
         //if ((w < 0.001F || h < 0.001F)) continue;
@@ -380,7 +382,7 @@ void fill_truth_detection(const char *path, int num_boxes, float *truth, int cla
             ++sub;
             continue;
         }
-        if ((w < lowest_w || h < lowest_h)) {
+        if ((w < lowest_w || h < lowest_h) || (area < min_area)) {
             //sprintf(buff, "echo %s \"Very small object: w < lowest_w OR h < lowest_h\" >> bad_label.list", labelpath);
             //system(buff);
             ++sub;
@@ -804,8 +806,9 @@ void blend_truth(float *new_truth, int boxes, float *old_truth)
 
 #include "http_stream.h"
 
-data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, int use_blur, int use_mixup,
-    float jitter, float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int letter_box, int show_imgs)
+data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, int use_blur, int use_mixup, float jitter,
+    float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int show_imgs, float min_area, int pj_crop,
+    float scale_min, float scale_max, int letter_box)
 {
     const int random_index = random_gen();
     c = c ? c : 3;
@@ -850,74 +853,115 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
             int oh = get_height_mat(src);
             int ow = get_width_mat(src);
+            float dx= 0.0, dy= 0.0;
+            int pleft = 0, ptop = 0;
+            int swidth = ow, sheight = oh;
+            float sx = 0.0, sy = 0.0;
 
-            int dw = (ow*jitter);
-            int dh = (oh*jitter);
-
+            
             if (!augmentation_calculated || !track)
             {
                 augmentation_calculated = 1;
-                r1 = random_float();
-                r2 = random_float();
-                r3 = random_float();
-                r4 = random_float();
 
-                r_scale = random_float();
-
-                dhue = rand_uniform_strong(-hue, hue);
-                dsat = rand_scale(saturation);
-                dexp = rand_scale(exposure);
-
-                flip = use_flip ? random_gen() % 2 : 0;
-                blur = rand_int(0, 1) ? (use_blur) : 0;
-            }
-
-            int pleft = rand_precalc_random(-dw, dw, r1);
-            int pright = rand_precalc_random(-dw, dw, r2);
-            int ptop = rand_precalc_random(-dh, dh, r3);
-            int pbot = rand_precalc_random(-dh, dh, r4);
-            //printf("\n pleft = %d, pright = %d, ptop = %d, pbot = %d, ow = %d, oh = %d \n", pleft, pright, ptop, pbot, ow, oh);
-
-            float scale = rand_precalc_random(.25, 2, r_scale); // unused currently
-
-            if (letter_box)
-            {
-                float img_ar = (float)ow / (float)oh;
-                float net_ar = (float)w / (float)h;
-                float result_ar = img_ar / net_ar;
-                //printf(" ow = %d, oh = %d, w = %d, h = %d, img_ar = %f, net_ar = %f, result_ar = %f \n", ow, oh, w, h, img_ar, net_ar, result_ar);
-                if (result_ar > 1)  // sheight - should be increased
-                {
-                    float oh_tmp = ow / net_ar;
-                    float delta_h = (oh_tmp - oh)/2;
-                    ptop = ptop - delta_h;
-                    pbot = pbot - delta_h;
-                    //printf(" result_ar = %f, oh_tmp = %f, delta_h = %d, ptop = %f, pbot = %f \n", result_ar, oh_tmp, delta_h, ptop, pbot);
+                int dw = (ow*jitter);
+                int dh = (oh*jitter);
+                
+                // cropping behaviour
+                int crop_style = 1; // default to AlexeyAB
+                if (pj_crop == 2){ // random crop
+                    crop_style = random_gen()%2;
                 }
-                else  // swidth - should be increased
-                {
-                    float ow_tmp = oh * net_ar;
-                    float delta_w = (ow_tmp - ow)/2;
-                    pleft = pleft - delta_w;
-                    pright = pright - delta_w;
-                    //printf(" result_ar = %f, ow_tmp = %f, delta_w = %d, pleft = %f, pright = %f \n", result_ar, ow_tmp, delta_w, pleft, pright);
+                else if (pj_crop == 1){  // pjreddie
+                    crop_style = 0;
                 }
-            }
+                
+                if (crop_style == 0)
+                { // pjreddie
+                    float new_ar = (ow + rand_uniform(-dw, dw)) / 
+                        (oh + rand_uniform(-dh, dh));
+                    float scale = rand_uniform(scale_min, scale_max);
+                    
+                    float nw, nh;
+                    if(new_ar < 1){
+                        nh = scale * h;
+                        nw = nh * new_ar;
+                    } else {
+                        nw = scale * w;
+                        nh = nw / new_ar;
+                    }
 
-            int swidth = ow - pleft - pright;
-            int sheight = oh - ptop - pbot;
+                    pleft = rand_uniform(0, w - nw);
+                    ptop = rand_uniform(0, h - nh);
 
-            float sx = (float)swidth / ow;
-            float sy = (float)sheight / oh;
+                    dx = (float)pleft/nw;
+                    dy = (float)ptop/nh;
 
-            float dx = ((float)pleft / ow) / sx;
-            float dy = ((float)ptop / oh) / sy;
+                    swidth = (int)nw;
+                    sheight = (int)nh;
 
+                    sx = nw/ow;
+                    sy = nh/oh;
+                }
+                else if (crop_style == 1)
+                { // AlexeyAB
+                    r1 = random_float();
+                    r2 = random_float();
+                    r3 = random_float();
+                    r4 = random_float();
 
-            fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy, 1. / sx, 1. / sy, w, h);
+                    r_scale = random_float();
 
-            image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth, sheight, flip, dhue, dsat, dexp,
-                blur, boxes, d.y.vals[i]);
+                    dhue = rand_uniform_strong(-hue, hue);
+                    dsat = rand_scale(saturation);
+                    dexp = rand_scale(exposure);
+
+                    flip = use_flip ? random_gen() % 2 : 0;
+                    blur = rand_int(0, 1) ? (use_blur) : 0;
+
+                    int pright, pbot;
+
+                    pleft = rand_precalc_random(-dw, dw, r1);
+                    pright = rand_precalc_random(-dw, dw, r2);
+                    ptop = rand_precalc_random(-dh, dh, r3);
+                    pbot = rand_precalc_random(-dh, dh, r4);
+
+                    if (letter_box)
+                    {
+                        float img_ar = (float)ow / (float)oh;
+                        float net_ar = (float)w / (float)h;
+                        float result_ar = img_ar / net_ar;
+                        if (result_ar > 1)  // sheight - should be increased
+                        {
+                            float oh_tmp = ow / net_ar;
+                            float delta_h = (oh_tmp - oh)/2;
+                            ptop = ptop - delta_h;
+                            pbot = pbot - delta_h;
+                        }
+                        else  // swidth - should be increased
+                        {
+                            float ow_tmp = oh * net_ar;
+                            float delta_w = (ow_tmp - ow)/2;
+                            pleft = pleft - delta_w;
+                            pright = pright - delta_w;
+                        }
+                    }
+
+                    swidth = ow - pleft - pright;
+                    sheight = oh - ptop - pbot;
+
+                    sx = (float)swidth / ow;
+                    sy = (float)sheight / oh;
+
+                    dx = ((float)pleft / ow) / sx;
+                    dy = ((float)ptop / oh) / sy;
+                }
+            }    
+
+            fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy,
+                    1. / sx, 1. / sy, w, h, min_area);
+
+            image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth,
+                    sheight, flip, dhue, dsat, dexp, blur, boxes, d.y.vals[i]);        
 
             if (i_mixup) {
                 image old_img = ai;
@@ -977,7 +1021,8 @@ void blend_images(image new_img, float alpha, image old_img, float beta)
 }
 
 data load_data_detection(int n, char **paths, int m, int w, int h, int c, int boxes, int classes, int use_flip, int use_blur, int use_mixup, float jitter,
-    float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int letter_box, int show_imgs)
+    float hue, float saturation, float exposure, int mini_batch, int track, int augment_speed, int show_imgs, float min_area, int pj_crop,
+    float scale_min, float scale_max, int letter_box)
 {
     const int random_index = random_gen();
     c = c ? c : 3;
@@ -1002,7 +1047,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     d.X.cols = h*w*c;
 
     float r1 = 0, r2 = 0, r3 = 0, r4 = 0, r_scale;
-    float dhue = 0, dsat = 0, dexp = 0, flip = 0;
+    float dhue = 0, dsat = 0, dexp = 0, flip = 0, blur = 0;
     int augmentation_calculated = 0;
 
     d.y = make_matrix(n, 5 * boxes);
@@ -1017,75 +1062,118 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
             int oh = orig.h;
             int ow = orig.w;
-
-            int dw = (ow*jitter);
-            int dh = (oh*jitter);
+            float dx= 0.0, dy= 0.0;
+            int pleft = 0, ptop = 0;
+            int swidth = ow, sheight = oh;
+            float sx = 0.0, sy = 0.0;
 
             if (!augmentation_calculated || !track)
             {
                 augmentation_calculated = 1;
-                r1 = random_float();
-                r2 = random_float();
-                r3 = random_float();
-                r4 = random_float();
 
-                r_scale = random_float();
-
-                dhue = rand_uniform_strong(-hue, hue);
-                dsat = rand_scale(saturation);
-                dexp = rand_scale(exposure);
-
-                flip = use_flip ? random_gen() % 2 : 0;
-            }
-
-            int pleft = rand_precalc_random(-dw, dw, r1);
-            int pright = rand_precalc_random(-dw, dw, r2);
-            int ptop = rand_precalc_random(-dh, dh, r3);
-            int pbot = rand_precalc_random(-dh, dh, r4);
-
-            float scale = rand_precalc_random(.25, 2, r_scale); // unused currently
-
-            if (letter_box)
-            {
-                float img_ar = (float)ow / (float)oh;
-                float net_ar = (float)w / (float)h;
-                float result_ar = img_ar / net_ar;
-                //printf(" ow = %d, oh = %d, w = %d, h = %d, img_ar = %f, net_ar = %f, result_ar = %f \n", ow, oh, w, h, img_ar, net_ar, result_ar);
-                if (result_ar > 1)  // sheight - should be increased
-                {
-                    float oh_tmp = ow / net_ar;
-                    float delta_h = (oh_tmp - oh) / 2;
-                    ptop = ptop - delta_h;
-                    pbot = pbot - delta_h;
-                    //printf(" result_ar = %f, oh_tmp = %f, delta_h = %d, ptop = %f, pbot = %f \n", result_ar, oh_tmp, delta_h, ptop, pbot);
+                int dw = (ow*jitter);
+                int dh = (oh*jitter);
+                
+                // cropping behaviour
+                
+              
+                int crop_style = 1; // default to AlexeyAB
+                if (pj_crop == 2){ // random crop
+                    crop_style = random_gen()%2;
                 }
-                else  // swidth - should be increased
-                {
-                    float ow_tmp = oh * net_ar;
-                    float delta_w = (ow_tmp - ow) / 2;
-                    pleft = pleft - delta_w;
-                    pright = pright - delta_w;
-                    //printf(" result_ar = %f, ow_tmp = %f, delta_w = %d, pleft = %f, pright = %f \n", result_ar, ow_tmp, delta_w, pleft, pright);
+                else if (pj_crop == 1){  // pjreddie
+                    crop_style = 0;
                 }
-            }
+                
+                if (crop_style == 0)
+                { // pjreddie
+                    float new_ar = (ow + rand_uniform(-dw, dw)) / 
+                        (oh + rand_uniform(-dh, dh));
+                    float scale = rand_uniform(scale_min, scale_max);
+                    
+                    float nw, nh;
+                    if(new_ar < 1){
+                        nh = scale * h;
+                        nw = nh * new_ar;
+                    } else {
+                        nw = scale * w;
+                        nh = nw / new_ar;
+                    }
 
-            int swidth = ow - pleft - pright;
-            int sheight = oh - ptop - pbot;
+                    pleft = rand_uniform(0, w - nw);
+                    ptop = rand_uniform(0, h - nh);
 
-            float sx = (float)swidth / ow;
-            float sy = (float)sheight / oh;
+                    dx = (float)pleft/nw;
+                    dy = (float)ptop/nh;
+
+                    swidth = (int)nw;
+                    sheight = (int)nh;
+
+                    sx = nw/ow;
+                    sy = nh/oh;
+                }
+                else if (crop_style == 1)
+                { // AlexeyAB
+                    r1 = random_float();
+                    r2 = random_float();
+                    r3 = random_float();
+                    r4 = random_float();
+
+                    r_scale = random_float();
+
+                    dhue = rand_uniform_strong(-hue, hue);
+                    dsat = rand_scale(saturation);
+                    dexp = rand_scale(exposure);
+
+                    flip = use_flip ? random_gen() % 2 : 0;
+                    blur = rand_int(0, 1) ? (use_blur) : 0;
+
+                    int pright, pbot;
+
+                    pleft = rand_precalc_random(-dw, dw, r1);
+                    pright = rand_precalc_random(-dw, dw, r2);
+                    ptop = rand_precalc_random(-dh, dh, r3);
+                    pbot = rand_precalc_random(-dh, dh, r4);
+
+                    if (letter_box)
+                    {
+                        float img_ar = (float)ow / (float)oh;
+                        float net_ar = (float)w / (float)h;
+                        float result_ar = img_ar / net_ar;
+                        if (result_ar > 1)  // sheight - should be increased
+                        {
+                            float oh_tmp = ow / net_ar;
+                            float delta_h = (oh_tmp - oh)/2;
+                            ptop = ptop - delta_h;
+                            pbot = pbot - delta_h;
+                        }
+                        else  // swidth - should be increased
+                        {
+                            float ow_tmp = oh * net_ar;
+                            float delta_w = (ow_tmp - ow)/2;
+                            pleft = pleft - delta_w;
+                            pright = pright - delta_w;
+                        }
+                    }
+
+                    swidth = ow - pleft - pright;
+                    sheight = oh - ptop - pbot;
+
+                    sx = (float)swidth / ow;
+                    sy = (float)sheight / oh;
+
+                    dx = ((float)pleft / ow) / sx;
+                    dy = ((float)ptop / oh) / sy;
+                }
+            }  
 
             image cropped = crop_image(orig, pleft, ptop, swidth, sheight);
-
-            float dx = ((float)pleft / ow) / sx;
-            float dy = ((float)ptop / oh) / sy;
 
             image sized = resize_image(cropped, w, h);
             if (flip) flip_image(sized);
             distort_image(sized, dhue, dsat, dexp);
-            //random_distort_image(sized, hue, saturation, exposure);
 
-            fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy, 1. / sx, 1. / sy, w, h);
+            fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy, 1. / sx, 1. / sy, w, h, min_area);
 
             if (i_mixup) {
                 image old_img = sized;
@@ -1158,7 +1246,8 @@ void *load_thread(void *ptr)
         *a.d = load_data_region(a.n, a.paths, a.m, a.w, a.h, a.num_boxes, a.classes, a.jitter, a.hue, a.saturation, a.exposure);
     } else if (a.type == DETECTION_DATA){
         *a.d = load_data_detection(a.n, a.paths, a.m, a.w, a.h, a.c, a.num_boxes, a.classes, a.flip, a.blur, a.mixup, a.jitter,
-            a.hue, a.saturation, a.exposure, a.mini_batch, a.track, a.augment_speed, a.letter_box, a.show_imgs);
+            a.hue, a.saturation, a.exposure, a.mini_batch, a.track, a.augment_speed, a.show_imgs, a.min_area, a.pj_crop,
+            a.scale_min, a.scale_max, a.letter_box);
     } else if (a.type == SWAG_DATA){
         *a.d = load_data_swag(a.paths, a.n, a.classes, a.jitter);
     } else if (a.type == COMPARE_DATA){

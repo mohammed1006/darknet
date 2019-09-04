@@ -776,6 +776,10 @@ void parse_net_options(list *options, network *net)
     net->saturation = option_find_float_quiet(options, "saturation", 1);
     net->exposure = option_find_float_quiet(options, "exposure", 1);
     net->hue = option_find_float_quiet(options, "hue", 0);
+    net->min_area = option_find_float_quiet(options, "min_area", 0);
+    net->pj_crop = option_find_int_quiet(options, "pj_crop", 1);
+    net->scale_min = option_find_float_quiet(options, "scale_min", 1.0);
+    net->scale_max = option_find_float_quiet(options, "scale_max", 1.0);
     net->power = option_find_float_quiet(options, "power", 4);
 
     if(!net->inputs && !(net->h && net->w && net->c)) error("No input parameters supplied");

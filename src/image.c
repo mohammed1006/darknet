@@ -41,7 +41,7 @@ float get_color(int c, int x, int max)
 
 static float get_pixel(image m, int x, int y, int c)
 {
-    assert(x < m.w && y < m.h && c < m.c);
+    STBI_ASSERT(x < m.w && y < m.h && c < m.c);
     return m.data[c*m.h*m.w + y*m.w + x];
 }
 static float get_pixel_extend(image m, int x, int y, int c)
@@ -59,12 +59,12 @@ static float get_pixel_extend(image m, int x, int y, int c)
 static void set_pixel(image m, int x, int y, int c, float val)
 {
     if (x < 0 || y < 0 || c < 0 || x >= m.w || y >= m.h || c >= m.c) return;
-    assert(x < m.w && y < m.h && c < m.c);
+    STBI_ASSERT(x < m.w && y < m.h && c < m.c);
     m.data[c*m.h*m.w + y*m.w + x] = val;
 }
 static void add_pixel(image m, int x, int y, int c, float val)
 {
-    assert(x < m.w && y < m.h && c < m.c);
+    STBI_ASSERT(x < m.w && y < m.h && c < m.c);
     m.data[c*m.h*m.w + y*m.w + x] += val;
 }
 
@@ -550,7 +550,7 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 
 void transpose_image(image im)
 {
-    assert(im.w == im.h);
+    STBI_ASSERT(im.w == im.h);
     int n, m;
     int c;
     for(c = 0; c < im.c; ++c){
@@ -566,7 +566,7 @@ void transpose_image(image im)
 
 void rotate_image_cw(image im, int times)
 {
-    assert(im.w == im.h);
+    STBI_ASSERT(im.w == im.h);
     times = (times + 400) % 4;
     int i, x, y, c;
     int n = im.w;
@@ -1095,7 +1095,7 @@ float three_way_min(float a, float b, float c)
 // http://www.cs.rit.edu/~ncs/color/t_convert.html
 void rgb_to_hsv(image im)
 {
-    assert(im.c == 3);
+    STBI_ASSERT(im.c == 3);
     int i, j;
     float r, g, b;
     float h, s, v;
@@ -1132,7 +1132,7 @@ void rgb_to_hsv(image im)
 
 void hsv_to_rgb(image im)
 {
-    assert(im.c == 3);
+    STBI_ASSERT(im.c == 3);
     int i, j;
     float r, g, b;
     float h, s, v;
@@ -1173,7 +1173,7 @@ void hsv_to_rgb(image im)
 
 image grayscale_image(image im)
 {
-    assert(im.c == 3);
+    STBI_ASSERT(im.c == 3);
     int i, j, k;
     image gray = make_image(im.w, im.h, 1);
     float scale[] = {0.587, 0.299, 0.114};
@@ -1199,7 +1199,7 @@ image threshold_image(image im, float thresh)
 
 image blend_image(image fore, image back, float alpha)
 {
-    assert(fore.w == back.w && fore.h == back.h && fore.c == back.c);
+    STBI_ASSERT(fore.w == back.w && fore.h == back.h && fore.c == back.c);
     image blend = make_image(fore.w, fore.h, fore.c);
     int i, j, k;
     for(k = 0; k < fore.c; ++k){

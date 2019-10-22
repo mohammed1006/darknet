@@ -74,19 +74,19 @@ function main () {
         if [[ "$use_nvidia_docker2" == "true" ]]; then
             docker run --gpus all -u $(id -u):$(id -g) \
                 -v /home/$(whoami):/home/$(whoami) \
-                -w /home/$(whoami)/ --rm -it \
+                -w /app/darknet/ --rm -it \
                 --entrypoint=/bin/bash alemelis/darknet
         else
             nvidia-docker run -u $(id -u):$(id -g) \
                 -v $volume_dir:/home/$(whoami) \
-                -w /home/$(whoami)/ --rm -it \
+                -w /app/darknet/ --rm -it \
                 --entrypoint=/bin/bash --runtime=nvidia alemelis/darknet
         fi
     else
         # Non-nvidia
         docker run -u $(id -u):$(id -g) \
             -v $volume_dir:/home/$(whoami) \
-            -w /home/$(whoami)/ --rm -it \
+            -w /app/darknet/ --rm -it \
             --entrypoint=/bin/bash alemelis/darknet
     fi
 }

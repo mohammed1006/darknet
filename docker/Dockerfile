@@ -17,6 +17,6 @@ RUN mkdir darknet
 
 RUN git clone https://github.com/fatal69100/darknet /darknet
 
-RUN cd /darknet && cmake -L .
+RUN cd /darknet && make .
 
 RUN wget https://pjreddie.com/media/files/darknet53.conv.74

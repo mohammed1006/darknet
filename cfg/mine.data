@@ -1,0 +1,5 @@
+classes= 1
+train  = /home/sdirollo/dev/darknet/data/list_google_train_images.txt
+valid  = /home/sdirollo/dev/darknet/data/list_google_test_images.txt
+names = /home/sdirollo/dev/darknet/cfg/mine.names
+backup = backup/

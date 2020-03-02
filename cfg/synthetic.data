@@ -1,0 +1,5 @@
+classes= 1
+train  = /home/sdirollo/dev/darknet/data/list_synthetic_training_images.txt
+valid  = /home/sdirollo/dev/darknet/data/list_synthetic_test_images.txt
+names = /home/sdirollo/dev/darknet/cfg/synthetic.names
+backup = backup/

@@ -211,7 +211,7 @@ struct layer {
     void(*update)    (struct layer, int, float, float, float);
     void(*forward_gpu)   (struct layer, struct network_state);
     void(*backward_gpu)  (struct layer, struct network_state);
-    void(*update_gpu)    (struct layer, int, float, float, float);
+    void(*update_gpu)    (struct layer, int, float, float, float, float);
     layer *share_layer;
     int train;
     int avgpool;
@@ -324,6 +324,8 @@ struct layer {
 
     int onlyforward;
     int stopbackward;
+    int dont_update;
+    int burnin_update;
     int dontload;
     int dontsave;
     int dontloadscales;
@@ -642,6 +644,7 @@ typedef struct network {
     int batch;
     uint64_t *seen;
     int *cur_iteration;
+    float loss_scale;
     int *t;
     float epoch;
     int subdivisions;

@@ -48,7 +48,10 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
         if(weightfile){
             load_weights(&nets[i], weightfile);
         }
-        if(clear) *nets[i].seen = 0;
+        if (clear) {
+            *nets[i].seen = 0;
+            *nets[i].cur_iteration = 0;
+        }
         nets[i].learning_rate *= ngpus;
     }
     srand(time(0));
@@ -753,13 +756,14 @@ void try_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filena
         float *predictions = network_predict(net, X);
 
         layer l = net.layers[layer_num];
-        for(int i = 0; i < l.c; ++i){
+        int i;
+        for(i = 0; i < l.c; ++i){
             if(l.rolling_mean) printf("%f %f %f\n", l.rolling_mean[i], l.rolling_variance[i], l.scales[i]);
         }
 #ifdef GPU
         cuda_pull_array(l.output_gpu, l.output, l.outputs);
 #endif
-        for(int i = 0; i < l.outputs; ++i){
+        for(i = 0; i < l.outputs; ++i){
             printf("%f\n", l.output[i]);
         }
         /*
@@ -777,7 +781,7 @@ void try_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filena
 
         top_predictions(net, top, indexes);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
-        for(int i = 0; i < top; ++i){
+        for(i = 0; i < top; ++i){
             int index = indexes[i];
             printf("%s: %f\n", names[index], predictions[index]);
         }

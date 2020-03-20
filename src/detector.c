@@ -28,7 +28,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     char *train_images = option_find_str(options, "train", "data/train.txt");
     char *valid_images = option_find_str(options, "valid", train_images);
     char *backup_directory = option_find_str(options, "backup", "/backup/");
-    boolean stop_training = false
+    int stop_training = 0
 
     network net_map;
     if (calc_map) {
@@ -170,7 +170,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     pthread_t load_thread = load_data(args);
     int count = 0;
     //while(i*imgs < N*120){
-    while (get_current_iteration(net) < net.max_batches && stop_training == false) {
+    while (get_current_iteration(net) < net.max_batches && stop_training == 0) {
         if (l.random && count++ % 10 == 0) {
             float rand_coef = 1.4;
             if (l.random != 1.0) rand_coef = l.random;
@@ -342,7 +342,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             // Check if required map is achieved and minimum number of training iterations are complete
             if (mean_average_precision >= mAP_thresh && iteration >= min_iters){
                 // Stop training
-                stop_training = true;
+                stop_training = 1;
             }
 
             draw_precision = 1;

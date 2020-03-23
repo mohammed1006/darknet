@@ -28,7 +28,6 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     char *train_images = option_find_str(options, "train", "data/train.txt");
     char *valid_images = option_find_str(options, "valid", train_images);
     char *backup_directory = option_find_str(options, "backup", "/backup/");
-    int stop_training = 0;
 
     network net_map;
     if (calc_map) {
@@ -170,7 +169,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     pthread_t load_thread = load_data(args);
     int count = 0;
     //while(i*imgs < N*120){
-    while (get_current_iteration(net) < net.max_batches && stop_training == 0) {
+    while (get_current_iteration(net) < net.max_batches) {
         if (l.random && count++ % 10 == 0) {
             float rand_coef = 1.4;
             if (l.random != 1.0) rand_coef = l.random;
@@ -339,12 +338,6 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
                 save_weights(net, buff);
             }
 
-            // Check if required map is achieved and minimum number of training iterations are complete
-            if (mean_average_precision >= mAP_thresh && iteration >= min_iters){
-                // Stop training
-                stop_training = 1;
-            }
-
             draw_precision = 1;
         }
 #ifdef OPENCV
@@ -373,6 +366,13 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             save_weights(net, buff);
         }
         free_data(train);
+
+        if (calc_map) {
+            // Check if required map is achieved and minimum number of training iterations are complete
+            if ((mean_average_precision*100) >= mAP_thresh && iteration >= min_iters){
+                break;
+            }
+        }
     }
 #ifdef GPU
     if (ngpus != 1) sync_nets(nets, ngpus, 0);
@@ -1689,7 +1689,7 @@ void run_detector(int argc, char **argv)
     // While training, decide after how many epochs mAP will be calculated. Default value is 4 which means the mAP will be calculated after each 4 epochs
     // The user must set (valid=valid.txt or train.txt) in obj.data file
     int mAP_epochs = find_int_arg(argc, argv, "-mAP_epochs", 4);
-    float mAP_thresh = find_float_arg(argc, argv, "-mAP_thresh", 80.0);
+    float mAP_thresh = find_float_arg(argc, argv, "-mAP_thresh", 75.0);
     int min_iters = find_int_arg(argc, argv, "-min_iters", 6000);
     if (argc < 4) {
         fprintf(stderr, "usage: %s %s [train/test/valid/demo/map] [data] [cfg] [weights (optional)]\n", argv[0], argv[1]);

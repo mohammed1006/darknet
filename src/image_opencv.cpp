@@ -1003,7 +1003,7 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
 // ====================================================================
 // Draw Loss & Accuracy chart
 // ====================================================================
-extern "C" mat_cv* draw_train_chart(char *windows_name, float max_img_loss, int max_batches, int number_of_lines, int img_size, int dont_show)
+extern "C" mat_cv* draw_train_chart(char *windows_name, float max_img_loss, int max_batches, int number_of_lines, int img_size, int dont_show, char* chart_path)
 {
     int img_offset = 60;
     int draw_size = img_size - img_offset;
@@ -1012,40 +1012,48 @@ extern "C" mat_cv* draw_train_chart(char *windows_name, float max_img_loss, int 
     cv::Point pt1, pt2, pt_text;
 
     try {
-        char char_buff[100];
-        int i;
-        // vertical lines
-        pt1.x = img_offset; pt2.x = img_size, pt_text.x = 30;
-        for (i = 1; i <= number_of_lines; ++i) {
-            pt1.y = pt2.y = (float)i * draw_size / number_of_lines;
-            cv::line(img, pt1, pt2, CV_RGB(224, 224, 224), 1, 8, 0);
-            if (i % 10 == 0) {
-                sprintf(char_buff, "%2.1f", max_img_loss*(number_of_lines - i) / number_of_lines);
-                pt_text.y = pt1.y + 3;
-
-                cv::putText(img, char_buff, pt_text, cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
-                cv::line(img, pt1, pt2, CV_RGB(128, 128, 128), 1, 8, 0);
-            }
+        // load chart from file
+        if (chart_path != NULL && chart_path[0] != '\0') {
+            *img_ptr = cv::imread(chart_path);
         }
-        // horizontal lines
-        pt1.y = draw_size; pt2.y = 0, pt_text.y = draw_size + 15;
-        for (i = 0; i <= number_of_lines; ++i) {
-            pt1.x = pt2.x = img_offset + (float)i * draw_size / number_of_lines;
-            cv::line(img, pt1, pt2, CV_RGB(224, 224, 224), 1, 8, 0);
-            if (i % 10 == 0) {
-                sprintf(char_buff, "%d", max_batches * i / number_of_lines);
-                pt_text.x = pt1.x - 20;
-                cv::putText(img, char_buff, pt_text, cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
-                cv::line(img, pt1, pt2, CV_RGB(128, 128, 128), 1, 8, 0);
+        else {
+            // draw new chart
+            char char_buff[100];
+            int i;
+            // vertical lines
+            pt1.x = img_offset; pt2.x = img_size, pt_text.x = 30;
+            for (i = 1; i <= number_of_lines; ++i) {
+                pt1.y = pt2.y = (float)i * draw_size / number_of_lines;
+                cv::line(img, pt1, pt2, CV_RGB(224, 224, 224), 1, 8, 0);
+                if (i % 10 == 0) {
+                    sprintf(char_buff, "%2.1f", max_img_loss*(number_of_lines - i) / number_of_lines);
+                    pt_text.y = pt1.y + 3;
+
+                    cv::putText(img, char_buff, pt_text, cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
+                    cv::line(img, pt1, pt2, CV_RGB(128, 128, 128), 1, 8, 0);
+                }
             }
+            // horizontal lines
+            pt1.y = draw_size; pt2.y = 0, pt_text.y = draw_size + 15;
+            for (i = 0; i <= number_of_lines; ++i) {
+                pt1.x = pt2.x = img_offset + (float)i * draw_size / number_of_lines;
+                cv::line(img, pt1, pt2, CV_RGB(224, 224, 224), 1, 8, 0);
+                if (i % 10 == 0) {
+                    sprintf(char_buff, "%d", max_batches * i / number_of_lines);
+                    pt_text.x = pt1.x - 20;
+                    cv::putText(img, char_buff, pt_text, cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
+                    cv::line(img, pt1, pt2, CV_RGB(128, 128, 128), 1, 8, 0);
+                }
+            }
+
+            cv::putText(img, "Loss", cv::Point(10, 55), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 255), 1, CV_AA);
+            cv::putText(img, "Iteration number", cv::Point(draw_size / 2, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
+            char max_batches_buff[100];
+            sprintf(max_batches_buff, "in cfg max_batches=%d", max_batches);
+            cv::putText(img, max_batches_buff, cv::Point(draw_size - 195, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
+            cv::putText(img, "Press 's' to save : chart.png", cv::Point(5, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
         }
 
-        cv::putText(img, "Loss", cv::Point(10, 55), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 255), 1, CV_AA);
-        cv::putText(img, "Iteration number", cv::Point(draw_size / 2, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
-        char max_batches_buff[100];
-        sprintf(max_batches_buff, "in cfg max_batches=%d", max_batches);
-        cv::putText(img, max_batches_buff, cv::Point(draw_size - 195, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
-        cv::putText(img, "Press 's' to save : chart.png", cv::Point(5, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(0, 0, 0), 1, CV_AA);
         if (!dont_show) {
             printf(" If error occurs - run training with flag: -dont_show \n");
             cv::namedWindow(windows_name, cv::WINDOW_NORMAL);
@@ -1085,10 +1093,12 @@ extern "C" void draw_train_loss(char *windows_name, mat_cv* img_src, int img_siz
             if (iteration_old == 0)
                 cv::putText(img, accuracy_name, cv::Point(10, 12), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 0, 0), 1, CV_AA);
 
-            cv::line(img,
-                cv::Point(img_offset + draw_size * (float)iteration_old / max_batches, draw_size * (1 - old_precision)),
-                cv::Point(img_offset + draw_size * (float)current_batch / max_batches, draw_size * (1 - precision)),
-                CV_RGB(255, 0, 0), 1, 8, 0);
+	    if (iteration_old != 0){
+            	cv::line(img,
+                    cv::Point(img_offset + draw_size * (float)iteration_old / max_batches, draw_size * (1 - old_precision)),
+                    cv::Point(img_offset + draw_size * (float)current_batch / max_batches, draw_size * (1 - precision)),
+                    CV_RGB(255, 0, 0), 1, 8, 0);
+	    }
 
             sprintf(char_buff, "%2.1f%% ", precision * 100);
             cv::putText(img, char_buff, cv::Point(10, 28), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 255, 255), 5, CV_AA);
@@ -1142,7 +1152,7 @@ extern "C" void draw_train_loss(char *windows_name, mat_cv* img_src, int img_siz
 extern "C" image image_data_augmentation(mat_cv* mat, int w, int h,
     int pleft, int ptop, int swidth, int sheight, int flip,
     float dhue, float dsat, float dexp,
-    int blur, int num_boxes, float *truth)
+    int gaussian_noise, int blur, int num_boxes, float *truth)
 {
     image out;
     try {
@@ -1247,6 +1257,19 @@ extern "C" image image_data_augmentation(mat_cv* mat, int w, int h,
             dst.copyTo(sized);
         }
 
+        if (gaussian_noise) {
+            cv::Mat noise = cv::Mat(sized.size(), sized.type());
+            gaussian_noise = std::min(gaussian_noise, 127);
+            gaussian_noise = std::max(gaussian_noise, 0);
+            cv::randn(noise, 0, gaussian_noise);  //mean and variance
+            cv::Mat sized_norm = sized + noise;
+            //cv::normalize(sized_norm, sized_norm, 0.0, 255.0, cv::NORM_MINMAX, sized.type());
+            //cv::imshow("source", sized);
+            //cv::imshow("gaussian noise", sized_norm);
+            //cv::waitKey(0);
+            sized = sized_norm;
+        }
+
         //char txt[100];
         //sprintf(txt, "blur = %d", blur);
         //cv::putText(sized, txt, cv::Point(100, 100), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.7, CV_RGB(255, 0, 0), 1, CV_AA);
@@ -1344,7 +1367,7 @@ void show_opencv_info()
 #else  // OPENCV
 extern "C" void show_opencv_info()
 {
-    std::cerr << " OpenCV isn't used \n";
+    std::cerr << " OpenCV isn't used - data increase will run slowly \n";
 }
 extern "C" int wait_key_cv(int delay) { return 0; }
 extern "C" int wait_until_press_key_cv() { return 0; }

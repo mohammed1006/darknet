@@ -22,7 +22,7 @@ int check_mistakes = 0;
 
 static int coco_ids[] = { 1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90 };
 
-void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int calc_map, int mjpeg_port, int show_imgs, int benchmark_layers, int mAP_epochs)
+void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int calc_map, int mjpeg_port, int show_imgs, int benchmark_layers, char* chart_path, int mAP_epochs)
 {
     list *options = read_data_cfg(datacfg);
     char *train_images = option_find_str(options, "train", "data/train.txt");
@@ -42,6 +42,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         cuda_set_device(gpus[0]);
         printf(" Prepare additional network for mAP calculation...\n");
         net_map = parse_network_cfg_custom(cfgfile, 1, 1);
+        net_map.benchmark_layers = benchmark_layers;
         const int net_classes = net_map.layers[net_map.n - 1].classes;
 
         int k;  // free memory unnecessary arrays
@@ -66,19 +67,22 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
     srand(time(0));
     int seed = rand();
-    int i;
-    for (i = 0; i < ngpus; ++i) {
+    int k;
+    for (k = 0; k < ngpus; ++k) {
         srand(seed);
 #ifdef GPU
-        cuda_set_device(gpus[i]);
+        cuda_set_device(gpus[k]);
 #endif
-        nets[i] = parse_network_cfg(cfgfile);
-        nets[i].benchmark_layers = benchmark_layers;
+        nets[k] = parse_network_cfg(cfgfile);
+        nets[k].benchmark_layers = benchmark_layers;
         if (weightfile) {
-            load_weights(&nets[i], weightfile);
+            load_weights(&nets[k], weightfile);
         }
-        if (clear) *nets[i].seen = 0;
-        nets[i].learning_rate *= ngpus;
+        if (clear) {
+            *nets[k].seen = 0;
+            *nets[k].cur_iteration = 0;
+        }
+        nets[k].learning_rate *= ngpus;
     }
     srand(time(0));
     network net = nets[0];
@@ -105,12 +109,13 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     int train_images_num = plist->size;
     char **paths = (char **)list_to_array(plist);
 
-    int init_w = net.w;
-    int init_h = net.h;
+    const int init_w = net.w;
+    const int init_h = net.h;
+    const int init_b = net.batch;
     int iter_save, iter_save_last, iter_map;
-    iter_save = get_current_batch(net);
-    iter_save_last = get_current_batch(net);
-    iter_map = get_current_batch(net);
+    iter_save = get_current_iteration(net);
+    iter_save_last = get_current_iteration(net);
+    iter_map = get_current_iteration(net);
     float mean_average_precision = -1;
     float best_map = mean_average_precision;
 
@@ -132,6 +137,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     args.threads = 64;    // 16 or 64
 
     args.angle = net.angle;
+    args.gaussian_noise = net.gaussian_noise;
     args.blur = net.blur;
     args.mixup = net.mixup;
     args.exposure = net.exposure;
@@ -150,7 +156,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     int img_size = 1000;
     char windows_name[100];
     sprintf(windows_name, "chart_%s.png", base);
-    img = draw_train_chart(windows_name, max_img_loss, net.max_batches, number_of_lines, img_size, dont_show);
+    img = draw_train_chart(windows_name, max_img_loss, net.max_batches, number_of_lines, img_size, dont_show, chart_path);
 #endif    //OPENCV
     if (net.track) {
         args.track = net.track;
@@ -165,11 +171,10 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     pthread_t load_thread = load_data(args);
 
     int count = 0;
-    double start, end, tmp, time_remaining[1000] = {0};
-    start = what_time_is_it_now();
+    double time_remaining, avg_time = -1, alpha_time = 0.01;
 
     //while(i*imgs < N*120){
-    while (get_current_batch(net) < net.max_batches) {
+    while (get_current_iteration(net) < net.max_batches) {
         if (l.random && count++ % 10 == 0) {
             float rand_coef = 1.4;
             if (l.random != 1.0) rand_coef = l.random;
@@ -179,26 +184,48 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             int dim_h = roundl(random_val*init_h / net.resize_step + 1) * net.resize_step;
             if (random_val < 1 && (dim_w > init_w || dim_h > init_h)) dim_w = init_w, dim_h = init_h;
 
-            // at the beginning
-            if (avg_loss < 0) {
-                dim_w = roundl(rand_coef*init_w / net.resize_step + 1) * net.resize_step;
-                dim_h = roundl(rand_coef*init_h / net.resize_step + 1) * net.resize_step;
+            int max_dim_w = roundl(rand_coef*init_w / net.resize_step + 1) * net.resize_step;
+            int max_dim_h = roundl(rand_coef*init_h / net.resize_step + 1) * net.resize_step;
+
+            // at the beginning (check if enough memory) and at the end (calc rolling mean/variance)
+            if (avg_loss < 0 || get_current_iteration(net) > net.max_batches - 100) {
+                dim_w = max_dim_w;
+                dim_h = max_dim_h;
             }
 
             if (dim_w < net.resize_step) dim_w = net.resize_step;
             if (dim_h < net.resize_step) dim_h = net.resize_step;
+            int dim_b = (init_b * max_dim_w * max_dim_h) / (dim_w * dim_h);
+            int new_dim_b = (int)(dim_b * 0.8);
+            if (new_dim_b > init_b) dim_b = new_dim_b;
 
-            printf("%d x %d \n", dim_w, dim_h);
             args.w = dim_w;
             args.h = dim_h;
+
+            int k;
+            if (net.dynamic_minibatch) {
+                for (k = 0; k < ngpus; ++k) {
+                    (*nets[k].seen) = init_b * net.subdivisions * get_current_iteration(net); // remove this line, when you will save to weights-file both: seen & cur_iteration
+                    nets[k].batch = dim_b;
+                    int j;
+                    for (j = 0; j < nets[k].n; ++j)
+                        nets[k].layers[j].batch = dim_b;
+                }
+                net.batch = dim_b;
+                imgs = net.batch * net.subdivisions * ngpus;
+                args.n = imgs;
+                printf("\n %d x %d  (batch = %d) \n", dim_w, dim_h, net.batch);
+            }
+            else
+                printf("\n %d x %d \n", dim_w, dim_h);
 
             pthread_join(load_thread, 0);
             train = buffer;
             free_data(train);
             load_thread = load_data(args);
 
-            for (i = 0; i < ngpus; ++i) {
-                resize_network(nets + i, dim_w, dim_h);
+            for (k = 0; k < ngpus; ++k) {
+                resize_network(nets + k, dim_w, dim_h);
             }
             net = nets[0];
         }
@@ -250,7 +277,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         if (avg_loss < 0 || avg_loss != avg_loss) avg_loss = loss;    // if(-inf or nan)
         avg_loss = avg_loss*.9 + loss*.1;
 
-        i = get_current_batch(net);
+        const int iteration = get_current_iteration(net);
+        //i = get_current_batch(net);
 
         int calc_map_for_each = mAP_epochs * train_images_num / (net.batch * net.subdivisions);  // calculate mAP for each 4 Epochs
         calc_map_for_each = fmax(calc_map_for_each, 100);
@@ -263,22 +291,36 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         }
 
         if (net.cudnn_half) {
-            if (i < net.burn_in * 3) fprintf(stderr, "\n Tensor Cores are disabled until the first %d iterations are reached.", 3 * net.burn_in);
+            if (iteration < net.burn_in * 3) fprintf(stderr, "\n Tensor Cores are disabled until the first %d iterations are reached.", 3 * net.burn_in);
             else fprintf(stderr, "\n Tensor Cores are used.");
         }
-        printf("\n %d: %f, %f avg loss, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), (what_time_is_it_now() - time), i*imgs);
+        printf("\n %d: %f, %f avg loss, %f rate, %lf seconds, %d images, %f time left\n", iteration, loss, avg_loss, get_current_rate(net), (what_time_is_it_now() - time), iteration*imgs, avg_time);
 
         int draw_precision = 0;
-        if (calc_map && (i >= next_map_calc || i == net.max_batches)) {
+        if (calc_map && (iteration >= next_map_calc || iteration == net.max_batches)) {
             if (l.random) {
-                printf("Resizing to initial size: %d x %d \n", init_w, init_h);
+                printf("Resizing to initial size: %d x %d ", init_w, init_h);
                 args.w = init_w;
                 args.h = init_h;
+                int k;
+                if (net.dynamic_minibatch) {
+                    for (k = 0; k < ngpus; ++k) {
+                        for (k = 0; k < ngpus; ++k) {
+                            nets[k].batch = init_b;
+                            int j;
+                            for (j = 0; j < nets[k].n; ++j)
+                                nets[k].layers[j].batch = init_b;
+                        }
+                    }
+                    net.batch = init_b;
+                    imgs = init_b * net.subdivisions * ngpus;
+                    args.n = imgs;
+                    printf("\n %d x %d  (batch = %d) \n", init_w, init_h, init_b);
+                }
                 pthread_join(load_thread, 0);
                 free_data(train);
                 train = buffer;
                 load_thread = load_data(args);
-                int k;
                 for (k = 0; k < ngpus; ++k) {
                     resize_network(nets + k, init_w, init_h);
                 }
@@ -290,7 +332,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             // combine Training and Validation networks
             //network net_combined = combine_train_valid_networks(net, net_map);
 
-            iter_map = i;
+            iter_map = iteration;
             mean_average_precision = validate_detector_map(datacfg, cfgfile, weightfile, 0.25, 0.5, 0, net.letter_box, &net_map);// &net_combined);
             printf("\n mean_average_precision (mAP@0.5) = %f \n", mean_average_precision);
             if (mean_average_precision > best_map) {
@@ -303,37 +345,28 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
             draw_precision = 1;
         }
+        time_remaining = (net.max_batches - iteration)*(what_time_is_it_now() - time + load_time) / 60 / 60;
+        // set initial value, even if resume training from 10000 iteration
+        if (avg_time < 0) avg_time = time_remaining;
+        else avg_time = alpha_time * time_remaining + (1 -  alpha_time) * avg_time;
 #ifdef OPENCV
-        end = what_time_is_it_now();
-        time_remaining[i%1000] = (net.max_batches - i)*(end - start) / 60 / 60;
-        tmp = 0.0;
-        int j, count = 0;
-        if (i > 50){
-            for (j = 0; j < 1000; ++j){
-            if (time_remaining[j] != 0){
-                tmp += time_remaining[j];
-                count++;
-            }
-            }
-        }
-        draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, i, net.max_batches, mean_average_precision, draw_precision, "mAP%", dont_show, mjpeg_port, tmp/count);
-        start = what_time_is_it_now();
+        draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, iteration, net.max_batches, mean_average_precision, draw_precision, "mAP%", dont_show, mjpeg_port, avg_time);
 #endif    // OPENCV
 
         //if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
         //if (i % 100 == 0) {
-        if (i >= (iter_save + 1000) || i % 1000 == 0) {
-            iter_save = i;
+        if (iteration >= (iter_save + 1000) || iteration % 1000 == 0) {
+            iter_save = iteration;
 #ifdef GPU
             if (ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif
             char buff[256];
-            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
+            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, iteration);
             save_weights(net, buff);
         }
 
-        if (i >= (iter_save_last + 100) || i % 100 == 0) {
-            iter_save_last = i;
+        if (iteration >= (iter_save_last + 100) || (iteration % 100 == 0 && iteration > 1)) {
+            iter_save_last = iteration;
 #ifdef GPU
             if (ngpus != 1) sync_nets(nets, ngpus, 0);
 #endif
@@ -367,7 +400,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     free_list_contents_kvp(options);
     free_list(options);
 
-    for (i = 0; i < ngpus; ++i) free_network(nets[i]);
+    for (k = 0; k < ngpus; ++k) free_network(nets[k]);
     free(nets);
     //free_network(net);
 
@@ -1655,8 +1688,9 @@ void run_detector(int argc, char **argv)
     // and for recall mode (extended output table-like format with results for best_class fit)
     int ext_output = find_arg(argc, argv, "-ext_output");
     int save_labels = find_arg(argc, argv, "-save_labels");
+    char* chart_path = find_char_arg(argc, argv, "-chart", 0);
     // While training, decide after how many epochs mAP will be calculated. Default value is 4 which means the mAP will be calculated after each 4 epochs
-    // The user must set (valid=valid.txt or train.txt) in obj.data file
+    // The user must set (valid=valid.txt or train.txt) in3 obj.data file
     int mAP_epochs = find_int_arg(argc, argv, "-mAP_epochs", 4);
     if (argc < 4) {
         fprintf(stderr, "usage: %s %s [train/test/valid/demo/map] [data] [cfg] [weights (optional)]\n", argv[0], argv[1]);
@@ -1696,7 +1730,7 @@ void run_detector(int argc, char **argv)
             if (weights[strlen(weights) - 1] == 0x0d) weights[strlen(weights) - 1] = 0;
     char *filename = (argc > 6) ? argv[6] : 0;
     if (0 == strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, dont_show, ext_output, save_labels, outfile, letter_box, benchmark_layers);
-    else if (0 == strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear, dont_show, calc_map, mjpeg_port, show_imgs, benchmark_layers, mAP_epochs);
+    else if (0 == strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear, dont_show, calc_map, mjpeg_port, show_imgs, benchmark_layers, chart_path, mAP_epochs);
     else if (0 == strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if (0 == strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);
     else if (0 == strcmp(argv[2], "map")) validate_detector_map(datacfg, cfg, weights, thresh, iou_thresh, map_points, letter_box, NULL);

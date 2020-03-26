@@ -9,6 +9,7 @@
 *.dll
 *.lib
 *.dylib
+Makefile
 mnist/
 caffe/
 grasp/

@@ -8,9 +8,9 @@ LIBSO=0
 ZED_CAMERA=0 # ZED SDK 3.0 and above
 ZED_CAMERA_v2_8=0 # ZED SDK 2.X
 
-# set GPU=1 and CUDNN=1 to speedup on GPU
-# set CUDNN_HALF=1 to further speedup 3 x times (Mixed-precision on Tensor Cores) GPU: Volta, Xavier, Turing and higher
-# set AVX=1 and OPENMP=1 to speedup on CPU (if error occurs then set AVX=0)
+GPU=0
+CUDNN_HALF=0
+AVX=1
 
 USE_CPP=0
 DEBUG=0
@@ -87,8 +87,8 @@ endif
 ifeq ($(OPENCV), 1)
 COMMON+= -DOPENCV
 CFLAGS+= -DOPENCV
-LDFLAGS+= `pkg-config --libs opencv4 2> /dev/null || pkg-config --libs opencv`
-COMMON+= `pkg-config --cflags opencv4 2> /dev/null || pkg-config --cflags opencv`
+pkg-config --libs opencv4
+pkg-config --cflags opencv4
 endif
 
 ifeq ($(OPENMP), 1)

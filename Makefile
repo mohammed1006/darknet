@@ -1,8 +1,8 @@
 GPU=0
 CUDNN=0
 CUDNN_HALF=0
-OPENCV=1
-AVX=1
+OPENCV=0
+AVX=0
 OPENMP=0
 LIBSO=0
 ZED_CAMERA=0 # ZED SDK 3.0 and above
@@ -87,8 +87,8 @@ endif
 ifeq ($(OPENCV), 1)
 COMMON+= -DOPENCV
 CFLAGS+= -DOPENCV
-pkg-config --libs opencv4
-pkg-config --cflags opencv4
+LDFLAGS+= `pkg-config --libs opencv4 2> /dev/null || pkg-config --libs opencv`
+COMMON+= `pkg-config --cflags opencv4 2> /dev/null || pkg-config --cflags opencv`
 endif
 
 ifeq ($(OPENMP), 1)

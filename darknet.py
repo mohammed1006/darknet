@@ -302,7 +302,7 @@ netMain = None
 metaMain = None
 altNames = None
 
-def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yolov3.cfg", weightPath = "yolov3.weights", metaPath= "./cfg/coco.data", showImage= True, makeImageOnly = False, initOnly= False):
+def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yolov3.cfg", weightPath = "yolov3.weights", metaPath= "./cfg/coco.data", saveImage=True, showImage= True, makeImageOnly = False, initOnly= False):
     """
     Convenience function to handle the detection and returns of objects.
 
@@ -433,9 +433,12 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                 draw.set_color(image, (rr3, cc3), boxColor, alpha= 0.8)
                 draw.set_color(image, (rr4, cc4), boxColor, alpha= 0.8)
                 draw.set_color(image, (rr5, cc5), boxColor, alpha= 0.8)
-            if not makeImageOnly:
-                io.imshow(image)
-                io.show()
+            # if not makeImageOnly:
+            #     io.imshow(image)
+            #     io.show()
+            if saveImage:
+                io.imsave(saveImage, image) 
+                print("Saving in", saveImage)
             detections = {
                 "detections": detections,
                 "image": image,

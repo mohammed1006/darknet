@@ -1308,6 +1308,7 @@ image quantize_image(image im)
     int size = im.c * im.w * im.h;
     int i;
     for (i = 0; i < size; ++i) im.data[i] = (int)(im.data[i] * 255) / 255. + (0.5/255);
+    return im;
 }
 
 void make_image_red(image im)

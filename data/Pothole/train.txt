@@ -3211,7 +3211,6 @@ data/Pothole/CPLX_G0459973.jpg
 data/Pothole/CPLX_G0459987.jpg
 data/Pothole/CPLX_G0459988.jpg
 data/Pothole/CPLX_G0459989.jpg
-
 data/Pothole/2020-04-03T16:03:38.272Z.jpg
 data/Pothole/2020-04-03T16:03:38.202Z.jpg
 data/Pothole/2020-04-03T16:03:38.082Z.jpg

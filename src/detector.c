@@ -29,6 +29,9 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     char *train_images = option_find_str(options, "train", "data/train.txt");
     char *valid_images = option_find_str(options, "valid", train_images);
     char *backup_directory = option_find_str(options, "backup", "/backup/");
+	int save_after_iterations = option_find_int(options, "saveweights", 1000);
+	int save_last_weights_after = option_find_int(options, "savelast", 100);
+
 
     network net_map;
     if (calc_map) {
@@ -356,7 +359,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
         //if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
         //if (i % 100 == 0) {
-        if (iteration >= (iter_save + 1000) || iteration % 1000 == 0) {
+		// David: changed to write finer weights. 
+        if (iteration >= (iter_save + save_after_iterations) || iteration % save_after_iterations == 0) {
             iter_save = iteration;
 #ifdef GPU
             if (ngpus != 1) sync_nets(nets, ngpus, 0);
@@ -366,7 +370,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             save_weights(net, buff);
         }
 
-        if (iteration >= (iter_save_last + 100) || (iteration % 100 == 0 && iteration > 1)) {
+		// David: only write last weights if save_after_iterations is higher than 100! 
+        if( (save_after_iterations > save_last_weights_after) && (iteration >= (iter_save_last + save_last_weights_after) || (iteration % save_last_weights_after == 0 && iteration > 1))) {
             iter_save_last = iteration;
 #ifdef GPU
             if (ngpus != 1) sync_nets(nets, ngpus, 0);

@@ -55,3 +55,17 @@ include/darknet/
 uselib
 uselib_track
 darknet
+
+# CMake & VS
+CMakeCache.txt
+CMakeFiles/
+dark.dir/
+darknet.dir/
+Release/
+uselib_track.dir/
+uselib.dir
+x64/
+*.vcxproj*
+*.sln
+*.cmake
+detect_cuda_compute_capabilities.cu

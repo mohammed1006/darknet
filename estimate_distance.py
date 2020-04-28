@@ -18,8 +18,6 @@ class EstimatorOfDistance(object):
         self.markers.append((423, 351))
         self.markers.append((432, 345))
         self.markers.append((440, 340))
-        self.markers.append((446, 336))
-        self.markers.append((452, 332))
         self.markers_x = []
         for marker in self.markers:
             self.markers_x.append(marker[0])

@@ -6,7 +6,8 @@ import cv2
 import numpy as np
 import time
 import darknet
-import Polygon
+from shapely.geometry import Polygon, Point
+from estimate_distance import EstimatorOfDistance
 
 
 def convertBack(x, y, w, h):
@@ -17,7 +18,7 @@ def convertBack(x, y, w, h):
     return xmin, ymin, xmax, ymax
 
 
-def cvDrawBoxes_v2(detections, img, color=(0, 255, 0)):
+def cvDrawBoxes_v2(detections, img, color):
     for detection in detections:
         x, y, w, h = detection[2][0],\
             detection[2][1],\
@@ -68,19 +69,29 @@ def video_detect():
     metaPath = "./cfg/coco.data"
     VideoPath = "D:/data/bridge/yinhe_bridge_south.mp4"
 
-    # Define road range
-    point_zero = (0, 607)
-    point_leftdown = (0, 477)
-    point_leftup = (405, 326)
-    point_rightdown = (91, 607)
-    point_rightup = (441, 340)
-    road = Polygon.Polygon((point_zero, point_leftdown, point_leftup, point_rightup, point_rightdown))
+    estim = EstimatorOfDistance()
 
-    # Define lane
-    point_lane_near = (0, 574)
-    point_lane_far = (424, 333)
-    line01 = Polygon.Polygon((point_leftdown, point_leftup, point_lane_near, point_lane_far))
-    line02 = Polygon.Polygon((point_zero, point_rightup, point_rightdown, point_lane_near, point_lane_far))
+    # Define road range
+    point_zero = Point(0, 607)
+    left_lane_border_w_offset = [Point(0, 493), Point(168, 418), Point(286, 368), Point(348, 345), Point(405, 326)]
+    mid_lane_w_offset = [Point(0, 582), Point(225, 438), Point(326, 381), Point(380, 354), Point(421, 333)]
+    right_lane_border_w_offset = []
+    point_cnt = len(estim.markers)
+    for i in range(point_cnt):
+        right_lane_border_w_offset.append(Point(estim.markers[i]))
+    road_points = [mid_lane_w_offset[-1]]
+    road_points.extend(right_lane_border_w_offset[::-1])
+    road_points.append(point_zero)
+    road_points.extend(left_lane_border_w_offset)
+
+    road = Polygon(road_points)
+
+    # Define lane, line01 = left lane in the video. The remaining area is lane02 (will not define here).
+
+    line01_points = mid_lane_w_offset[::-1]
+    line01_points.extend(left_lane_border_w_offset)
+
+    line01 = Polygon(line01_points)
 
     if not os.path.exists(configPath):
         raise ValueError("Invalid config path `" +
@@ -153,15 +164,16 @@ def video_detect():
                     total_class_names.append(class_name)
                 if class_name == 'car':
                     x, y, w, h = loc
-                    if road.isInside(x, y):
+                    if road.contains(Point(x, y)):
                         # in-line check
-                        if line01.isInside(x, y):
+                        print(x, y)
+                        if line01.contains(Point(x, y)):
                             line01_cars.append(det)
                         else:
                             line02_cars.append(det)
 
                         det_cars.append(det)
-                        # cv2.circle(frame_resized, (int(x), int(y)), 2, (255, 0, 0), 0)
+                        cv2.circle(frame_resized, (int(x), int(y)), 2, (255, 0, 0), 0)
 
             # line01_x = []
             # line02_x = []

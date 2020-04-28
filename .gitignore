@@ -69,3 +69,13 @@ x64/
 *.sln
 *.cmake
 detect_cuda_compute_capabilities.cu
+*.pdb
+
+# PyCharm
+.idea/
+__pycache__/
+
+# Video
+*.avi
+*.mp4
+*.mkv

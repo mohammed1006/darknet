@@ -17,6 +17,25 @@ def convertBack(x, y, w, h):
     return xmin, ymin, xmax, ymax
 
 
+def cvDrawBoxes_v2(detections, img, color=(0, 255, 0)):
+    for detection in detections:
+        x, y, w, h = detection[2][0],\
+            detection[2][1],\
+            detection[2][2],\
+            detection[2][3]
+        xmin, ymin, xmax, ymax = convertBack(
+            float(x), float(y), float(w), float(h))
+        pt1 = (xmin, ymin)
+        pt2 = (xmax, ymax)
+        cv2.rectangle(img, pt1, pt2, color, 1)
+        cv2.putText(img,
+                    detection[0].decode() +
+                    " [" + str(round(detection[1] * 100, 2)) + "]",
+                    (pt1[0], pt1[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                    color, 2)
+    return img
+
+
 def cvDrawBoxes(detections, img):
     for detection in detections:
         x, y, w, h = detection[2][0],\
@@ -57,6 +76,12 @@ def video_detect():
     point_rightup = (441, 340)
     road = Polygon.Polygon((point_zero, point_leftdown, point_leftup, point_rightup, point_rightdown))
 
+    # Define lane
+    point_lane_near = (0, 574)
+    point_lane_far = (424, 333)
+    line01 = Polygon.Polygon((point_leftdown, point_leftup, point_lane_near, point_lane_far))
+    line02 = Polygon.Polygon((point_zero, point_rightup, point_rightdown, point_lane_near, point_lane_far))
+
     if not os.path.exists(configPath):
         raise ValueError("Invalid config path `" +
                          os.path.abspath(configPath)+"`")
@@ -95,9 +120,9 @@ def video_detect():
     cap = cv2.VideoCapture(VideoPath)
     cap.set(3, 1280)
     cap.set(4, 720)
-    out = cv2.VideoWriter(
-        "output.avi", cv2.VideoWriter_fourcc(*"MJPG"), 10.0,
-        (darknet.network_width(netMain), darknet.network_height(netMain)))
+    # out = cv2.VideoWriter(
+    #     "output.avi", cv2.VideoWriter_fourcc(*"MJPG"), 10.0,
+    #     (darknet.network_width(netMain), darknet.network_height(netMain)))
     print("Starting the YOLO loop...")
 
     # Create an image we reuse for each detect
@@ -118,17 +143,45 @@ def video_detect():
             detections = darknet.detect_image(netMain, metaMain, darknet_image, thresh=0.25)
             # Parse detections results
             det_cars = []
+            line01_cars = []
+            line02_cars = []
+            total_class_names = []
             for det in detections:
                 class_name, conf, loc = det
-                if class_name.decode() == 'car':
+                class_name = class_name.decode()
+                if class_name not in total_class_names:
+                    total_class_names.append(class_name)
+                if class_name == 'car':
                     x, y, w, h = loc
                     if road.isInside(x, y):
+                        # in-line check
+                        if line01.isInside(x, y):
+                            line01_cars.append(det)
+                        else:
+                            line02_cars.append(det)
+
                         det_cars.append(det)
                         # cv2.circle(frame_resized, (int(x), int(y)), 2, (255, 0, 0), 0)
 
-            image = cvDrawBoxes(det_cars, frame_resized)
+            # line01_x = []
+            # line02_x = []
+            # if len(line01_cars) > 1:
+            #     for det in line01_cars:
+            #         class_name, conf, loc = det
+            #         x, y, w, h = loc
+            #         line01_x.append(x)
+            #     min_x = min(line01_x)
+            #     min_idx = line01.index(min_x)
+            #     for i in range(len(line01_cars)):
+            #         if i != min_idx:
+            #             # calculate distance between the nearest car and current car
+            #             pass
+
+            # image = cvDrawBoxes(det_cars, frame_resized)
+            image = cvDrawBoxes_v2(line01_cars, frame_resized, (255, 0, 0))
+            image = cvDrawBoxes_v2(line02_cars, image, (0, 255, 0))
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            print('fps', 1/(time.time()-prev_time))
+            print('fps', 1/(time.time() - prev_time))
             cv2.imshow('Demo', image)
             cv2.waitKey(3)
         else:
@@ -136,7 +189,7 @@ def video_detect():
             break
 
     cap.release()
-    out.release()
+    # out.release()
 
 
 if __name__ == "__main__":

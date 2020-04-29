@@ -40,7 +40,6 @@ altNames = None
 
 
 def YOLO():
-
     global metaMain, netMain, altNames
     configPath = "./cfg/yolov4.cfg"
     weightPath = "./yolov4.weights"
@@ -83,31 +82,49 @@ def YOLO():
     cap = cv2.VideoCapture("test.mp4")
     cap.set(3, 1280)
     cap.set(4, 720)
+    
+    #cap.set will set size for webcam but for 
+    #a video file cap.set() returns False and does nothing
+    #we find w for a certain according to aspect ratio
+    #we also get the input video fps
+    h = 512
+    r = cap.get(4) / h
+    w = int(cap.get(3) / r)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    
     out = cv2.VideoWriter(
-        "output.avi", cv2.VideoWriter_fourcc(*"MJPG"), 10.0,
-        (darknet.network_width(netMain), darknet.network_height(netMain)))
+        "output.avi", cv2.VideoWriter_fourcc(*"MJPG"), fps,
+        (w , h))
     print("Starting the YOLO loop...")
 
     # Create an image we reuse for each detect
     darknet_image = darknet.make_image(darknet.network_width(netMain),
                                     darknet.network_height(netMain),3)
-    while True:
+    while cap.isOpened():
         prev_time = time.time()
         ret, frame_read = cap.read()
+        
+        if ret == False:
+            break
+            
         frame_rgb = cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB)
         frame_resized = cv2.resize(frame_rgb,
                                    (darknet.network_width(netMain),
                                     darknet.network_height(netMain)),
                                    interpolation=cv2.INTER_LINEAR)
-
+        
         darknet.copy_image_from_bytes(darknet_image,frame_resized.tobytes())
 
         detections = darknet.detect_image(netMain, metaMain, darknet_image, thresh=0.25)
         image = cvDrawBoxes(detections, frame_resized)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)    
+        image = cv2.resize(image, (w, h))
+
+        out.write(image)
         print(1/(time.time()-prev_time))
         cv2.imshow('Demo', image)
         cv2.waitKey(3)
+    
     cap.release()
     out.release()
 

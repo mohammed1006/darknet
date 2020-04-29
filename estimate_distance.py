@@ -1,6 +1,10 @@
 import math
 
 
+def point_int(point):
+    return int(point[0]), int(point[1])
+
+
 class EstimatorOfDistance(object):
     def __init__(self):
         super().__init__()
@@ -97,6 +101,33 @@ class EstimatorOfDistance(object):
         else:
             distance = None
         return distance
+
+    def lane_distance_estimate(self, lane_cars):
+        distances = []
+        points_pairs = []
+        if len(lane_cars) > 1:
+            lane_x = []
+            lane_y = []
+            for det in lane_cars:
+                class_name, conf, loc = det
+                x, y, w, h = loc
+                lane_x.append(x)
+                lane_y.append(y)
+            min_x = min(lane_x)
+            min_idx = lane_x.index(min_x)
+            for i in range(len(lane_cars)):
+                if i != min_idx:
+                    # calculate distance between the nearest car and current car
+                    # pt1 must be the near point
+                    near_car = (lane_x[min_idx], lane_y[min_idx])
+                    far_car = (lane_x[i], lane_y[i])
+                    est_dist = self.estimate(near_car, far_car)
+                    # print(lane_cars)
+                    # print('estim_debug', near_car, far_car, est_dist)
+                    distances.append(est_dist)
+                    pair = [point_int(near_car), point_int(far_car)]
+                    points_pairs.append(pair)
+        return distances, points_pairs
 
 
 if __name__ == '__main__':

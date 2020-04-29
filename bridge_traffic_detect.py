@@ -61,6 +61,44 @@ metaMain = None
 altNames = None
 
 
+def remove_near_boxes(detections, thresh=3.0):
+    clear_detections = []
+    removed_indexes = []
+    square_thresh = thresh * thresh
+    boxes_cnt = len(detections)
+    for i in range(boxes_cnt):
+        if i not in removed_indexes:
+            class_name_i, conf_i, loc_i = detections[i]
+            x_i, y_i, w_i, h_i = loc_i
+            near_dets_conf = [conf_i]
+            near_dets_indexes = [i]
+            for j in range(i, boxes_cnt):
+                if j not in removed_indexes:
+                    class_name_j, conf_j, loc_j = detections[j]
+                    x_j, y_j, w_j, h_j = loc_j
+                    square_dist = (x_i - x_j) ** 2 + (y_i - y_j) ** 2
+                    if square_dist < square_thresh:
+                        near_dets_conf.append(conf_j)
+                        near_dets_indexes.append(j)
+            # Condition 1: No near_dets
+            # no detection need to be removed
+            # Condition 2: Has near_det
+            # Find max confidence detection and remove others
+            if len(near_dets_conf) > 1:
+                max_conf = max(near_dets_conf)
+                max_idx = near_dets_conf.index(max_conf)
+                remain_idx = near_dets_indexes[max_idx]
+                for idx in near_dets_indexes:
+                    if idx != remain_idx:
+                        removed_indexes.append(idx)
+
+    for i in range(boxes_cnt):
+        if i not in removed_indexes:
+            clear_detections.append(detections[i])
+
+    return clear_detections
+
+
 def video_detect():
 
     global metaMain, netMain, altNames
@@ -70,6 +108,7 @@ def video_detect():
     VideoPath = "D:/data/bridge/yinhe_bridge_south.mp4"
 
     estim = EstimatorOfDistance()
+    class_whitelist = ['car', 'truck']
 
     # Define road range
     point_zero = Point(0, 607)
@@ -86,12 +125,12 @@ def video_detect():
 
     road = Polygon(road_points)
 
-    # Define lane, line01 = left lane in the video. The remaining area is lane02 (will not define here).
+    # Define lane, lane01 = left lane in the video. The remaining area is lane02 (will not define here).
 
-    line01_points = mid_lane_w_offset[::-1]
-    line01_points.extend(left_lane_border_w_offset)
+    lane01_points = mid_lane_w_offset[::-1]
+    lane01_points.extend(left_lane_border_w_offset)
 
-    line01 = Polygon(line01_points)
+    lane01 = Polygon(lane01_points)
 
     if not os.path.exists(configPath):
         raise ValueError("Invalid config path `" +
@@ -151,49 +190,77 @@ def video_detect():
 
             darknet.copy_image_from_bytes(darknet_image, frame_resized.tobytes())
 
-            detections = darknet.detect_image(netMain, metaMain, darknet_image, thresh=0.25)
+            detections = darknet.detect_image(netMain, metaMain, darknet_image, thresh=0.5)
             # Parse detections results
             det_cars = []
-            line01_cars = []
-            line02_cars = []
+            lane01_cars = []
+            lane02_cars = []
             total_class_names = []
             for det in detections:
                 class_name, conf, loc = det
                 class_name = class_name.decode()
                 if class_name not in total_class_names:
                     total_class_names.append(class_name)
-                if class_name == 'car':
+                if class_name in class_whitelist:
                     x, y, w, h = loc
                     if road.contains(Point(x, y)):
                         # in-line check
-                        print(x, y)
-                        if line01.contains(Point(x, y)):
-                            line01_cars.append(det)
+                        # print(x, y)
+                        if lane01.contains(Point(x, y)):
+                            lane01_cars.append(det)
                         else:
-                            line02_cars.append(det)
+                            lane02_cars.append(det)
 
                         det_cars.append(det)
                         cv2.circle(frame_resized, (int(x), int(y)), 2, (255, 0, 0), 0)
 
-            # line01_x = []
-            # line02_x = []
-            # if len(line01_cars) > 1:
-            #     for det in line01_cars:
-            #         class_name, conf, loc = det
-            #         x, y, w, h = loc
-            #         line01_x.append(x)
-            #     min_x = min(line01_x)
-            #     min_idx = line01.index(min_x)
-            #     for i in range(len(line01_cars)):
-            #         if i != min_idx:
-            #             # calculate distance between the nearest car and current car
-            #             pass
+            lane01_cars = remove_near_boxes(lane01_cars)
+            lane02_cars = remove_near_boxes(lane02_cars)
+
+            lane01_dists, lane01_pairs = estim.lane_distance_estimate(lane01_cars)
+            lane02_dists, lane02_pairs = estim.lane_distance_estimate(lane02_cars)
+
+            if len(lane01_dists) > 0:
+                print("lane01")
+                print(lane01_dists, lane01_pairs)
+            if len(lane02_dists) > 0:
+                print("lane02")
+                print(lane02_dists, lane02_pairs)
+
+            lane01_color = (255, 0, 0)
+            lane02_color = (0, 255, 0)
 
             # image = cvDrawBoxes(det_cars, frame_resized)
-            image = cvDrawBoxes_v2(line01_cars, frame_resized, (255, 0, 0))
-            image = cvDrawBoxes_v2(line02_cars, image, (0, 255, 0))
+            image = cvDrawBoxes_v2(lane01_cars, frame_resized, lane01_color)
+            image = cvDrawBoxes_v2(lane02_cars, image, lane02_color)
+            i = 0
+            for lines in lane01_pairs:
+                image = cv2.line(image, lines[0], lines[1], lane01_color)
+                mid_pt_x = int((lines[0][0] + lines[1][0]) * 0.5)
+                mid_pt_y = int((lines[0][1] + lines[1][1]) * 0.5)
+                mid_pt = (mid_pt_x, mid_pt_y)
+                distance = lane01_dists[i]
+                if distance is not None:
+                    image = cv2.putText(image,
+                                        str(round(distance)),
+                                        mid_pt, cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                                        lane01_color, 2)
+                i += 1
+            i = 0
+            for lines in lane02_pairs:
+                image = cv2.line(image, lines[0], lines[1], lane02_color)
+                mid_pt_x = int((lines[0][0] + lines[1][0]) * 0.5)
+                mid_pt_y = int((lines[0][1] + lines[1][1]) * 0.5)
+                mid_pt = (mid_pt_x, mid_pt_y)
+                distance = lane02_dists[i]
+                if distance is not None:
+                    image = cv2.putText(image,
+                                        str(round(distance)),
+                                        mid_pt, cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                                        lane02_color, 2)
+                i += 1
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            print('fps', 1/(time.time() - prev_time))
+            # print('fps', 1/(time.time() - prev_time))
             cv2.imshow('Demo', image)
             cv2.waitKey(3)
         else:
@@ -201,6 +268,7 @@ def video_detect():
             break
 
     cap.release()
+    print(total_class_names)
     # out.release()
 
 

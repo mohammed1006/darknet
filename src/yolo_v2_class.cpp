@@ -44,7 +44,7 @@ int detect_image(const char *filename, bbox_t_container &container)
 int detect_mat(const uint8_t* data, const size_t data_length, bbox_t_container &container) {
 #ifdef OPENCV
     std::vector<char> vdata(data, data + data_length);
-    image image = imdecode(cv::Mat(vdata), 1);
+    cv::Mat image image = imdecode(cv::Mat(vdata), 1);
 
     std::vector<bbox_t> detection = detector->detect(image);
     for (size_t i = 0; i < detection.size() && i < C_SHARP_MAX_OBJECTS; ++i)

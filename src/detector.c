@@ -29,7 +29,6 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     char *train_images = option_find_str(options, "train", "data/train.txt");
     char *valid_images = option_find_str(options, "valid", train_images);
     char *backup_directory = option_find_str(options, "backup", "/backup/");
-    char *chart_path = option_find_str(options, "backup", "/backup/");
 
     network net_map;
     if (calc_map) {
@@ -1898,7 +1897,7 @@ void run_detector(int argc, char **argv)
     // and for recall mode (extended output table-like format with results for best_class fit)
     int ext_output = find_arg(argc, argv, "-ext_output");
     int save_labels = find_arg(argc, argv, "-save_labels");
-    //char* chart_path = find_char_arg(argc, argv, "-chart", 0);
+    char* chart_path = find_char_arg(argc, argv, "-chart", 0);
     if (argc < 4) {
         fprintf(stderr, "usage: %s %s [train/test/valid/demo/map] [data] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;

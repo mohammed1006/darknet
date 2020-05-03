@@ -29,7 +29,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     char *train_images = option_find_str(options, "train", "data/train.txt");
     char *valid_images = option_find_str(options, "valid", train_images);
     char *backup_directory = option_find_str(options, "backup", "/backup/");
-    char *chart_path = backup_directory;
+    char *chart_path = option_find_str(options, "backup", "/backup/");
 
     network net_map;
     if (calc_map) {

@@ -79,3 +79,5 @@ __pycache__/
 *.avi
 *.mp4
 *.mkv
+
+!cfg\voc_defeat.data

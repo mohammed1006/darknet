@@ -10,7 +10,6 @@
 *.lib
 *.dylib
 mnist/
-data/
 caffe/
 grasp/
 images/
@@ -18,7 +17,6 @@ opencv/
 convnet/
 decaf/
 submission/
-cfg/
 build/darknet/*
 build_*/
 !build/darknet/YoloWrapper.cs
@@ -79,5 +77,3 @@ __pycache__/
 *.avi
 *.mp4
 *.mkv
-
-!cfg\voc_defeat.data

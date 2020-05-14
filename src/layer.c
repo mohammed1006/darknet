@@ -55,7 +55,9 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
     if (l.type == DROPOUT) {
         if (l.rand)           free(l.rand);
 #ifdef GPU
-        if (l.rand_gpu)             cuda_free(l.rand_gpu);
+        if (l.rand_gpu)              cuda_free(l.rand_gpu);
+        if (l.drop_blocks_scale)     cuda_free_host(l.drop_blocks_scale);
+        if (l.drop_blocks_scale_gpu) cuda_free(l.drop_blocks_scale_gpu);
 #endif
         return;
     }
@@ -65,6 +67,8 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
     if (l.indexes)            free(l.indexes);
     if (l.input_layers)       free(l.input_layers);
     if (l.input_sizes)        free(l.input_sizes);
+    if (l.layers_output)      free(l.layers_output);
+    if (l.layers_delta)       free(l.layers_delta);
     if (l.map)                free(l.map);
     if (l.rand)               free(l.rand);
     if (l.cost)               free(l.cost);
@@ -156,6 +160,8 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
     if (l.binary_weights_gpu)      cuda_free(l.binary_weights_gpu);
     if (l.mean_gpu)                cuda_free(l.mean_gpu), l.mean_gpu = NULL;
     if (l.variance_gpu)            cuda_free(l.variance_gpu), l.variance_gpu = NULL;
+    if (l.m_cbn_avg_gpu)           cuda_free(l.m_cbn_avg_gpu), l.m_cbn_avg_gpu = NULL;
+    if (l.v_cbn_avg_gpu)           cuda_free(l.v_cbn_avg_gpu), l.v_cbn_avg_gpu = NULL;
     if (l.rolling_mean_gpu)        cuda_free(l.rolling_mean_gpu), l.rolling_mean_gpu = NULL;
     if (l.rolling_variance_gpu)    cuda_free(l.rolling_variance_gpu), l.rolling_variance_gpu = NULL;
     if (l.variance_delta_gpu)      cuda_free(l.variance_delta_gpu), l.variance_delta_gpu = NULL;
@@ -184,12 +190,16 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
     if (l.optimized_memory < 2) {
         if (l.x_gpu)                   cuda_free(l.x_gpu);  l.x_gpu = NULL;
         if (l.output_gpu)              cuda_free(l.output_gpu), l.output_gpu = NULL;
+        if (l.output_avg_gpu)          cuda_free(l.output_avg_gpu), l.output_avg_gpu = NULL;
         if (l.activation_input_gpu)    cuda_free(l.activation_input_gpu), l.activation_input_gpu = NULL;
     }
     if (l.delta_gpu && l.keep_delta_gpu && l.optimized_memory < 3) cuda_free(l.delta_gpu), l.delta_gpu = NULL;
     if (l.rand_gpu)                cuda_free(l.rand_gpu);
     if (l.squared_gpu)             cuda_free(l.squared_gpu);
     if (l.norms_gpu)               cuda_free(l.norms_gpu);
+    if (l.input_sizes_gpu)         cuda_free((float*)l.input_sizes_gpu);
+    if (l.layers_output_gpu)       cuda_free((float*)l.layers_output_gpu);
+    if (l.layers_delta_gpu)        cuda_free((float*)l.layers_delta_gpu);
 
     // CONV-LSTM
     if (l.f_gpu)                   cuda_free(l.f_gpu);

@@ -823,7 +823,7 @@ image float_to_image_scaled(int w, int h, int c, float *data)
 image rgb_to_image(int w, int h, int c, unsigned char* data)
 {
   image out = make_empty_image(w,h,c);
-  out.data = (float*)malloc(w*h*c*sizeof(float));
+  out.data = (float*)xmalloc(w*h*c*sizeof(float));
 
   int step = w*c;
   int i, j, k;

@@ -1,0 +1,5 @@
+classes= 3
+train  = D:\data\defect_detection\train.txt
+valid  = D:\data\defect_detection\test.txt
+names = data/voc_defeat.names
+backup = D:\data\defect_detection\backup

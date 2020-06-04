@@ -410,6 +410,7 @@ layer parse_yolo(list *options, size_params params)
     layer l = make_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes, max_boxes);
     if (l.outputs != params.inputs) {
         printf("Error: l.outputs == params.inputs \n");
+        printf("%d == %d \n", l.outputs, params.inputs);
         printf("filters= in the [convolutional]-layer doesn't correspond to classes= or mask= in [yolo]-layer \n");
         exit(EXIT_FAILURE);
     }

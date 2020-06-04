@@ -104,7 +104,7 @@ typedef struct tree {
 
 // activations.h
 typedef enum {
-    LOGISTIC, RELU, RELU6, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU, GELU, SWISH, MISH, NORM_CHAN, NORM_CHAN_SOFTMAX, NORM_CHAN_SOFTMAX_MAXVAL
+    LOGISTIC, RELU, RELU6,HSWISH,HSIGMODE ,RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU, GELU, SWISH, MISH, NORM_CHAN, NORM_CHAN_SOFTMAX, NORM_CHAN_SOFTMAX_MAXVAL
 }ACTIVATION;
 
 // parser.h
@@ -809,6 +809,7 @@ typedef struct image {
 // box.h
 typedef struct box {
     float x, y, w, h;
+    float lx1 ,ly1 ,lx2, ly2 ,lx3, ly3 ,lx4, ly4 ,lx5 , ly5;
 } box;
 
 // box.h
@@ -918,7 +919,8 @@ typedef struct load_args {
 // data.h
 typedef struct box_label {
     int id;
-    float x, y, w, h;
+    float x, y, w, h ;
+    float lx1 ,ly1 ,lx2, ly2 ,lx3, ly3 ,lx4, ly4 ,lx5 , ly5;
     float left, right, top, bottom;
 } box_label;
 

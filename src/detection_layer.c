@@ -299,10 +299,25 @@ void get_detection_detections(layer l, int w, int h, float thresh, detection *de
 			float scale = predictions[p_index];
 			int box_index = l.side*l.side*(l.classes + l.n) + (i*l.n + n) * 4;
 			box b;
+         
+
 			b.x = (predictions[box_index + 0] + col) / l.side * w;
 			b.y = (predictions[box_index + 1] + row) / l.side * h;
 			b.w = pow(predictions[box_index + 2], (l.sqrt ? 2 : 1)) * w;
 			b.h = pow(predictions[box_index + 3], (l.sqrt ? 2 : 1)) * h;
+            b.lx1 = (predictions[box_index + 4] + col) / l.side * w;
+            b.ly1 = (predictions[box_index + 5] + row) / l.side * h;
+            b.lx2 = (predictions[box_index + 6] + col) / l.side * w;
+            b.ly2 = (predictions[box_index + 7] + row) / l.side * h;
+            b.lx3 = (predictions[box_index + 8] + col) / l.side * w;
+            b.ly3 = (predictions[box_index + 9] + row) / l.side * h;
+            b.lx4 = (predictions[box_index + 10] + col) / l.side * w;
+            b.ly4 = (predictions[box_index + 11] + row) / l.side * h;
+            b.lx5 = (predictions[box_index + 12] + col) / l.side * w;
+            b.ly5 = (predictions[box_index + 13] + row) / l.side * h;
+
+ 
+
 			dets[index].bbox = b;
 			dets[index].objectness = scale;
 			for (j = 0; j < l.classes; ++j) {

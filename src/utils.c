@@ -655,15 +655,46 @@ void translate_array(float *a, int n, float s)
     }
 }
 
+float wing_loss(float *a, int n)
+{
+    float w = 10.0;
+    float e = 2.0;
+    int i;
+    float sum = 0;
+    float C = w - (w * log(1 + w / e ));
+    for(i = 0; i < n; ++i){
+        float error = a[i] > 0 ? a[i]:a[i]*-1;
+        // if (error != 0) printf("%f \n",error);
+        if (error < w) sum += w * log(1 + error / e);
+        else sum += error - C;
+        
+    }
+    return sum;
+}
+
 float mag_array(float *a, int n)
 {
     int i;
     float sum = 0;
     for(i = 0; i < n; ++i){
         sum += a[i]*a[i];
+        // sum += abs(a[i]);
     }
     return sqrt(sum);
 }
+
+
+float mae_array(float *a, int n)
+{
+    int i;
+    float sum = 0;
+    for(i = 0; i < n; ++i){
+        // sum += a[i]*a[i];
+        sum += a[i] > 0 ? a[i]:a[i]*-1;
+    }
+    return sum;
+}
+
 
 // indicies to skip is a bit array
 float mag_array_skip(float *a, int n, int * indices_to_skip)

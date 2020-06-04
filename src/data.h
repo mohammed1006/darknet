@@ -70,9 +70,10 @@ typedef struct load_args{
     tree *hierarchy;
 } load_args;
 
-typedef struct{
+typedef struct box_label {
     int id;
-    float x,y,w,h;
+    float x, y, w, h ;
+    float lx1 ,ly1 ,lx2, ly2 ,lx3, ly3 ,lx4, ly4 ,lx5 , ly5;
     float left, right, top, bottom;
 } box_label;
 

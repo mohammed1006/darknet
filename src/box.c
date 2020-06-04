@@ -25,6 +25,16 @@ box float_to_box_stride(float *f, int stride)
     b.y = f[1 * stride];
     b.w = f[2 * stride];
     b.h = f[3 * stride];
+    b.lx1 = f[4 * stride];
+    b.ly1 = f[5 * stride];
+    b.lx2 = f[6 * stride];
+    b.ly2 = f[7 * stride];
+    b.lx3 = f[8 * stride];
+    b.ly3 = f[9 * stride];
+    b.lx4 = f[10 * stride];
+    b.ly4 = f[11 * stride];
+    b.lx5 = f[12 * stride];
+    b.ly5 = f[13 * stride];
     return b;
 }
 

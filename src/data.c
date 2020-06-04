@@ -202,10 +202,11 @@ box_label *read_boxes(char *filename, int *n)
         *n = 0;
         return boxes;
     }
-    float x, y, h, w;
+    float x, y, h, w ,lx1 ,ly1 ,lx2, ly2 ,lx3, ly3 ,lx4, ly4 ,lx5 , ly5 ;
     int id;
     int count = 0;
-    while(fscanf(file, "%d %f %f %f %f", &id, &x, &y, &w, &h) == 5){
+
+    while(fscanf(file, "%d %f %f %f %f %f %f %f %f %f %f %f %f %f %f", &id, &x, &y, &w, &h ,&lx1 ,&ly1 ,&lx2, &ly2 ,&lx3, &ly3 ,&lx4, &ly4 ,&lx5 , &ly5) == 15){
         boxes = (box_label*)xrealloc(boxes, (count + 1) * sizeof(box_label));
         boxes[count].id = id;
         boxes[count].x = x;
@@ -216,10 +217,22 @@ box_label *read_boxes(char *filename, int *n)
         boxes[count].right  = x + w/2;
         boxes[count].top    = y - h/2;
         boxes[count].bottom = y + h/2;
+        boxes[count].lx1 = lx1;
+        boxes[count].ly1 = ly1;
+        boxes[count].lx2 = lx2;
+        boxes[count].ly2 = ly2;
+        boxes[count].lx3 = lx3;
+        boxes[count].ly3 = ly3;
+        boxes[count].lx4 = lx4;
+        boxes[count].ly4 = ly4;
+        boxes[count].lx5 = lx5;
+        boxes[count].ly5 = ly5;
+
         ++count;
     }
     fclose(file);
     *n = count;
+
     return boxes;
 }
 
@@ -243,6 +256,18 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
             boxes[i].y = 999999;
             boxes[i].w = 999999;
             boxes[i].h = 999999;
+            boxes[i].lx1 = 999999;
+            boxes[i].ly1 = 999999;
+            boxes[i].lx2 = 999999;
+            boxes[i].ly2 = 999999;
+            boxes[i].lx3 = 999999;
+            boxes[i].ly3 = 999999;
+            boxes[i].lx4 = 999999;
+            boxes[i].ly4 = 999999;
+            boxes[i].lx5 = 999999;
+            boxes[i].ly5 = 999999;
+
+
             continue;
         }
         if ((boxes[i].x + boxes[i].w / 2) < 0 || (boxes[i].y + boxes[i].h / 2) < 0 ||
@@ -252,17 +277,70 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
             boxes[i].y = 999999;
             boxes[i].w = 999999;
             boxes[i].h = 999999;
+            boxes[i].lx1 = 999999;
+            boxes[i].ly1 = 999999;
+            boxes[i].lx2 = 999999;
+            boxes[i].ly2 = 999999;
+            boxes[i].lx3 = 999999;
+            boxes[i].ly3 = 999999;
+            boxes[i].lx4 = 999999;
+            boxes[i].ly4 = 999999;
+            boxes[i].lx5 = 999999;
+            boxes[i].ly5 = 999999;
             continue;
         }
+
+
         boxes[i].left   = boxes[i].left  * sx - dx;
         boxes[i].right  = boxes[i].right * sx - dx;
         boxes[i].top    = boxes[i].top   * sy - dy;
         boxes[i].bottom = boxes[i].bottom* sy - dy;
 
+        if (boxes[i].lx1 != -1)
+        {
+            boxes[i].lx1 = boxes[i].lx1* sx - dx;
+            boxes[i].ly1 = boxes[i].ly1* sy - dy;
+            boxes[i].lx2 = boxes[i].lx2* sx - dx;
+            boxes[i].ly2 = boxes[i].ly2* sy - dy;
+            boxes[i].lx3 = boxes[i].lx3* sx - dx;
+            boxes[i].ly3 = boxes[i].ly3* sy - dy;
+            boxes[i].lx4 = boxes[i].lx4* sx - dx;
+            boxes[i].ly4 = boxes[i].ly4* sy - dy;
+            boxes[i].lx5 = boxes[i].lx5* sx - dx;
+            boxes[i].ly5 = boxes[i].ly5* sy - dy;
+        }
+
+
+
+
         if(flip){
             float swap = boxes[i].left;
             boxes[i].left = 1. - boxes[i].right;
             boxes[i].right = 1. - swap;
+
+            if (boxes[i].lx1 != -1)
+            {
+                boxes[i].lx1 = 1. - boxes[i].lx1;
+                boxes[i].lx2 = 1. - boxes[i].lx2;
+                boxes[i].lx3 = 1. - boxes[i].lx3;
+                boxes[i].lx4 = 1. - boxes[i].lx4;
+                boxes[i].lx5 = 1. - boxes[i].lx5;
+
+                float tmpx = boxes[i].lx1;
+                float tmpy = boxes[i].ly1;
+                boxes[i].lx1 = boxes[i].lx2 ;
+                boxes[i].ly1 = boxes[i].ly2 ;
+                boxes[i].lx2 = tmpx;
+                boxes[i].ly2 = tmpy;
+
+
+                tmpx = boxes[i].lx4;
+                tmpy = boxes[i].ly4;
+                boxes[i].lx4 = boxes[i].lx5 ;
+                boxes[i].ly4 = boxes[i].ly5 ;
+                boxes[i].lx5 = tmpx;
+                boxes[i].ly5 = tmpy;
+            }
         }
 
         boxes[i].left =  constrain(0, 1, boxes[i].left);
@@ -286,10 +364,11 @@ void fill_truth_swag(char *path, float *truth, int classes, int flip, float dx, 
     replace_image_to_label(path, labelpath);
 
     int count = 0;
+
     box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
     correct_boxes(boxes, count, dx, dy, sx, sy, flip);
-    float x,y,w,h;
+    float x,y,w,h,lx1 ,ly1 ,lx2, ly2 ,lx3, ly3 ,lx4, ly4 ,lx5,ly5;
     int id;
     int i;
 
@@ -298,16 +377,38 @@ void fill_truth_swag(char *path, float *truth, int classes, int flip, float dx, 
         y =  boxes[i].y;
         w =  boxes[i].w;
         h =  boxes[i].h;
+        lx1 = boxes[i].lx1;
+        ly1 = boxes[i].ly1;
+        lx2 = boxes[i].lx2;
+        ly2 = boxes[i].ly2;
+        lx3 = boxes[i].lx3;
+        ly3 = boxes[i].ly3;
+        lx4 = boxes[i].lx4;
+        ly4 = boxes[i].ly4;
+        lx5 = boxes[i].lx5;
+        ly5 = boxes[i].ly5;
+
+
         id = boxes[i].id;
 
         if (w < .0 || h < .0) continue;
 
-        int index = (4+classes) * i;
+        int index = (14+classes) * i;
 
         truth[index++] = x;
         truth[index++] = y;
         truth[index++] = w;
         truth[index++] = h;
+        truth[index++] = lx1;
+        truth[index++] = ly1;
+        truth[index++] = lx2;
+        truth[index++] = ly2;
+        truth[index++] = lx3;
+        truth[index++] = ly3;
+        truth[index++] = lx4;
+        truth[index++] = ly4;
+        truth[index++] = lx5;
+        truth[index++] = ly5;
 
         if (id < classes) truth[index+id] = 1;
     }
@@ -318,12 +419,12 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
 {
     char labelpath[4096];
     replace_image_to_label(path, labelpath);
-
+    printf("\n fill_truth_region \n");
     int count = 0;
     box_label *boxes = read_boxes(labelpath, &count);
     randomize_boxes(boxes, count);
     correct_boxes(boxes, count, dx, dy, sx, sy, flip);
-    float x,y,w,h;
+    float x,y,w,h,lx1 ,ly1 ,lx2, ly2 ,lx3, ly3 ,lx4, ly4 ,lx5,ly5;
     int id;
     int i;
 
@@ -332,6 +433,16 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
         y =  boxes[i].y;
         w =  boxes[i].w;
         h =  boxes[i].h;
+        lx1 = boxes[i].lx1;
+        ly1 = boxes[i].ly1;
+        lx2 = boxes[i].lx2;
+        ly2 = boxes[i].ly2;
+        lx3 = boxes[i].lx3;
+        ly3 = boxes[i].ly3;
+        lx4 = boxes[i].lx4;
+        ly4 = boxes[i].ly4;
+        lx5 = boxes[i].lx5;
+        ly5 = boxes[i].ly5;
         id = boxes[i].id;
 
         if (w < .001 || h < .001) continue;
@@ -342,7 +453,19 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
         x = x*num_boxes - col;
         y = y*num_boxes - row;
 
-        int index = (col+row*num_boxes)*(5+classes);
+        lx1 = boxes[i].lx1*num_boxes - col;
+        ly1 = boxes[i].ly1*num_boxes - row;
+        lx2 = boxes[i].lx2*num_boxes - col;
+        ly2 = boxes[i].ly2*num_boxes - row;
+        lx3 = boxes[i].lx3*num_boxes - col;
+        ly3 = boxes[i].ly3*num_boxes - row;
+        lx4 = boxes[i].lx4*num_boxes - col;
+        ly4 = boxes[i].ly4*num_boxes - row;
+        lx5 = boxes[i].lx5*num_boxes - col;
+        ly5 = boxes[i].ly5*num_boxes - row;
+
+
+        int index = (col+row*num_boxes)*(15+classes);
         if (truth[index]) continue;
         truth[index++] = 1;
 
@@ -353,6 +476,16 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
         truth[index++] = y;
         truth[index++] = w;
         truth[index++] = h;
+        truth[index++] = lx1;
+        truth[index++] = ly1;
+        truth[index++] = lx2;
+        truth[index++] = ly2;
+        truth[index++] = lx3;
+        truth[index++] = ly3;
+        truth[index++] = lx4;
+        truth[index++] = ly4;
+        truth[index++] = lx5;
+        truth[index++] = ly5;
     }
     free(boxes);
 }
@@ -361,6 +494,7 @@ int fill_truth_detection(const char *path, int num_boxes, float *truth, int clas
     int net_w, int net_h)
 {
     char labelpath[4096];
+
     replace_image_to_label(path, labelpath);
 
     int count = 0;
@@ -372,7 +506,7 @@ int fill_truth_detection(const char *path, int num_boxes, float *truth, int clas
     randomize_boxes(boxes, count);
     correct_boxes(boxes, count, dx, dy, sx, sy, flip);
     if (count > num_boxes) count = num_boxes;
-    float x, y, w, h;
+    float x,y,w,h,lx1 ,ly1 ,lx2, ly2 ,lx3, ly3 ,lx4, ly4 ,lx5,ly5;
     int id;
     int sub = 0;
 
@@ -381,6 +515,16 @@ int fill_truth_detection(const char *path, int num_boxes, float *truth, int clas
         y = boxes[i].y;
         w = boxes[i].w;
         h = boxes[i].h;
+        lx1 = boxes[i].lx1;
+        ly1 = boxes[i].ly1;
+        lx2 = boxes[i].lx2;
+        ly2 = boxes[i].ly2;
+        lx3 = boxes[i].lx3;
+        ly3 = boxes[i].ly3;
+        lx4 = boxes[i].lx4;
+        ly4 = boxes[i].ly4;
+        lx5 = boxes[i].lx5;
+        ly5 = boxes[i].ly5;
         id = boxes[i].id;
 
         // not detect small objects
@@ -431,15 +575,31 @@ int fill_truth_detection(const char *path, int num_boxes, float *truth, int clas
             h = 1;
             if (check_mistakes) getchar();
         }
+        // add del small face
+        if (w * net_w < 6 || h * net_h < 6  )  {
+            // printf("\n net_w = %d net_h = %d w = %f h = %f",net_w,net_h,w * net_w, h * net_h);
+            ++sub;
+            continue;
+        }
+
         if (x == 0) x += lowest_w;
         if (y == 0) y += lowest_h;
 
-        truth[(i-sub)*5+0] = x;
-        truth[(i-sub)*5+1] = y;
-        truth[(i-sub)*5+2] = w;
-        truth[(i-sub)*5+3] = h;
-        truth[(i-sub)*5+4] = id;
-
+        truth[(i-sub)*15+0] = x;
+        truth[(i-sub)*15+1] = y;
+        truth[(i-sub)*15+2] = w;
+        truth[(i-sub)*15+3] = h;
+        truth[(i-sub)*15+4] = lx1;
+        truth[(i-sub)*15+5] = ly1;
+        truth[(i-sub)*15+6] = lx2;
+        truth[(i-sub)*15+7] = ly2;
+        truth[(i-sub)*15+8] = lx3;
+        truth[(i-sub)*15+9] = ly3;
+        truth[(i-sub)*15+10] = lx4;
+        truth[(i-sub)*15+11] = ly4;
+        truth[(i-sub)*15+12] = lx5;
+        truth[(i-sub)*15+13] = ly5;
+        truth[(i-sub)*15+14] = id;
         if (min_w_h == 0) min_w_h = w*net_w;
         if (min_w_h > w*net_w) min_w_h = w*net_w;
         if (min_w_h > h*net_h) min_w_h = h*net_h;
@@ -671,10 +831,10 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
         int dw = (ow*jitter);
         int dh = (oh*jitter);
 
-        int pleft  = rand_uniform(-dw, dw);
-        int pright = rand_uniform(-dw, dw);
-        int ptop   = rand_uniform(-dh, dh);
-        int pbot   = rand_uniform(-dh, dh);
+        int pleft  = rand_uniform(0, dw);
+        int pright = rand_uniform(0, dw);
+        int ptop   = rand_uniform(0, dh);
+        int pbot   = rand_uniform(0, dh);
 
         int swidth =  ow - pleft - pright;
         int sheight = oh - ptop - pbot;
@@ -784,16 +944,16 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
     d.X.vals = (float**)xcalloc(d.X.rows, sizeof(float*));
     d.X.cols = h*w*3;
 
-    int k = (4+classes)*30;
+    int k = (14+classes)*30;
     d.y = make_matrix(1, k);
 
     int dw = w*jitter;
     int dh = h*jitter;
 
-    int pleft  = rand_uniform(-dw, dw);
-    int pright = rand_uniform(-dw, dw);
-    int ptop   = rand_uniform(-dh, dh);
-    int pbot   = rand_uniform(-dh, dh);
+    int pleft  = rand_uniform(0, dw);
+    int pright = rand_uniform(0, dw);
+    int ptop   = rand_uniform(0, dh);
+    int pbot   = rand_uniform(0, dh);
 
     int swidth =  w - pleft - pright;
     int sheight = h - ptop - pbot;
@@ -821,11 +981,11 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
 
 void blend_truth(float *new_truth, int boxes, float *old_truth)
 {
-    const int t_size = 4 + 1;
+    const int t_size = 14 + 1;
     int count_new_truth = 0;
     int t;
     for (t = 0; t < boxes; ++t) {
-        float x = new_truth[t*(4 + 1)];
+        float x = new_truth[t*(14 + 1)];
         if (!x) break;
         count_new_truth++;
 
@@ -841,11 +1001,22 @@ void blend_truth(float *new_truth, int boxes, float *old_truth)
         new_truth_ptr[2] = old_truth_ptr[2];
         new_truth_ptr[3] = old_truth_ptr[3];
         new_truth_ptr[4] = old_truth_ptr[4];
+        new_truth_ptr[5] = old_truth_ptr[5];
+        new_truth_ptr[6] = old_truth_ptr[6];
+        new_truth_ptr[7] = old_truth_ptr[7];
+        new_truth_ptr[8] = old_truth_ptr[8];
+        new_truth_ptr[9] = old_truth_ptr[9];
+        new_truth_ptr[10] = old_truth_ptr[10];
+        new_truth_ptr[11] = old_truth_ptr[11];
+        new_truth_ptr[12] = old_truth_ptr[12];
+        new_truth_ptr[13] = old_truth_ptr[13];
+        new_truth_ptr[14] = old_truth_ptr[14];
+
     }
     //printf("\n was %d bboxes, now %d bboxes \n", count_new_truth, t);
 }
 
-
+//landmark not use
 void blend_truth_mosaic(float *new_truth, int boxes, float *old_truth, int w, int h, float cut_x, float cut_y, int i_mixup,
     int left_shift, int right_shift, int top_shift, int bot_shift)
 {
@@ -1041,7 +1212,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
     float dhue = 0, dsat = 0, dexp = 0, flip = 0, blur = 0;
     int augmentation_calculated = 0, gaussian_noise = 0;
 
-    d.y = make_matrix(n, 5*boxes);
+    d.y = make_matrix(n, 15*boxes);
     int i_mixup = 0;
     for (i_mixup = 0; i_mixup <= use_mixup; i_mixup++) {
         if (i_mixup) augmentation_calculated = 0;   // recalculate augmentation for the 2nd sequence if(track==1)
@@ -1051,7 +1222,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
         else random_paths = get_random_paths(paths, n, m);
 
         for (i = 0; i < n; ++i) {
-            float *truth = (float*)xcalloc(5 * boxes, sizeof(float));
+            float *truth = (float*)xcalloc(15 * boxes, sizeof(float));
             const char *filename = random_paths[i];
 
             int flag = (c >= 3);
@@ -1197,12 +1368,12 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
             if (use_mixup == 0) {
                 d.X.vals[i] = ai.data;
-                memcpy(d.y.vals[i], truth, 5 * boxes * sizeof(float));
+                memcpy(d.y.vals[i], truth, 15 * boxes * sizeof(float));
             }
             else if (use_mixup == 1) {
                 if (i_mixup == 0) {
                     d.X.vals[i] = ai.data;
-                    memcpy(d.y.vals[i], truth, 5 * boxes * sizeof(float));
+                    memcpy(d.y.vals[i], truth, 15 * boxes * sizeof(float));
                 }
                 else if (i_mixup == 1) {
                     image old_img = make_empty_image(w, h, c);
@@ -1273,7 +1444,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
                 sprintf(buff, "aug_%d_%d_%d", random_index, i, random_gen());
                 int t;
                 for (t = 0; t < boxes; ++t) {
-                    box b = float_to_box_stride(d.y.vals[i] + t*(4 + 1), 1);
+                    box b = float_to_box_stride(d.y.vals[i] + t*(14 + 1), 1);
                     if (!b.x) break;
                     int left = (b.x - b.w / 2.)*ai.w;
                     int right = (b.x + b.w / 2.)*ai.w;

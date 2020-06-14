@@ -87,7 +87,7 @@ jobs:
       with:
         vcpkgArguments: '@${{ env.vcpkgResponseFile }}'
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgGitCommitId: '2bc6cd714f931c32d3299a137d5abe0f86f803e1'
+        vcpkgGitCommitId: 'ffa7fd27cfa29f206d1fd2ccfc722cad4aaeef3d'
         appendedCacheKey: ${{ hashFiles(env.vcpkgResponseFile) }}
 
     - name: 'Build with CMake and Ninja'
@@ -259,7 +259,7 @@ jobs:
       with:
         vcpkgArguments: '@${{ env.vcpkgResponseFile }}'
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgGitCommitId: '2bc6cd714f931c32d3299a137d5abe0f86f803e1'
+        vcpkgGitCommitId: 'ffa7fd27cfa29f206d1fd2ccfc722cad4aaeef3d'
         appendedCacheKey: ${{ hashFiles(env.vcpkgResponseFile) }}
 
     - name: 'Build with CMake and Ninja'
@@ -363,7 +363,7 @@ jobs:
       with:
         vcpkgArguments: '@${{ env.vcpkgResponseFile }}'
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgGitCommitId: '2bc6cd714f931c32d3299a137d5abe0f86f803e1'
+        vcpkgGitCommitId: 'ffa7fd27cfa29f206d1fd2ccfc722cad4aaeef3d'
         appendedCacheKey: ${{ hashFiles(env.vcpkgResponseFile) }}
 
     - name: 'Build with CMake and Ninja'
@@ -424,7 +424,7 @@ jobs:
       with:
         vcpkgArguments: '@${{ env.vcpkgResponseFile }}'
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        vcpkgGitCommitId: '2bc6cd714f931c32d3299a137d5abe0f86f803e1'
+        vcpkgGitCommitId: 'ffa7fd27cfa29f206d1fd2ccfc722cad4aaeef3d'
         appendedCacheKey: ${{ hashFiles(env.vcpkgResponseFile) }}
 
     - name: 'Build with CMake and Ninja'

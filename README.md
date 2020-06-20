@@ -670,6 +670,7 @@ Different tools for marking objects in images:
 3. in Python: https://github.com/Cartucho/OpenLabeling
 4. in C++: https://www.ccoderun.ca/darkmark/
 5. in JavaScript: https://github.com/opencv/cvat
+6. in C++: https://github.com/jveitchmichaelis/deeplabel
 
 
 ## How to use Yolo as DLL and SO libraries

@@ -46,6 +46,7 @@ typedef struct{
 }section;
 
 list *read_cfg(char *filename);
+list *read_cfg_mem(const char* str);
 
 LAYER_TYPE string_to_layer_type(char * type)
 {
@@ -1254,9 +1255,394 @@ void set_train_only_bn(network net)
     }
 }
 
+network parse_network_cfg_mem(char *str)
+{
+    return parse_network_cfg_custom_mem(str, 0, 0);
+}
+
 network parse_network_cfg(char *filename)
 {
     return parse_network_cfg_custom(filename, 0, 0);
+}
+
+network parse_network_cfg_custom_mem(char *str, int batch, int time_steps)
+{
+    list *sections = read_cfg_mem(str);
+    node *n = sections->front;
+    if(!n) error("Config file has no sections");
+    network net = make_network(sections->size - 1);
+    net.gpu_index = gpu_index;
+    size_params params;
+
+    if (batch > 0) params.train = 0;    // allocates memory for Detection only
+    else params.train = 1;              // allocates memory for Detection & Training
+
+    section *s = (section *)n->val;
+    list *options = s->options;
+    if(!is_network(s)) error("First section must be [net] or [network]");
+    parse_net_options(options, &net);
+
+#ifdef GPU
+    printf("net.optimized_memory = %d \n", net.optimized_memory);
+    if (net.optimized_memory >= 2 && params.train) {
+        pre_allocate_pinned_memory((size_t)1024 * 1024 * 1024 * 8);   // pre-allocate 8 GB CPU-RAM for pinned memory
+    }
+#endif  // GPU
+
+    params.h = net.h;
+    params.w = net.w;
+    params.c = net.c;
+    params.inputs = net.inputs;
+    if (batch > 0) net.batch = batch;
+    if (time_steps > 0) net.time_steps = time_steps;
+    if (net.batch < 1) net.batch = 1;
+    if (net.time_steps < 1) net.time_steps = 1;
+    if (net.batch < net.time_steps) net.batch = net.time_steps;
+    params.batch = net.batch;
+    params.time_steps = net.time_steps;
+    params.net = net;
+    printf("mini_batch = %d, batch = %d, time_steps = %d, train = %d \n", net.batch, net.batch * net.subdivisions, net.time_steps, params.train);
+
+    int avg_outputs = 0;
+    int avg_counter = 0;
+    float bflops = 0;
+    size_t workspace_size = 0;
+    size_t max_inputs = 0;
+    size_t max_outputs = 0;
+    int receptive_w = 1, receptive_h = 1;
+    int receptive_w_scale = 1, receptive_h_scale = 1;
+    const int show_receptive_field = option_find_float_quiet(options, "show_receptive_field", 0);
+
+    n = n->next;
+    int count = 0;
+    free_section(s);
+    fprintf(stderr, "   layer   filters  size/strd(dil)      input                output\n");
+    while(n){
+        params.index = count;
+        fprintf(stderr, "%4d ", count);
+        s = (section *)n->val;
+        options = s->options;
+        layer l = { (LAYER_TYPE)0 };
+        LAYER_TYPE lt = string_to_layer_type(s->type);
+        if(lt == CONVOLUTIONAL){
+            l = parse_convolutional(options, params);
+        }else if(lt == LOCAL){
+            l = parse_local(options, params);
+        }else if(lt == ACTIVE){
+            l = parse_activation(options, params);
+        }else if(lt == RNN){
+            l = parse_rnn(options, params);
+        }else if(lt == GRU){
+            l = parse_gru(options, params);
+        }else if(lt == LSTM){
+            l = parse_lstm(options, params);
+        }else if (lt == CONV_LSTM) {
+            l = parse_conv_lstm(options, params);
+        }else if(lt == CRNN){
+            l = parse_crnn(options, params);
+        }else if(lt == CONNECTED){
+            l = parse_connected(options, params);
+        }else if(lt == CROP){
+            l = parse_crop(options, params);
+        }else if(lt == COST){
+            l = parse_cost(options, params);
+            l.keep_delta_gpu = 1;
+        }else if(lt == REGION){
+            l = parse_region(options, params);
+            l.keep_delta_gpu = 1;
+        }else if (lt == YOLO) {
+            l = parse_yolo(options, params);
+            l.keep_delta_gpu = 1;
+        }else if (lt == GAUSSIAN_YOLO) {
+            l = parse_gaussian_yolo(options, params);
+            l.keep_delta_gpu = 1;
+        }else if(lt == DETECTION){
+            l = parse_detection(options, params);
+        }else if(lt == SOFTMAX){
+            l = parse_softmax(options, params);
+            net.hierarchy = l.softmax_tree;
+            l.keep_delta_gpu = 1;
+        }else if (lt == CONTRASTIVE) {
+            l = parse_contrastive(options, params);
+            l.keep_delta_gpu = 1;
+        }else if(lt == NORMALIZATION){
+            l = parse_normalization(options, params);
+        }else if(lt == BATCHNORM){
+            l = parse_batchnorm(options, params);
+        }else if(lt == MAXPOOL){
+            l = parse_maxpool(options, params);
+        }else if (lt == LOCAL_AVGPOOL) {
+            l = parse_local_avgpool(options, params);
+        }else if(lt == REORG){
+            l = parse_reorg(options, params);        }
+        else if (lt == REORG_OLD) {
+            l = parse_reorg_old(options, params);
+        }else if(lt == AVGPOOL){
+            l = parse_avgpool(options, params);
+        }else if(lt == ROUTE){
+            l = parse_route(options, params);
+            int k;
+            for (k = 0; k < l.n; ++k) {
+                net.layers[l.input_layers[k]].use_bin_output = 0;
+                net.layers[l.input_layers[k]].keep_delta_gpu = 1;
+            }
+        }else if (lt == UPSAMPLE) {
+            l = parse_upsample(options, params, net);
+        }else if(lt == SHORTCUT){
+            l = parse_shortcut(options, params, net);
+            net.layers[count - 1].use_bin_output = 0;
+            net.layers[l.index].use_bin_output = 0;
+            net.layers[l.index].keep_delta_gpu = 1;
+        }else if (lt == SCALE_CHANNELS) {
+            l = parse_scale_channels(options, params, net);
+            net.layers[count - 1].use_bin_output = 0;
+            net.layers[l.index].use_bin_output = 0;
+            net.layers[l.index].keep_delta_gpu = 1;
+        }
+        else if (lt == SAM) {
+            l = parse_sam(options, params, net);
+            net.layers[count - 1].use_bin_output = 0;
+            net.layers[l.index].use_bin_output = 0;
+            net.layers[l.index].keep_delta_gpu = 1;
+        }else if(lt == DROPOUT){
+            l = parse_dropout(options, params);
+            l.output = net.layers[count-1].output;
+            l.delta = net.layers[count-1].delta;
+#ifdef GPU
+            l.output_gpu = net.layers[count-1].output_gpu;
+            l.delta_gpu = net.layers[count-1].delta_gpu;
+            l.keep_delta_gpu = 1;
+#endif
+        }
+        else if (lt == EMPTY) {
+            layer empty_layer = {(LAYER_TYPE)0};
+            empty_layer.out_w = params.w;
+            empty_layer.out_h = params.h;
+            empty_layer.out_c = params.c;
+            l = empty_layer;
+            l.output = net.layers[count - 1].output;
+            l.delta = net.layers[count - 1].delta;
+#ifdef GPU
+            l.output_gpu = net.layers[count - 1].output_gpu;
+            l.delta_gpu = net.layers[count - 1].delta_gpu;
+#endif
+        }else{
+            fprintf(stderr, "Type not recognized: %s\n", s->type);
+        }
+
+        // calculate receptive field
+        if(show_receptive_field)
+        {
+            int dilation = max_val_cmp(1, l.dilation);
+            int stride = max_val_cmp(1, l.stride);
+            int size = max_val_cmp(1, l.size);
+
+            if (l.type == UPSAMPLE || (l.type == REORG))
+            {
+
+                l.receptive_w = receptive_w;
+                l.receptive_h = receptive_h;
+                l.receptive_w_scale = receptive_w_scale = receptive_w_scale / stride;
+                l.receptive_h_scale = receptive_h_scale = receptive_h_scale / stride;
+
+            }
+            else {
+                if (l.type == ROUTE) {
+                    receptive_w = receptive_h = receptive_w_scale = receptive_h_scale = 0;
+                    int k;
+                    for (k = 0; k < l.n; ++k) {
+                        layer route_l = net.layers[l.input_layers[k]];
+                        receptive_w = max_val_cmp(receptive_w, route_l.receptive_w);
+                        receptive_h = max_val_cmp(receptive_h, route_l.receptive_h);
+                        receptive_w_scale = max_val_cmp(receptive_w_scale, route_l.receptive_w_scale);
+                        receptive_h_scale = max_val_cmp(receptive_h_scale, route_l.receptive_h_scale);
+                    }
+                }
+                else
+                {
+                    int increase_receptive = size + (dilation - 1) * 2 - 1;// stride;
+                    increase_receptive = max_val_cmp(0, increase_receptive);
+
+                    receptive_w += increase_receptive * receptive_w_scale;
+                    receptive_h += increase_receptive * receptive_h_scale;
+                    receptive_w_scale *= stride;
+                    receptive_h_scale *= stride;
+                }
+
+                l.receptive_w = receptive_w;
+                l.receptive_h = receptive_h;
+                l.receptive_w_scale = receptive_w_scale;
+                l.receptive_h_scale = receptive_h_scale;
+            }
+            //printf(" size = %d, dilation = %d, stride = %d, receptive_w = %d, receptive_w_scale = %d - ", size, dilation, stride, receptive_w, receptive_w_scale);
+
+            int cur_receptive_w = receptive_w;
+            int cur_receptive_h = receptive_h;
+
+            fprintf(stderr, "%4d - receptive field: %d x %d \n", count, cur_receptive_w, cur_receptive_h);
+        }
+
+#ifdef GPU
+        // futher GPU-memory optimization: net.optimized_memory == 2
+        l.optimized_memory = net.optimized_memory;
+        if (net.optimized_memory >= 2 && params.train && l.type != DROPOUT)
+        {
+            if (l.output_gpu) {
+                cuda_free(l.output_gpu);
+                //l.output_gpu = cuda_make_array_pinned(l.output, l.batch*l.outputs); // l.steps
+                l.output_gpu = cuda_make_array_pinned_preallocated(NULL, l.batch*l.outputs); // l.steps
+            }
+            if (l.activation_input_gpu) {
+                cuda_free(l.activation_input_gpu);
+                l.activation_input_gpu = cuda_make_array_pinned_preallocated(NULL, l.batch*l.outputs); // l.steps
+            }
+
+            if (l.x_gpu) {
+                cuda_free(l.x_gpu);
+                l.x_gpu = cuda_make_array_pinned_preallocated(NULL, l.batch*l.outputs); // l.steps
+            }
+
+            // maximum optimization
+            if (net.optimized_memory >= 3 && l.type != DROPOUT) {
+                if (l.delta_gpu) {
+                    cuda_free(l.delta_gpu);
+                    //l.delta_gpu = cuda_make_array_pinned_preallocated(NULL, l.batch*l.outputs); // l.steps
+                    //printf("\n\n PINNED DELTA GPU = %d \n", l.batch*l.outputs);
+                }
+            }
+
+            if (l.type == CONVOLUTIONAL) {
+                set_specified_workspace_limit(&l, net.workspace_size_limit);   // workspace size limit 1 GB
+            }
+        }
+#endif // GPU
+
+        l.clip = option_find_float_quiet(options, "clip", 0);
+        l.dynamic_minibatch = net.dynamic_minibatch;
+        l.onlyforward = option_find_int_quiet(options, "onlyforward", 0);
+        l.dont_update = option_find_int_quiet(options, "dont_update", 0);
+        l.burnin_update = option_find_int_quiet(options, "burnin_update", 0);
+        l.stopbackward = option_find_int_quiet(options, "stopbackward", 0);
+        l.train_only_bn = option_find_int_quiet(options, "train_only_bn", 0);
+        l.dontload = option_find_int_quiet(options, "dontload", 0);
+        l.dontloadscales = option_find_int_quiet(options, "dontloadscales", 0);
+        l.learning_rate_scale = option_find_float_quiet(options, "learning_rate", 1);
+        option_unused(options);
+        net.layers[count] = l;
+        if (l.workspace_size > workspace_size) workspace_size = l.workspace_size;
+        if (l.inputs > max_inputs) max_inputs = l.inputs;
+        if (l.outputs > max_outputs) max_outputs = l.outputs;
+        free_section(s);
+        n = n->next;
+        ++count;
+        if(n){
+            if (l.antialiasing) {
+                params.h = l.input_layer->out_h;
+                params.w = l.input_layer->out_w;
+                params.c = l.input_layer->out_c;
+                params.inputs = l.input_layer->outputs;
+            }
+            else {
+                params.h = l.out_h;
+                params.w = l.out_w;
+                params.c = l.out_c;
+                params.inputs = l.outputs;
+            }
+        }
+        if (l.bflops > 0) bflops += l.bflops;
+
+        if (l.w > 1 && l.h > 1) {
+            avg_outputs += l.outputs;
+            avg_counter++;
+        }
+    }
+    free_list(sections);
+
+#ifdef GPU
+    if (net.optimized_memory && params.train)
+    {
+        int k;
+        for (k = 0; k < net.n; ++k) {
+            layer l = net.layers[k];
+            // delta GPU-memory optimization: net.optimized_memory == 1
+            if (!l.keep_delta_gpu) {
+                const size_t delta_size = l.outputs*l.batch; // l.steps
+                if (net.max_delta_gpu_size < delta_size) {
+                    net.max_delta_gpu_size = delta_size;
+                    if (net.global_delta_gpu) cuda_free(net.global_delta_gpu);
+                    if (net.state_delta_gpu) cuda_free(net.state_delta_gpu);
+                    assert(net.max_delta_gpu_size > 0);
+                    net.global_delta_gpu = (float *)cuda_make_array(NULL, net.max_delta_gpu_size);
+                    net.state_delta_gpu = (float *)cuda_make_array(NULL, net.max_delta_gpu_size);
+                }
+                if (l.delta_gpu) {
+                    if (net.optimized_memory >= 3) {}
+                    else cuda_free(l.delta_gpu);
+                }
+                l.delta_gpu = net.global_delta_gpu;
+            }
+
+            // maximum optimization
+            if (net.optimized_memory >= 3 && l.type != DROPOUT) {
+                if (l.delta_gpu && l.keep_delta_gpu) {
+                    //cuda_free(l.delta_gpu);   // already called above
+                    l.delta_gpu = cuda_make_array_pinned_preallocated(NULL, l.batch*l.outputs); // l.steps
+                    //printf("\n\n PINNED DELTA GPU = %d \n", l.batch*l.outputs);
+                }
+            }
+
+            net.layers[k] = l;
+        }
+    }
+#endif
+
+    set_train_only_bn(net); // set l.train_only_bn for all required layers
+
+    net.outputs = get_network_output_size(net);
+    net.output = get_network_output(net);
+    avg_outputs = avg_outputs / avg_counter;
+    fprintf(stderr, "Total BFLOPS %5.3f \n", bflops);
+    fprintf(stderr, "avg_outputs = %d \n", avg_outputs);
+#ifdef GPU
+    get_cuda_stream();
+    get_cuda_memcpy_stream();
+    if (gpu_index >= 0)
+    {
+        int size = get_network_input_size(net) * net.batch;
+        net.input_state_gpu = cuda_make_array(0, size);
+        if (cudaSuccess == cudaHostAlloc(&net.input_pinned_cpu, size * sizeof(float), cudaHostRegisterMapped)) net.input_pinned_cpu_flag = 1;
+        else {
+            cudaGetLastError(); // reset CUDA-error
+            net.input_pinned_cpu = (float*)xcalloc(size, sizeof(float));
+        }
+
+        // pre-allocate memory for inference on Tensor Cores (fp16)
+        if (net.cudnn_half) {
+            *net.max_input16_size = max_inputs;
+            CHECK_CUDA(cudaMalloc((void **)net.input16_gpu, *net.max_input16_size * sizeof(short))); //sizeof(half)
+            *net.max_output16_size = max_outputs;
+            CHECK_CUDA(cudaMalloc((void **)net.output16_gpu, *net.max_output16_size * sizeof(short))); //sizeof(half)
+        }
+        if (workspace_size) {
+            fprintf(stderr, " Allocate additional workspace_size = %1.2f MB \n", (float)workspace_size/1000000);
+            net.workspace = cuda_make_array(0, workspace_size / sizeof(float) + 1);
+        }
+        else {
+            net.workspace = (float*)xcalloc(1, workspace_size);
+        }
+    }
+#else
+        if (workspace_size) {
+            net.workspace = (float*)xcalloc(1, workspace_size);
+        }
+#endif
+
+    LAYER_TYPE lt = net.layers[net.n - 1].type;
+    if ((net.w % 32 != 0 || net.h % 32 != 0) && (lt == YOLO || lt == REGION || lt == DETECTION)) {
+        printf("\n Warning: width=%d and height=%d in cfg-file must be divisible by 32 for default networks Yolo v1/v2/v3!!! \n\n",
+            net.w, net.h);
+    }
+    return net;
 }
 
 network parse_network_cfg_custom(char *filename, int batch, int time_steps)
@@ -1639,7 +2025,50 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
     return net;
 }
 
+list *read_cfg_mem(const char* str)
+{
+    if(str == NULL) error("string is NULL!");
 
+    int nu = 0;
+    list *sections = make_list();
+    section *current = 0;
+
+    const char * curLine = str;
+    while(curLine)
+    {
+        ++nu;
+        const char * nextLine = strchr(curLine, '\n');
+        int curLineLen = nextLine ? (nextLine-curLine) : strlen(curLine);
+        char * line = (char *) xmalloc(curLineLen+1);
+        memcpy(line, curLine, curLineLen);
+        line[curLineLen] = '\0';  // NUL-terminate!
+        strip(line);
+        switch(line[0])
+        {
+            case '[':
+                current = (section*)xmalloc(sizeof(section));
+                list_insert(sections, current);
+                current->options = make_list();
+                current->type = line;
+                break;
+            case '\0':
+            case '#':
+            case ';':
+                free(line);
+                break;
+            default:
+                if(!read_option(line, current->options)){
+                    fprintf(stderr, "Config file error line %d, could parse: %s\n", nu, line);
+                    free(line);
+                }
+            break;
+        }
+        curLine = nextLine ? (nextLine+1) : NULL;
+   }
+   return sections;
+
+
+}
 
 list *read_cfg(char *filename)
 {
@@ -1883,6 +2312,40 @@ void transpose_matrix(float *a, int rows, int cols)
     free(transpose);
 }
 
+int mread(void* out, int size_of_element, int count, void* data, int* data_index)
+{
+    int total_bytes = count*size_of_element;
+
+    char* p = data;
+    memcpy(out, p + *data_index, total_bytes);
+    *data_index += total_bytes;
+    return total_bytes;
+}
+
+void load_connected_weights_mem(layer l, char* data, int* data_index, int transpose)
+{
+    mread(l.biases, sizeof(float), l.outputs, data, data_index);
+    mread(l.weights, sizeof(float), l.outputs*l.inputs, data, data_index);
+    if(transpose){
+        transpose_matrix(l.weights, l.inputs, l.outputs);
+    }
+    //printf("Biases: %f mean %f variance\n", mean_array(l.biases, l.outputs), variance_array(l.biases, l.outputs));
+    //printf("Weights: %f mean %f variance\n", mean_array(l.weights, l.outputs*l.inputs), variance_array(l.weights, l.outputs*l.inputs));
+    if (l.batch_normalize && (!l.dontloadscales)){
+        mread(l.scales, sizeof(float), l.outputs, data, data_index);
+        mread(l.rolling_mean, sizeof(float), l.outputs, data, data_index);
+        mread(l.rolling_variance, sizeof(float), l.outputs, data, data_index);
+        //printf("Scales: %f mean %f variance\n", mean_array(l.scales, l.outputs), variance_array(l.scales, l.outputs));
+        //printf("rolling_mean: %f mean %f variance\n", mean_array(l.rolling_mean, l.outputs), variance_array(l.rolling_mean, l.outputs));
+        //printf("rolling_variance: %f mean %f variance\n", mean_array(l.rolling_variance, l.outputs), variance_array(l.rolling_variance, l.outputs));
+    }
+#ifdef GPU
+    if(gpu_index >= 0){
+        push_connected_layer(l);
+    }
+#endif
+}
+
 void load_connected_weights(layer l, FILE *fp, int transpose)
 {
     fread(l.biases, sizeof(float), l.outputs, fp);
@@ -1903,6 +2366,19 @@ void load_connected_weights(layer l, FILE *fp, int transpose)
 #ifdef GPU
     if(gpu_index >= 0){
         push_connected_layer(l);
+    }
+#endif
+}
+
+void load_batchnorm_weights_mem(layer l, char* data, int* data_index)
+{
+    mread(l.biases, sizeof(float), l.c, data, data_index);
+    mread(l.scales, sizeof(float), l.c, data, data_index);
+    mread(l.rolling_mean, sizeof(float), l.c, data, data_index);
+    mread(l.rolling_variance, sizeof(float), l.c, data, data_index);
+#ifdef GPU
+    if(gpu_index >= 0){
+        push_batchnorm_layer(l);
     }
 #endif
 }
@@ -1943,6 +2419,35 @@ void load_convolutional_weights_binary(layer l, FILE *fp)
             }
         }
     }
+#ifdef GPU
+    if(gpu_index >= 0){
+        push_convolutional_layer(l);
+    }
+#endif
+}
+
+void load_convolutional_weights_mem(layer l, char* data, int* data_index)
+{
+
+    int num = l.nweights;
+    int read_bytes;
+    read_bytes = mread(l.biases, sizeof(float), l.n, data, data_index);
+    if (read_bytes > 0 && read_bytes < l.n) printf("\n Warning: Unexpected end of wights-file! l.biases - l.index = %d \n", l.index);
+    if (l.batch_normalize && (!l.dontloadscales)){
+        read_bytes = mread(l.scales, sizeof(float), l.n, data, data_index);
+        if (read_bytes > 0 && read_bytes < l.n) printf("\n Warning: Unexpected end of wights-file! l.scales - l.index = %d \n", l.index);
+        read_bytes = mread(l.rolling_mean, sizeof(float), l.n, data, data_index);
+        if (read_bytes > 0 && read_bytes < l.n) printf("\n Warning: Unexpected end of wights-file! l.rolling_mean - l.index = %d \n", l.index);
+        read_bytes = mread(l.rolling_variance, sizeof(float), l.n, data, data_index);
+        if (read_bytes > 0 && read_bytes < l.n) printf("\n Warning: Unexpected end of wights-file! l.rolling_variance - l.index = %d \n", l.index);
+    }
+    read_bytes = mread(l.weights, sizeof(float), num, data, data_index);
+    if (read_bytes > 0 && read_bytes < l.n) printf("\n Warning: Unexpected end of wights-file! l.weights - l.index = %d \n", l.index);
+
+    if (l.flipped) {
+        transpose_matrix(l.weights, (l.c/l.groups)*l.size*l.size, l.n);
+    }
+
 #ifdef GPU
     if(gpu_index >= 0){
         push_convolutional_layer(l);
@@ -2002,6 +2507,19 @@ void load_convolutional_weights(layer l, FILE *fp)
 #endif
 }
 
+void load_shortcut_weights_mem(layer l, char* data, int* data_index)
+{
+    int num = l.nweights;
+    int read_bytes;
+    read_bytes = mread(l.weights, sizeof(float), num, data, data_index);
+    if (read_bytes > 0 && read_bytes < num) printf("\n Warning: Unexpected end of wights-file! l.weights - l.index = %d \n", l.index);
+#ifdef GPU
+    if (gpu_index >= 0) {
+        push_shortcut_layer(l);
+    }
+#endif
+}
+
 void load_shortcut_weights(layer l, FILE *fp)
 {
     int num = l.nweights;
@@ -2015,6 +2533,117 @@ void load_shortcut_weights(layer l, FILE *fp)
         push_shortcut_layer(l);
     }
 #endif
+}
+
+void load_weights_upto_mem(network *net, char *data, int cutoff)
+{
+#ifdef GPU
+    if(net->gpu_index >= 0){
+        cuda_set_device(net->gpu_index);
+    }
+#endif
+    fprintf(stderr, "Loading weights from memory...");
+
+    if(!data) error("Weights data is NULL");
+
+    int major;
+    int minor;
+    int revision;
+    int data_index = 0;
+
+    mread(&major, sizeof(int), 1, data, &data_index);
+    mread(&minor, sizeof(int), 1, data, &data_index);
+    mread(&revision, sizeof(int), 1, data, &data_index);
+    if ((major * 10 + minor) >= 2) {
+        printf("\n seen 64");
+        uint64_t iseen = 0;
+        mread(&iseen, sizeof(uint64_t), 1, data, &data_index);
+        *net->seen = iseen;
+    }
+    else {
+        printf("\n seen 32");
+        uint32_t iseen = 0;
+        mread(&iseen, sizeof(uint32_t), 1, data, &data_index);
+        *net->seen = iseen;
+    }
+    *net->cur_iteration = get_current_batch(*net);
+    printf(", trained: %.0f K-images (%.0f Kilo-batches_64) \n", (float)(*net->seen / 1000), (float)(*net->seen / 64000));
+    int transpose = (major > 1000) || (minor > 1000);
+
+    int i;
+    for(i = 0; i < net->n && i < cutoff; ++i){
+        layer l = net->layers[i];
+        if (l.dontload) continue;
+        if(l.type == CONVOLUTIONAL && l.share_layer == NULL){
+            load_convolutional_weights_mem(l, data, &data_index);
+        }
+        if (l.type == SHORTCUT && l.nweights > 0) {
+            load_shortcut_weights_mem(l, data, &data_index);
+        }
+        if(l.type == CONNECTED){
+            load_connected_weights_mem(l, data, &data_index, transpose);
+        }
+        if(l.type == BATCHNORM){
+            load_batchnorm_weights_mem(l, data, &data_index);
+        }
+        if(l.type == CRNN){
+            load_convolutional_weights_mem(*(l.input_layer), data, &data_index);
+            load_convolutional_weights_mem(*(l.self_layer), data, &data_index);
+            load_convolutional_weights_mem(*(l.output_layer), data, &data_index);
+        }
+        if(l.type == RNN){
+            load_connected_weights_mem(*(l.input_layer), data, &data_index, transpose);
+            load_connected_weights_mem(*(l.self_layer), data, &data_index, transpose);
+            load_connected_weights_mem(*(l.output_layer), data, &data_index, transpose);
+        }
+        if(l.type == GRU){
+            load_connected_weights_mem(*(l.input_z_layer), data, &data_index, transpose);
+            load_connected_weights_mem(*(l.input_r_layer), data, &data_index, transpose);
+            load_connected_weights_mem(*(l.input_h_layer), data, &data_index, transpose);
+            load_connected_weights_mem(*(l.state_z_layer), data, &data_index, transpose);
+            load_connected_weights_mem(*(l.state_r_layer), data, &data_index, transpose);
+            load_connected_weights_mem(*(l.state_h_layer), data, &data_index, transpose);
+        }
+        if(l.type == LSTM){
+            load_connected_weights_mem(*(l.wf), data, &data_index, transpose);
+            load_connected_weights_mem(*(l.wi), data, &data_index, transpose);
+            load_connected_weights_mem(*(l.wg), data, &data_index, transpose);
+            load_connected_weights_mem(*(l.wo), data, &data_index, transpose);
+            load_connected_weights_mem(*(l.uf), data, &data_index, transpose);
+            load_connected_weights_mem(*(l.ui), data, &data_index, transpose);
+            load_connected_weights_mem(*(l.ug), data, &data_index, transpose);
+            load_connected_weights_mem(*(l.uo), data, &data_index, transpose);
+        }
+        if (l.type == CONV_LSTM) {
+            if (l.peephole) {
+                load_convolutional_weights_mem(*(l.vf), data, &data_index);
+                load_convolutional_weights_mem(*(l.vi), data, &data_index);
+                load_convolutional_weights_mem(*(l.vo), data, &data_index);
+            }
+            load_convolutional_weights_mem(*(l.wf), data, &data_index);
+            if (!l.bottleneck) {
+                load_convolutional_weights_mem(*(l.wi), data, &data_index);
+                load_convolutional_weights_mem(*(l.wg), data, &data_index);
+                load_convolutional_weights_mem(*(l.wo), data, &data_index);
+            }
+            load_convolutional_weights_mem(*(l.uf), data, &data_index);
+            load_convolutional_weights_mem(*(l.ui), data, &data_index);
+            load_convolutional_weights_mem(*(l.ug), data, &data_index);
+            load_convolutional_weights_mem(*(l.uo), data, &data_index);
+        }
+        if(l.type == LOCAL){
+            int locations = l.out_w*l.out_h;
+            int size = l.size*l.size*l.c*l.n*locations;
+            mread(l.biases, sizeof(float), l.outputs, data, &data_index);
+            mread(l.weights, sizeof(float), size, data, &data_index);
+#ifdef GPU
+            if(gpu_index >= 0){
+                push_local_layer(l);
+            }
+#endif
+        }
+    }
+    fprintf(stderr, "Done! Loaded %d layers from weights-file \n", i);
 }
 
 void load_weights_upto(network *net, char *filename, int cutoff)
@@ -2129,9 +2758,32 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     fclose(fp);
 }
 
+void load_weights_mem(network *net, char *data)
+{
+    load_weights_upto_mem(net, data, net->n);
+}
+
 void load_weights(network *net, char *filename)
 {
     load_weights_upto(net, filename, net->n);
+}
+
+// load network & force - set batch size
+network *load_network_custom_mem(char *cfg_str, char *weights_data, int clear, int batch)
+{
+    printf(" Trying to load cfg and weights from memory: clear = %d \n", clear);
+    network* net = (network*)xcalloc(1, sizeof(network));
+    *net = parse_network_cfg_custom_mem(cfg_str, batch, 1);
+    if (weights_data) {
+        printf(" Trying to load weights from memory\n");
+        load_weights_mem(net, weights_data);
+    }
+    fuse_conv_batchnorm(*net);
+    if (clear) {
+        (*net->seen) = 0;
+        (*net->cur_iteration) = 0;
+    }
+    return net;
 }
 
 // load network & force - set batch size

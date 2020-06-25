@@ -2316,7 +2316,7 @@ int mread(void* out, int size_of_element, int count, void* data, int* data_index
 {
     int total_bytes = count*size_of_element;
 
-    char* p = data;
+    char* p = (char* ) data;
     memcpy(out, p + *data_index, total_bytes);
     *data_index += total_bytes;
     return total_bytes;

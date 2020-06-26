@@ -1956,7 +1956,7 @@ void transpose_matrix(float *a, int rows, int cols)
     free(transpose);
 }
 
-int mread(void* out, int size_of_element, int count, void* data, int data_size, int* data_index)
+int mread(void* out, int size_of_element, int count, const void* data, int data_size, int* data_index)
 {
     int total_bytes = count*size_of_element;
 
@@ -1964,13 +1964,13 @@ int mread(void* out, int size_of_element, int count, void* data, int data_size, 
     {
         total_bytes = data_size - *data_index;
     }
-    char* p = (char* ) data;
+    const char* p = (const char* ) data;
     memcpy(out, p + *data_index, total_bytes);
     *data_index += total_bytes;
     return total_bytes;
 }
 
-void load_connected_weights(layer l, char* data, int data_size, int* data_index, int transpose)
+void load_connected_weights(layer l, const char* data, int data_size, int* data_index, int transpose)
 {
     mread(l.biases, sizeof(float), l.outputs, data, data_size, data_index);
     mread(l.weights, sizeof(float), l.outputs*l.inputs, data, data_size, data_index);
@@ -1994,7 +1994,7 @@ void load_connected_weights(layer l, char* data, int data_size, int* data_index,
 #endif
 }
 
-void load_batchnorm_weights(layer l, char* data, int data_size, int* data_index)
+void load_batchnorm_weights(layer l, const char* data, int data_size, int* data_index)
 {
     mread(l.biases, sizeof(float), l.c, data, data_size, data_index);
     mread(l.scales, sizeof(float), l.c, data, data_size, data_index);
@@ -2007,7 +2007,7 @@ void load_batchnorm_weights(layer l, char* data, int data_size, int* data_index)
 #endif
 }
 
-void load_convolutional_weights_binary(layer l, char* data, int data_size, int* data_index)
+void load_convolutional_weights_binary(layer l, const char* data, int data_size, int* data_index)
 {
     mread(l.biases, sizeof(float), l.n, data, data_size, data_index);
     if (l.batch_normalize && (!l.dontloadscales)){
@@ -2037,7 +2037,7 @@ void load_convolutional_weights_binary(layer l, char* data, int data_size, int* 
 #endif
 }
 
-void load_convolutional_weights(layer l, char* data, int data_size, int* data_index)
+void load_convolutional_weights(layer l, const char* data, int data_size, int* data_index)
 {
 
     int num = l.nweights;
@@ -2066,7 +2066,7 @@ void load_convolutional_weights(layer l, char* data, int data_size, int* data_in
 #endif
 }
 
-void load_shortcut_weights(layer l, char* data, int data_size, int* data_index)
+void load_shortcut_weights(layer l, const char* data, int data_size, int* data_index)
 {
     int num = l.nweights;
     int read_bytes;
@@ -2236,7 +2236,7 @@ void load_weights(network *net, char *filename)
 }
 
 // load network & force - set batch size
-network *load_network_custom_mem(const char *cfg_str, char *weights_data, int data_size, int clear, int batch)
+network *load_network_custom_mem(const char *cfg_str, const char *weights_data, int data_size, int clear, int batch)
 {
     network* net = (network*)xcalloc(1, sizeof(network));
     *net = parse_network_cfg_custom_mem(cfg_str, batch, 1);

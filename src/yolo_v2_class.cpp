@@ -177,8 +177,7 @@ LIB_API Detector::Detector(std::string cfg_filename, std::string weight_filename
 }
 
 // Detector initialized by using cfg and weights in an array instead of file
-// Dummy argument inserted to avoid using this constructor by mistake
-LIB_API Detector::Detector(char* cfg_str, char* weight_data, int gpu_id, int dummy) : cur_gpu_id(gpu_id)
+LIB_API Detector::Detector(const std::string& cfg_string, const std::vector<char>& weights, int gpu_id) : cur_gpu_id(gpu_id)
 {
     wait_stream = 0;
 #ifdef GPU
@@ -198,10 +197,10 @@ LIB_API Detector::Detector(char* cfg_str, char* weight_data, int gpu_id, int dum
     net.gpu_index = cur_gpu_id;
     //gpu_index = i;
 
-
-    net = parse_network_cfg_custom_mem(cfg_str, 1, 1);
-    if (weight_data) {
-        load_weights_mem(&net, weight_data);
+    net = parse_network_cfg_custom_mem( cfg_string.c_str(), 1, 1);
+    if(weights.size() > 0)
+    {
+        load_weights_mem(&net, weights.data(), weights.size());
     }
     set_batch_network(&net, 1);
     net.gpu_index = cur_gpu_id;

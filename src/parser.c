@@ -2081,7 +2081,7 @@ void load_shortcut_weights(layer l, char* data, int data_size, int* data_index)
 #endif
 }
 
-void load_weights_upto_mem(network *net, char *data, int data_size, int cutoff)
+void load_weights_upto_mem(network *net, const char *data, int data_size, int cutoff)
 {
 #ifdef GPU
     if(net->gpu_index >= 0){
@@ -2225,7 +2225,7 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     free(data);
 }
 
-void load_weights_mem(network *net, char *data, int data_size)
+void load_weights_mem(network *net, const char *data, int data_size)
 {
     load_weights_upto_mem(net, data, data_size, net->n);
 }

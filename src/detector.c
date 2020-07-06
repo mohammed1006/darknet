@@ -1259,6 +1259,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
                 //delta_recall=last_recall-0;
                 avg_precision += last_recall * last_precision;
             }
+            printf("class_id = %d, point = %d, cur_recall = %.4f, cur_precision = %.4f \n", i, point, last_recall, last_precision);
         }
         // MSCOCO - 101 Recall-points, PascalVOC - 11 Recall-points
         else

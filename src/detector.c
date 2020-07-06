@@ -1256,8 +1256,8 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
             //add remaining area of PR curve when recall isn't 0 at rank1
             if(pr[i][0].recall!=0)
             {
-                delta_recall=last_recall;//last_recall-0;
-                avg_precision += delta_recall * last_precision;
+                //delta_recall=last_recall-0;
+                avg_precision += last_recall * last_precision;
             }
         }
         // MSCOCO - 101 Recall-points, PascalVOC - 11 Recall-points

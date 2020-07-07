@@ -240,7 +240,7 @@ void show_console_result(std::vector<bbox_t> const result_vec, std::vector<std::
     }
 }
 
-void show_file_result(std::vector<bbox_t> const result_vec, std::vector<std::string> const obj_names, int frame_id = -1, ofstream &myfile) {
+void show_file_result(std::vector<bbox_t> const result_vec, std::vector<std::string> const obj_names, int frame_id, std::ofstream &myfile) {
     if (frame_id >= 0) myfile << "Frame: " << frame_id << std::endl;
     for (auto &i : result_vec) {
         if(obj_names[i.obj_id] == "person")
@@ -325,7 +325,7 @@ int main(int argc, char *argv[])
     float const thresh = (argc > 5) ? std::stof(argv[5]) : 0.2;
 
 
-    ofstream outFile;
+    std::ofstream outFile;
     if(argc > 6)
     {
         outFile.open (argv[6]);

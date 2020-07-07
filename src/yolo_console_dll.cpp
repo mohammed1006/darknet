@@ -180,7 +180,6 @@ std::vector<bbox_t> get_3d_coordinates(std::vector<bbox_t> bbox_vect, cv::Mat xy
 void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std::string> obj_names,
     int current_det_fps = -1, int current_cap_fps = -1)
 {
-    std::cout << "TEST 03" << std::endl;
     int const colors[6][3] = { { 1,0,1 },{ 0,0,1 },{ 0,1,1 },{ 0,1,0 },{ 1,1,0 },{ 1,0,0 } };
 
     for (auto &i : result_vec) {
@@ -222,9 +221,17 @@ void show_console_result(std::vector<bbox_t> const result_vec, std::vector<std::
     if (frame_id >= 0) std::cout << " Frame: " << frame_id << std::endl;
     for (auto &i : result_vec) {
         if (obj_names.size() > i.obj_id) std::cout << obj_names[i.obj_id] << " - ";
+            if (!std::isnan(i.z_3d)) {
+        std::cout << "obj_id = " << i.obj_id << ",  x = " << i.x_3d << ", y = " << i.y_3d << ", z = " << i.z_3d
+            << ", w = " << i.w << ", h = " << i.h
+            << std::setprecision(3) << ", prob = " << i.prob << std::endl;
+            }
+else
+{
         std::cout << "obj_id = " << i.obj_id << ",  x = " << i.x << ", y = " << i.y
             << ", w = " << i.w << ", h = " << i.h
             << std::setprecision(3) << ", prob = " << i.prob << std::endl;
+}
     }
 }
 
@@ -272,9 +279,6 @@ public:
 
 int main(int argc, char *argv[])
 {
-    std::cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" << std::endl;
-
-
 
     std::string  names_file = "data/coco.names";
     std::string  cfg_file = "cfg/yolov3.cfg";
@@ -287,9 +291,14 @@ int main(int argc, char *argv[])
         weights_file = argv[3];
         filename = argv[4];
     }
+
+
     else if (argc > 1) filename = argv[1];
 
     float const thresh = (argc > 5) ? std::stof(argv[5]) : 0.2;
+
+
+std::cout << names_file << " "  << cfg_file << " "  << weights_file << " "  << filename << " "  << thresh  << std::endl;
 
     Detector detector(cfg_file, weights_file);
 
@@ -388,9 +397,9 @@ int main(int argc, char *argv[])
                 cv::VideoWriter output_video;
                 if (save_output_videofile)
 #ifdef CV_VERSION_EPOCH // OpenCV 2.x
-                    output_video.open(out_videofile, CV_FOURCC('D', 'I', 'V', 'X'), std::max(5, video_fps), frame_size, true);
+                    output_video.open(out_videofile, CV_FOURCC('D', 'I', 'V', 'X'), std::max(35, video_fps), frame_size, true);
 #else
-                    output_video.open(out_videofile, cv::VideoWriter::fourcc('D', 'I', 'V', 'X'), std::max(5, video_fps), frame_size, true);
+                    output_video.open(out_videofile, cv::VideoWriter::fourcc('D', 'I', 'V', 'X'), std::max(35, video_fps), frame_size, true);
 #endif
 
                 struct detection_data_t {
@@ -452,8 +461,6 @@ int main(int argc, char *argv[])
                     } while (!detection_data.exit_flag);
                     std::cout << " t_cap exit \n";
                 });
-
-                std::cout << "TEST 01" << std::endl;
 
 
                 // pre-processing video frame (resize, convertion)
@@ -565,17 +572,23 @@ int main(int argc, char *argv[])
 
                         //small_preview.set(draw_frame, result_vec);
                         //large_preview.set(draw_frame, result_vec);
-                        draw_boxes(draw_frame, result_vec, obj_names, current_fps_det, current_fps_cap);
-                        std::cout << "TEST 02" << std::endl;
-                        //show_console_result(result_vec, obj_names, detection_data.frame_id);
+                        
+
+			draw_boxes(draw_frame, result_vec, obj_names, current_fps_det, current_fps_cap);
+                        //std::cout << "TEST 02" << std::endl;
+                        show_console_result(result_vec, obj_names, detection_data.frame_id);
                         //large_preview.draw(draw_frame);
                         //small_preview.draw(draw_frame, true);
+
+if(detection_data.frame_id % 10 == 0)
+{
 
                         detection_data.result_vec = result_vec;
                         detection_data.draw_frame = draw_frame;
                         draw2show.send(detection_data);
-                        if (send_network) draw2net.send(detection_data);
-                        if (output_video.isOpened()) draw2write.send(detection_data);
+}
+                        //if (send_network) draw2net.send(detection_data);
+                        //if (output_video.isOpened()) draw2write.send(detection_data);
                     } while (!detection_data.exit_flag);
                     std::cout << " t_draw exit \n";
                 });

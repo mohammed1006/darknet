@@ -180,6 +180,7 @@ std::vector<bbox_t> get_3d_coordinates(std::vector<bbox_t> bbox_vect, cv::Mat xy
 void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std::string> obj_names,
     int current_det_fps = -1, int current_cap_fps = -1)
 {
+    std::cout << "TEST 03" << std::endl;
     int const colors[6][3] = { { 1,0,1 },{ 0,0,1 },{ 0,1,1 },{ 0,1,0 },{ 1,1,0 },{ 1,0,0 } };
 
     for (auto &i : result_vec) {
@@ -387,9 +388,9 @@ int main(int argc, char *argv[])
                 cv::VideoWriter output_video;
                 if (save_output_videofile)
 #ifdef CV_VERSION_EPOCH // OpenCV 2.x
-                    output_video.open(out_videofile, CV_FOURCC('D', 'I', 'V', 'X'), std::max(35, video_fps), frame_size, true);
+                    output_video.open(out_videofile, CV_FOURCC('D', 'I', 'V', 'X'), std::max(5, video_fps), frame_size, true);
 #else
-                    output_video.open(out_videofile, cv::VideoWriter::fourcc('D', 'I', 'V', 'X'), std::max(35, video_fps), frame_size, true);
+                    output_video.open(out_videofile, cv::VideoWriter::fourcc('D', 'I', 'V', 'X'), std::max(5, video_fps), frame_size, true);
 #endif
 
                 struct detection_data_t {
@@ -451,6 +452,8 @@ int main(int argc, char *argv[])
                     } while (!detection_data.exit_flag);
                     std::cout << " t_cap exit \n";
                 });
+
+                std::cout << "TEST 01" << std::endl;
 
 
                 // pre-processing video frame (resize, convertion)
@@ -563,6 +566,7 @@ int main(int argc, char *argv[])
                         //small_preview.set(draw_frame, result_vec);
                         //large_preview.set(draw_frame, result_vec);
                         draw_boxes(draw_frame, result_vec, obj_names, current_fps_det, current_fps_cap);
+                        std::cout << "TEST 02" << std::endl;
                         //show_console_result(result_vec, obj_names, detection_data.frame_id);
                         //large_preview.draw(draw_frame);
                         //small_preview.draw(draw_frame, true);

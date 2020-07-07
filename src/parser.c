@@ -487,6 +487,11 @@ layer parse_yolo(list *options, size_params params)
     l.iou_thresh = option_find_float_quiet(options, "iou_thresh", 1); // recommended to use iou_thresh=0.213 in [yolo]
     l.random = option_find_float_quiet(options, "random", 0);
 
+    l.track_history_size = option_find_int_quiet(options, "track_history_size", 5);
+    l.sim_thresh = option_find_int_quiet(options, "sim_thresh", 0.8);
+    l.dets_for_track = option_find_int_quiet(options, "dets_for_track", 1);
+    l.dets_for_show = option_find_int_quiet(options, "dets_for_show", 1);
+    l.track_ciou_norm = option_find_float_quiet(options, "track_ciou_norm", 0.01);
     int embedding_layer_id = option_find_int_quiet(options, "embedding_layer", 999999);
     if (embedding_layer_id < 0) embedding_layer_id = params.index + embedding_layer_id;
     if (embedding_layer_id != 999999) {

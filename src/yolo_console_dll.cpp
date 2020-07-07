@@ -271,6 +271,10 @@ public:
 
 int main(int argc, char *argv[])
 {
+    std::cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" << std::endl;
+
+
+
     std::string  names_file = "data/coco.names";
     std::string  cfg_file = "cfg/yolov3.cfg";
     std::string  weights_file = "yolov3.weights";
@@ -352,7 +356,7 @@ int main(int argc, char *argv[])
                 init_params.sdk_gpu_id = detector.cur_gpu_id;
 
                 if (filename == "zed_camera" || file_ext == "svo") {
-                    std::cout << "ZED 3D Camera " << zed.open(init_params) << std::endl;
+                    std::cout << "ZED 3D Camera TEST !!! " << zed.open(init_params) << std::endl;
                     if (!zed.isOpened()) {
                         std::cout << " Error: ZED Camera should be connected to USB 3.0. And ZED_SDK should be installed. \n";
                         getchar();

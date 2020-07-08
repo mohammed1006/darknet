@@ -22,6 +22,11 @@
 
 #include "yolo_v2_class.hpp"    // imported functions from DLL
 
+//TMP
+//#define OPENCV
+//#define ZED_STEREO
+
+
 #ifdef OPENCV
 #ifdef ZED_STEREO
 #include <sl/Camera.hpp>
@@ -103,21 +108,21 @@ std::vector<bbox_t> get_3d_coordinates(std::vector<bbox_t> bbox_vect, cv::Mat xy
 cv::Mat slMat2cvMat(sl::Mat &input) {
     int cv_type = -1; // Mapping between MAT_TYPE and CV_TYPE
     if(input.getDataType() ==
-#ifdef ZED_STEREO_2_COMPAT_MODE
-        sl::MAT_TYPE_32F_C4
-#else
-        sl::MAT_TYPE::F32_C4
-#endif
-        ) {
+        #ifdef ZED_STEREO_2_COMPAT_MODE
+            sl::MAT_TYPE_32F_C4
+        #else
+            sl::MAT_TYPE::F32_C4
+        #endif
+            ) {
         cv_type = CV_32FC4;
     } else cv_type = CV_8UC4; // sl::Mat used are either RGBA images or XYZ (4C) point clouds
     return cv::Mat(input.getHeight(), input.getWidth(), cv_type, input.getPtr<sl::uchar1>(
-#ifdef ZED_STEREO_2_COMPAT_MODE
-        sl::MEM::MEM_CPU
-#else
-        sl::MEM::CPU
-#endif
-        ));
+                   #ifdef ZED_STEREO_2_COMPAT_MODE
+                       sl::MEM::MEM_CPU
+                   #else
+                       sl::MEM::CPU
+                   #endif
+                       ));
 }
 
 cv::Mat zed_capture_rgb(sl::Camera &zed) {
@@ -131,12 +136,12 @@ cv::Mat zed_capture_rgb(sl::Camera &zed) {
 cv::Mat zed_capture_3d(sl::Camera &zed) {
     sl::Mat cur_cloud;
     zed.retrieveMeasure(cur_cloud,
-#ifdef ZED_STEREO_2_COMPAT_MODE
-        sl::MEASURE_XYZ
-#else
-        sl::MEASURE::XYZ
-#endif
-        );
+                    #ifdef ZED_STEREO_2_COMPAT_MODE
+                        sl::MEASURE_XYZ
+                    #else
+                        sl::MEASURE::XYZ
+                    #endif
+                        );
     return slMat2cvMat(cur_cloud).clone();
 }
 
@@ -178,7 +183,7 @@ std::vector<bbox_t> get_3d_coordinates(std::vector<bbox_t> bbox_vect, cv::Mat xy
 
 
 void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std::string> obj_names,
-    int current_det_fps = -1, int current_cap_fps = -1)
+                int current_det_fps = -1, int current_cap_fps = -1)
 {
     int const colors[6][3] = { { 1,0,1 },{ 0,0,1 },{ 0,1,1 },{ 0,1,0 },{ 1,1,0 },{ 1,0,0 } };
 
@@ -203,8 +208,8 @@ void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std
             }
 
             cv::rectangle(mat_img, cv::Point2f(std::max((int)i.x - 1, 0), std::max((int)i.y - 35, 0)),
-                cv::Point2f(std::min((int)i.x + max_width, mat_img.cols - 1), std::min((int)i.y, mat_img.rows - 1)),
-                color, CV_FILLED, 8, 0);
+                          cv::Point2f(std::min((int)i.x + max_width, mat_img.cols - 1), std::min((int)i.y, mat_img.rows - 1)),
+                          color, CV_FILLED, 8, 0);
             putText(mat_img, obj_name, cv::Point2f(i.x, i.y - 16), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.2, cv::Scalar(0, 0, 0), 2);
             if(!coords_3d.empty()) putText(mat_img, coords_3d, cv::Point2f(i.x, i.y-1), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(0, 0, 0), 1);
         }
@@ -221,17 +226,38 @@ void show_console_result(std::vector<bbox_t> const result_vec, std::vector<std::
     if (frame_id >= 0) std::cout << " Frame: " << frame_id << std::endl;
     for (auto &i : result_vec) {
         if (obj_names.size() > i.obj_id) std::cout << obj_names[i.obj_id] << " - ";
-            if (!std::isnan(i.z_3d)) {
-        std::cout << "obj_id = " << i.obj_id << ",  x = " << i.x_3d << ", y = " << i.y_3d << ", z = " << i.z_3d
-            << ", w = " << i.w << ", h = " << i.h
-            << std::setprecision(3) << ", prob = " << i.prob << std::endl;
-            }
-else
-{
-        std::cout << "obj_id = " << i.obj_id << ",  x = " << i.x << ", y = " << i.y
-            << ", w = " << i.w << ", h = " << i.h
-            << std::setprecision(3) << ", prob = " << i.prob << std::endl;
+        if (!std::isnan(i.z_3d)) {
+            std::cout << "obj_id = " << i.obj_id << ",  x = " << i.x_3d << ", y = " << i.y_3d << ", z = " << i.z_3d
+                      << ", w = " << i.w << ", h = " << i.h
+                      << std::setprecision(3) << ", prob = " << i.prob << std::endl;
+        }
+        else
+        {
+            std::cout << "obj_id = " << i.obj_id << ",  x = " << i.x << ", y = " << i.y
+                      << ", w = " << i.w << ", h = " << i.h
+                      << std::setprecision(3) << ", prob = " << i.prob << std::endl;
+        }
+    }
 }
+
+void show_file_result(std::vector<bbox_t> const result_vec, std::vector<std::string> const obj_names, int frame_id = -1, ofstream &myfile) {
+    if (frame_id >= 0) myfile << "Frame: " << frame_id << std::endl;
+    for (auto &i : result_vec) {
+        if(obj_names[i.obj_id] == "person")
+        {
+            if (obj_names.size() > i.obj_id) myfile << obj_names[i.obj_id] << " - ";
+            if (!std::isnan(i.z_3d)) {
+                myfile << "obj_id = " << i.obj_id << ",  x = " << i.x_3d << ", y = " << i.y_3d << ", z = " << i.z_3d
+                       << ", w = " << i.w << ", h = " << i.h
+                       << std::setprecision(3) << ", prob = " << i.prob << std::endl;
+            }
+            else
+            {
+                myfile << "obj_id = " << i.obj_id << ",  x = " << i.x << ", y = " << i.y
+                       << ", w = " << i.w << ", h = " << i.h
+                       << std::setprecision(3) << ", prob = " << i.prob << std::endl;
+            }
+        }
     }
 }
 
@@ -293,17 +319,25 @@ int main(int argc, char *argv[])
     }
 
 
+
     else if (argc > 1) filename = argv[1];
 
     float const thresh = (argc > 5) ? std::stof(argv[5]) : 0.2;
 
 
-std::cout << names_file << " "  << cfg_file << " "  << weights_file << " "  << filename << " "  << thresh  << std::endl;
+    ofstream outFile;
+    if(argc > 6)
+    {
+        outFile.open (argv[6]);
+    }
+
+
+    std::cout << names_file << " "  << cfg_file << " "  << weights_file << " "  << filename << " "  << thresh  << std::endl;
 
     Detector detector(cfg_file, weights_file);
 
     auto obj_names = objects_names_from_file(names_file);
-    std::string out_videofile = "result.avi";
+    std::string out_videofile = "/tmp/result.avi";
     bool const save_output_videofile = false;   // true - for history
     bool const send_network = false;        // true - for remote detection
     bool const use_kalman_filter = false;   // true - for stationary camera
@@ -330,8 +364,8 @@ std::cout << names_file << " "  << cfg_file << " "  << weights_file << " "  << f
             std::string const file_ext = filename.substr(filename.find_last_of(".") + 1);
             std::string const protocol = filename.substr(0, 7);
             if (file_ext == "avi" || file_ext == "mp4" || file_ext == "mjpg" || file_ext == "mov" ||     // video file
-                protocol == "rtmp://" || protocol == "rtsp://" || protocol == "http://" || protocol == "https:/" ||    // video network stream
-                filename == "zed_camera" || file_ext == "svo" || filename == "web_camera")   // ZED stereo camera
+                    protocol == "rtmp://" || protocol == "rtsp://" || protocol == "http://" || protocol == "https:/" ||    // video network stream
+                    filename == "zed_camera" || file_ext == "svo" || filename == "web_camera")   // ZED stereo camera
 
             {
                 if (protocol == "rtsp://" || protocol == "http://" || protocol == "https:/" || filename == "zed_camera" || filename == "web_camera")
@@ -350,18 +384,18 @@ std::cout << names_file << " "  << cfg_file << " "  << weights_file << " "  << f
 #ifdef ZED_STEREO
                 sl::InitParameters init_params;
                 init_params.depth_minimum_distance = 0.5;
-    #ifdef ZED_STEREO_2_COMPAT_MODE
+#ifdef ZED_STEREO_2_COMPAT_MODE
                 init_params.depth_mode = sl::DEPTH_MODE_ULTRA;
                 init_params.camera_resolution = sl::RESOLUTION_HD720;// sl::RESOLUTION_HD1080, sl::RESOLUTION_HD720
                 init_params.coordinate_units = sl::UNIT_METER;
                 init_params.camera_buffer_count_linux = 2;
                 if (file_ext == "svo") init_params.svo_input_filename.set(filename.c_str());
-    #else
+#else
                 init_params.depth_mode = sl::DEPTH_MODE::ULTRA;
                 init_params.camera_resolution = sl::RESOLUTION::HD720;// sl::RESOLUTION::HD1080, sl::RESOLUTION::HD720
                 init_params.coordinate_units = sl::UNIT::METER;
                 if (file_ext == "svo") init_params.input.setFromSVOFile(filename.c_str());
-    #endif
+#endif
                 //init_params.sdk_cuda_ctx = (CUcontext)detector.get_cuda_context();
                 init_params.sdk_gpu_id = detector.cur_gpu_id;
 
@@ -417,7 +451,7 @@ std::cout << names_file << " "  << cfg_file << " "  << weights_file << " "  << f
 
                 const bool sync = detection_sync; // sync data exchange
                 send_one_replaceable_object_t<detection_data_t> cap2prepare(sync), cap2draw(sync),
-                    prepare2detect(sync), detect2draw(sync), draw2show(sync), draw2write(sync), draw2net(sync);
+                        prepare2detect(sync), detect2draw(sync), draw2show(sync), draw2write(sync), draw2net(sync);
 
                 std::thread t_cap, t_prepare, t_detect, t_post, t_draw, t_write, t_network;
 
@@ -432,12 +466,12 @@ std::cout << names_file << " "  << cfg_file << " "  << weights_file << " "  << f
 #ifdef ZED_STEREO
                         if (use_zed_camera) {
                             while (zed.grab() !=
-        #ifdef ZED_STEREO_2_COMPAT_MODE
-                                sl::SUCCESS
-        #else
-                                sl::ERROR_CODE::SUCCESS
-        #endif
-                                ) std::this_thread::sleep_for(std::chrono::milliseconds(2));
+       #ifdef ZED_STEREO_2_COMPAT_MODE
+                                   sl::SUCCESS
+       #else
+                                   sl::ERROR_CODE::SUCCESS
+       #endif
+                                   ) std::this_thread::sleep_for(std::chrono::milliseconds(2));
                             detection_data.cap_frame = zed_capture_rgb(zed);
                             detection_data.zed_cloud = zed_capture_3d(zed);
                         }
@@ -574,21 +608,24 @@ std::cout << names_file << " "  << cfg_file << " "  << weights_file << " "  << f
                         //large_preview.set(draw_frame, result_vec);
                         
 
-			draw_boxes(draw_frame, result_vec, obj_names, current_fps_det, current_fps_cap);
-                        //std::cout << "TEST 02" << std::endl;
+                        draw_boxes(draw_frame, result_vec, obj_names, current_fps_det, current_fps_cap);
                         show_console_result(result_vec, obj_names, detection_data.frame_id);
+
+                        if(argc > 6)
+                        {
+                            show_file_result(result_vec, obj_names, detection_data.frame_id, outFile);
+                        }
                         //large_preview.draw(draw_frame);
                         //small_preview.draw(draw_frame, true);
 
-if(detection_data.frame_id % 10 == 0)
-{
-
-                        detection_data.result_vec = result_vec;
-                        detection_data.draw_frame = draw_frame;
-                        draw2show.send(detection_data);
-}
-                        //if (send_network) draw2net.send(detection_data);
-                        //if (output_video.isOpened()) draw2write.send(detection_data);
+                        if(detection_data.frame_id % 10 == 0)
+                        {
+                            detection_data.result_vec = result_vec;
+                            detection_data.draw_frame = draw_frame;
+                            draw2show.send(detection_data);
+                        }
+                        if (send_network) draw2net.send(detection_data);
+                        if (output_video.isOpened()) draw2write.send(detection_data);
                     } while (!detection_data.exit_flag);
                     std::cout << " t_draw exit \n";
                 });
@@ -716,6 +753,9 @@ if(detection_data.frame_id % 10 == 0)
         catch (...) { std::cerr << "unknown exception \n"; getchar(); }
         filename.clear();
     }
-
+    if(argc > 6)
+    {
+        outFile.close();
+    }
     return 0;
 }

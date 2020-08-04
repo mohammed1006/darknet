@@ -4,6 +4,10 @@
 #include "image.h"
 #include "matrix.h"
 
+#ifdef REALSENSE2
+#include "rdv_GetRealsense.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -591,28 +591,49 @@ extern "C" cap_cv* get_capture_video_stream(const char *path) {
 
 extern "C" cap_cv* get_capture_webcam(int index)
 {
-	cv::VideoCapture* cap = NULL;
-#ifdef REALSENSE2_CAMERA
+#ifdef REALSENSE2
+	printf("[RDV] Use Realsense2 Camea\n") ;
+
+	CRealsense *cap = NULL;
+
+	try 
+	{
+		cap = new CRealsense() ;
+	}	
 #else
-    try {
+	printf("[RDV] Use Opencv Video Capture\n") ;
+
+	cv::VideoCapture* cap = NULL;
+    try 
+	{
         cap = new cv::VideoCapture(index);
         //cap->set(CV_CAP_PROP_FRAME_WIDTH, 1280);
         //cap->set(CV_CAP_PROP_FRAME_HEIGHT, 960);
     }
-    catch (...) {
+#endif	        
+	catch (...) 
+	{
         cerr << " OpenCV exception: Web-camera " << index << " can't be opened! \n";
     }
-#endif	
+    
+	
     return (cap_cv*)cap;
 }
 // ----------------------------------------
 
 extern "C" void release_capture(cap_cv* cap)
 {
+#ifdef REALSENSE2
+	try {
+        CRealsense *cpp_cap = (CRealsense *)cap;
+        delete cpp_cap;
+    }
+#else
     try {
         cv::VideoCapture *cpp_cap = (cv::VideoCapture *)cap;
         delete cpp_cap;
     }
+#endif
     catch (...) {
         cerr << " OpenCV exception: cv::VideoCapture " << cap << " can't be released! \n";
     }
@@ -624,12 +645,17 @@ extern "C" mat_cv* get_capture_frame_cv(cap_cv *cap) {
     try {
         mat = new cv::Mat();
         if (cap) {
-            cv::VideoCapture &cpp_cap = *(cv::VideoCapture *)cap;
+#ifdef REALSENSE2			
+			CRealsense &cpp_cap = *(CRealsense *)cap;
+			*mat = cpp_cap.Get_Image_RGB() ;
+#else
+			cv::VideoCapture &cpp_cap = *(cv::VideoCapture *)cap;
             if (cpp_cap.isOpened())
             {
                 cpp_cap >> *mat;
             }
-            else std::cout << " Video-stream stopped! \n";
+			else std::cout << " Video-stream stopped! \n";			
+#endif
         }
         else cerr << " cv::VideoCapture isn't created \n";
     }
@@ -644,11 +670,15 @@ extern "C" int get_stream_fps_cpp_cv(cap_cv *cap)
 {
     int fps = 25;
     try {
+#ifdef REALSENSE2
+		fps = 30;
+#else
         cv::VideoCapture &cpp_cap = *(cv::VideoCapture *)cap;
 #ifndef CV_VERSION_EPOCH    // OpenCV 3.x
         fps = cpp_cap.get(cv::CAP_PROP_FPS);
 #else                        // OpenCV 2.x
         fps = cpp_cap.get(CV_CAP_PROP_FPS);
+#endif
 #endif
     }
     catch (...) {
@@ -661,8 +691,11 @@ extern "C" int get_stream_fps_cpp_cv(cap_cv *cap)
 extern "C" double get_capture_property_cv(cap_cv *cap, int property_id)
 {
     try {
+#ifdef REALSENSE2
+#else
         cv::VideoCapture &cpp_cap = *(cv::VideoCapture *)cap;
         return cpp_cap.get(property_id);
+#endif		
     }
     catch (...) {
         cerr << " OpenCV exception: Can't get property of source video-stream. \n";
@@ -674,11 +707,14 @@ extern "C" double get_capture_property_cv(cap_cv *cap, int property_id)
 extern "C" double get_capture_frame_count_cv(cap_cv *cap)
 {
     try {
+#ifdef REALSENSE2
+#else
         cv::VideoCapture &cpp_cap = *(cv::VideoCapture *)cap;
 #ifndef CV_VERSION_EPOCH    // OpenCV 3.x
         return cpp_cap.get(cv::CAP_PROP_FRAME_COUNT);
 #else                        // OpenCV 2.x
         return cpp_cap.get(CV_CAP_PROP_FRAME_COUNT);
+#endif
 #endif
     }
     catch (...) {
@@ -691,8 +727,11 @@ extern "C" double get_capture_frame_count_cv(cap_cv *cap)
 extern "C" int set_capture_property_cv(cap_cv *cap, int property_id, double value)
 {
     try {
+#ifdef REALSENSE2		
+#else
         cv::VideoCapture &cpp_cap = *(cv::VideoCapture *)cap;
         return cpp_cap.set(property_id, value);
+#endif
     }
     catch (...) {
         cerr << " Can't set property of source video-stream. \n";
@@ -704,11 +743,14 @@ extern "C" int set_capture_property_cv(cap_cv *cap, int property_id, double valu
 extern "C" int set_capture_position_frame_cv(cap_cv *cap, int index)
 {
     try {
+#ifdef REALSENSE2		
+#else
         cv::VideoCapture &cpp_cap = *(cv::VideoCapture *)cap;
 #ifndef CV_VERSION_EPOCH    // OpenCV 3.x
         return cpp_cap.set(cv::CAP_PROP_POS_FRAMES, index);
 #else                        // OpenCV 2.x
         return cpp_cap.set(CV_CAP_PROP_POS_FRAMES, index);
+#endif
 #endif
     }
     catch (...) {

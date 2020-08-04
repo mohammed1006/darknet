@@ -300,11 +300,27 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 			{
 				draw_detections_cv_v3(show_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
 
-				#ifdef REALSENSE2
+				#ifdef REALSENSE2			
 				cv::Mat *depth = NULL;
 				depth = (cv::Mat*)get_depth_frame_cv(cap);
 				depth_img = (mat_cv *)depth ;
-				draw_detections_cv_v3(depth_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
+
+				//check size
+				cv::Mat *s_img = (cv::Mat*)show_img;
+				cv::Mat *d_img = (cv::Mat*)depth_img;
+
+				if( s_img && d_img )
+				{
+					const float scale_w = (float)s_img->cols / (float)d_img->cols ;
+					const float scale_h = (float)s_img->rows / (float)d_img->rows ;
+					if( scale_w != 1.0 || scale_h != 1.0 )
+					{
+						//resize
+						cv::resize(*d_img, *d_img, cv::Size(), scale_w, scale_h, cv::INTER_LINEAR);
+					}
+					
+					draw_detections_cv_v3(depth_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
+				}
 				#endif
             }
 			

@@ -25,6 +25,14 @@ void CRealsense::ThreadFunction(void)
 	//Instruct pipeline to start streaming with the requested configuration
     m_pipe.start(m_cfg);
 
+	
+	// Define two align objects. One will be used to align
+	// to depth viewport and the other to color.
+	// Creating align object is an expensive operation
+	// that should not be performed in the main loop
+	rs2::align align_to_depth(RS2_STREAM_DEPTH);
+	rs2::align align_to_color(RS2_STREAM_COLOR);
+
 	// Camera warmup - dropping several first frames to let auto-exposure stabilize
     rs2::frameset frames;
     for(int i = 0; i < 30; i++)
@@ -63,10 +71,16 @@ void CRealsense::ThreadFunction(void)
 	    //Get each frame
 	    rs2::frame color_frame = frames.get_color_frame();
 		//rs2::frame ir_frame = frames.first(RS2_STREAM_INFRARED);
+
+		// Align
+        frames = align_to_color.process(frames);
 		rs2::frame depth_frame = frames.get_depth_frame();
+
+		
+		
 		//rs2::frame depth_color_frame = color_map(depth_frame); // Find and colorize the depth data
 		//rs2::frame depth_frame = frames.first(RS2_STREAM_DEPTH, RS2_FORMAT_RGB8);
-		
+#if 0		
 		rs2::frame filtered = depth_frame; // Does not copy the frame, only adds a reference
 
         /* Apply filters.
@@ -95,6 +109,7 @@ void CRealsense::ThreadFunction(void)
         {
             filtered = disparity_to_depth.process(filtered);
         }
+#endif
 
 		m_mutex.lock() ;
 		
@@ -105,13 +120,14 @@ void CRealsense::ThreadFunction(void)
 	    if( m_mat_depth.empty() ) m_mat_depth = cv::Mat(cv::Size(width, height), CV_16UC1, (void*)depth_frame.get_data(), cv::Mat::AUTO_STEP);
 		//Mat ir(Size(640, 480), CV_8UC1, (void*)ir_frame.get_data(), Mat::AUTO_STEP);
 
+#if 0
 		// Creating OpenCV matrix from IR image
 		// Query frame size (width and height)
         const int w = filtered.as<rs2::video_frame>().get_width();
         const int h = filtered.as<rs2::video_frame>().get_height();
 
 		if( m_mat_filtered.empty() )	m_mat_filtered = cv::Mat(cv::Size(w, h), CV_16UC1, (void*)filtered.get_data(), cv::Mat::AUTO_STEP);
-		
+#endif		
 		// Convert 16bit image to 8bit image
 		//m_mat_depth.convertTo(m_mat_depth, CV_8UC1, 15 / 256.0);
 		//m_mat_filtered.convertTo(m_mat_filtered, CV_8UC1, 15 / 256.0);

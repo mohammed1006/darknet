@@ -1,4 +1,4 @@
-#include "GetRealsense.h"
+#include "rdv_GetRealsense.h"
 
 CRealsense::CRealsense(void)
 {	
@@ -116,7 +116,7 @@ void CRealsense::ThreadFunction(void)
 		//m_mat_depth.convertTo(m_mat_depth, CV_8UC1, 15 / 256.0);
 		//m_mat_filtered.convertTo(m_mat_filtered, CV_8UC1, 15 / 256.0);
 
-#if 1	
+#if 0	
 		cv::Mat display_depth ;
 		m_mat_depth.convertTo(display_depth, CV_8UC1, 15 / 256.0);
 		cv::Mat display_filtered ;
@@ -178,6 +178,7 @@ cv::Mat CRealsense::Get_Value_Depth(void)
 
 cv::Mat CRealsense::Get_Image_Colormap(void)
 {
+	return cv::Mat();
 }
 
 /**

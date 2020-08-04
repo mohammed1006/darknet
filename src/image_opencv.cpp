@@ -591,7 +591,9 @@ extern "C" cap_cv* get_capture_video_stream(const char *path) {
 
 extern "C" cap_cv* get_capture_webcam(int index)
 {
-    cv::VideoCapture* cap = NULL;
+	cv::VideoCapture* cap = NULL;
+#ifdef REALSENSE2_CAMERA
+#else
     try {
         cap = new cv::VideoCapture(index);
         //cap->set(CV_CAP_PROP_FRAME_WIDTH, 1280);
@@ -600,6 +602,7 @@ extern "C" cap_cv* get_capture_webcam(int index)
     catch (...) {
         cerr << " OpenCV exception: Web-camera " << index << " can't be opened! \n";
     }
+#endif	
     return (cap_cv*)cap;
 }
 // ----------------------------------------

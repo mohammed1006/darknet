@@ -45,6 +45,9 @@ static mat_cv** cv_images;
 mat_cv* in_img;
 mat_cv* det_img;
 mat_cv* show_img;
+#ifdef REALSENSE2
+mat_cv* depth_img;
+#endif
 
 static volatile int flag_exit;
 static int letter_box = 0;
@@ -66,6 +69,7 @@ void *fetch_in_thread(void *ptr)
             in_s = get_image_from_stream_letterbox(cap, net.w, net.h, net.c, &in_img, dont_close_stream);
         else
             in_s = get_image_from_stream_resize(cap, net.w, net.h, net.c, &in_img, dont_close_stream);
+		
         if (!in_s.data) {
             printf("Stream closed.\n");
             custom_atomic_store_int(&flag_exit, 1);
@@ -138,6 +142,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     avg_frames = avgframes;
     letter_box = letter_box_in;
     in_img = det_img = show_img = NULL;
+#ifdef REALSENSE2	
+	depth_img = NULL ;
+#endif	
     //skip = frame_skip;
     image **alphabet = load_alphabet();
     int delay = frame_skip;
@@ -294,8 +301,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 				draw_detections_cv_v3(show_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
 
 				#ifdef REALSENSE2
-				
-				draw_detections_cv_v3(show_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
+				cv::Mat *depth = NULL;
+				depth = (cv::Mat*)get_depth_frame_cv(cap);
+				depth_img = (mat_cv *)depth ;
+				draw_detections_cv_v3(depth_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
 				#endif
             }
 			
@@ -306,7 +315,15 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             if(!prefix){
                 if (!dont_show) {
                     const int each_frame = max_val_cmp(1, avg_fps / 60);
-                    if(global_frame_counter % each_frame == 0) show_image_mat(show_img, "Demo");
+                    if(global_frame_counter % each_frame == 0)
+					{
+						show_image_mat(show_img, "Demo");
+
+						#ifdef REALSENSE2
+						show_image_mat(depth_img, "Depth");
+						#endif
+                    }
+					
                     int c = wait_key_cv(1);
                     if (c == 10) {
                         if (frame_skip == 0) frame_skip = 60;

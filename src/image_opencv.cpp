@@ -666,6 +666,33 @@ extern "C" mat_cv* get_capture_frame_cv(cap_cv *cap) {
 }
 // ----------------------------------------
 
+#ifdef REALSENSE2
+extern "C" mat_cv* get_depth_frame_cv(cap_cv *cap)
+{
+	cv::Mat *mat = NULL;
+	try 
+	{
+		mat = new cv::Mat();
+		if (cap) 
+		{
+			CRealsense &cpp_cap = *(CRealsense *)cap;
+			*mat = cpp_cap.Get_Image_Depth() ;
+		}
+		else
+		{
+			cerr << " Realsense isn't created \n";
+		}
+	}
+	catch (...) 
+	{
+		std::cout << " Realsense exception: Video-stream stoped! \n";
+	}
+	
+	return (mat_cv *)mat;
+}
+#endif
+
+
 extern "C" int get_stream_fps_cpp_cv(cap_cv *cap)
 {
     int fps = 25;

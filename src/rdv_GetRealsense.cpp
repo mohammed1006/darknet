@@ -192,7 +192,7 @@ cv::Mat CRealsense::Get_Image_Depth(void)
 	
 	m_mutex.lock() ;
 	m_mat_depth.copyTo(ret_mat) ;
-	ret_mat.convertTo(ret_mat, CV_8UC1, 15 / 256.0);
+	//ret_mat.convertTo(ret_mat, CV_8UC1, 15 / 256.0);
 	m_mutex.unlock() ;
 
 	return ret_mat ;

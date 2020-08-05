@@ -641,6 +641,7 @@ extern "C" void release_capture(cap_cv* cap)
 // ----------------------------------------
 
 extern "C" mat_cv* get_capture_frame_cv(cap_cv *cap) {
+
     cv::Mat *mat = NULL;
     try {
         mat = new cv::Mat();

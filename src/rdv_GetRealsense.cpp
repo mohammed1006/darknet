@@ -15,13 +15,19 @@ CRealsense::~CRealsense(void)
 
 void CRealsense::ThreadFunction(void)
 {
+	printf("CRealsense : 1\n") ;
+	
 	const int width = 1280 ;
 	const int height = 720 ;
 	
 	//Add desired streams to configuration
     m_cfg.enable_stream(RS2_STREAM_COLOR, width, height, RS2_FORMAT_BGR8, 30);
 	m_cfg.enable_stream(RS2_STREAM_DEPTH, width, height, RS2_FORMAT_Z16, 30);
+	//m_cfg.enable_stream(RS2_STREAM_DEPTH);
+    //m_cfg.enable_stream(RS2_STREAM_COLOR);
 
+	printf("CRealsense : 1-1\n") ;
+	
 	//Instruct pipeline to start streaming with the requested configuration
     m_pipe.start(m_cfg);
 
@@ -33,6 +39,8 @@ void CRealsense::ThreadFunction(void)
 	rs2::align align_to_depth(RS2_STREAM_DEPTH);
 	rs2::align align_to_color(RS2_STREAM_COLOR);
 
+	printf("CRealsense : 2\n") ;
+	
 	// Camera warmup - dropping several first frames to let auto-exposure stabilize
     rs2::frameset frames;
     for(int i = 0; i < 30; i++)
@@ -40,6 +48,8 @@ void CRealsense::ThreadFunction(void)
         //Wait for all configured streams to produce a frame
         frames = m_pipe.wait_for_frames();
     }
+
+	printf("CRealsense : 3\n") ;
 
 	// Declare filters
     rs2::decimation_filter dec_filter;  // Decimation - reduces depth frame density
@@ -63,6 +73,7 @@ void CRealsense::ThreadFunction(void)
     filters.emplace_back("Temporal", temp_filter);
 
 	//rs2::colorizer color_map; 
+	printf("CRealsense : 4\n") ;
 	
 	while(m_run_thread)
 	{
@@ -114,10 +125,14 @@ void CRealsense::ThreadFunction(void)
 		m_mutex.lock() ;
 		
 		// Creating OpenCV Matrix from a color image
-		if( m_mat_color.empty() )	m_mat_color = cv::Mat(cv::Size(width, height), CV_8UC3, (void*)color_frame.get_data(), cv::Mat::AUTO_STEP);
-
+		//if( m_mat_color.empty() )	m_mat_color = cv::Mat(cv::Size(width, height), CV_8UC3, (void*)color_frame.get_data(), cv::Mat::AUTO_STEP);
+		cv::Mat mat_color = cv::Mat(cv::Size(width, height), CV_8UC3, (void*)color_frame.get_data(), cv::Mat::AUTO_STEP);
+		mat_color.copyTo(m_mat_color) ;
+		
 		// Creating OpenCV matrix from IR image
-	    if( m_mat_depth.empty() ) m_mat_depth = cv::Mat(cv::Size(width, height), CV_16UC1, (void*)depth_frame.get_data(), cv::Mat::AUTO_STEP);
+	    //if( m_mat_depth.empty() ) m_mat_depth = cv::Mat(cv::Size(width, height), CV_16UC1, (void*)depth_frame.get_data(), cv::Mat::AUTO_STEP);
+	    cv::Mat mat_depth = cv::Mat(cv::Size(width, height), CV_16UC1, (void*)depth_frame.get_data(), cv::Mat::AUTO_STEP);
+		mat_depth.copyTo(m_mat_depth) ;
 		//Mat ir(Size(640, 480), CV_8UC1, (void*)ir_frame.get_data(), Mat::AUTO_STEP);
 
 #if 0

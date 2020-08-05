@@ -133,7 +133,8 @@ void CRealsense::ThreadFunction(void)
 		
 		// Creating OpenCV matrix from IR image
 	    //if( m_mat_depth.empty() ) m_mat_depth = cv::Mat(cv::Size(width, height), CV_16UC1, (void*)depth_frame.get_data(), cv::Mat::AUTO_STEP);
-	    cv::Mat mat_depth = cv::Mat(cv::Size(width, height), CV_16UC1, (void*)depth_frame.get_data(), cv::Mat::AUTO_STEP);
+	    //cv::Mat mat_depth = cv::Mat(cv::Size(width, height), CV_16UC1, (void*)depth_frame.get_data(), cv::Mat::AUTO_STEP);
+	    cv::Mat mat_depth = cv::Mat(cv::Size(width, height), CV_8UC3, (void*)depth_frame.get_data(), cv::Mat::AUTO_STEP);
 		mat_depth.copyTo(m_mat_depth) ;
 		//Mat ir(Size(640, 480), CV_8UC1, (void*)ir_frame.get_data(), Mat::AUTO_STEP);
 

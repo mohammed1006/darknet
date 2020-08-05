@@ -74,6 +74,8 @@ void CRealsense::ThreadFunction(void)
 
 	//rs2::colorizer color_map; 
 	printf("CRealsense : 4\n") ;
+	//rs2::colorizer color_map;
+	rs2::colorizer color_filter;	// Colorize - convert from depth to RGB color
 	
 	while(m_run_thread)
 	{
@@ -86,7 +88,7 @@ void CRealsense::ThreadFunction(void)
 		// Align
         frames = align_to_color.process(frames);
 		rs2::frame depth_frame = frames.get_depth_frame();
-
+		depth_frame = color_filter.process(depth_frame);
 		
 		
 		//rs2::frame depth_color_frame = color_map(depth_frame); // Find and colorize the depth data

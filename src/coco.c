@@ -388,6 +388,7 @@ void test_coco(char *cfgfile, char *weightfile, char *filename, float thresh)
 
 void run_coco(int argc, char **argv)
 {
+	int use_realsense = find_arg(argc, argv, "-use_realsense");
 	int dont_show = find_arg(argc, argv, "-dont_show");
 	int mjpeg_port = find_int_arg(argc, argv, "-mjpeg_port", -1);
     int json_port = find_int_arg(argc, argv, "-json_port", -1);
@@ -411,6 +412,7 @@ void run_coco(int argc, char **argv)
     else if(0==strcmp(argv[2], "train")) train_coco(cfg, weights);
     else if(0==strcmp(argv[2], "valid")) validate_coco(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_coco_recall(cfg, weights);
-    else if(0==strcmp(argv[2], "demo")) demo(cfg, weights, thresh, hier_thresh, cam_index, filename, coco_classes, 80, 1, frame_skip,
-		prefix, out_filename, mjpeg_port, 0, json_port, dont_show, ext_output, 0, 0, 0, 0, 0);
+    else if(0==strcmp(argv[2], "demo"))
+        demo(cfg, weights, thresh, hier_thresh, cam_index, filename, coco_classes, 80, 1, frame_skip, prefix,
+             out_filename, mjpeg_port, 0, json_port, dont_show, ext_output, 0, 0, 0, 0, 0, use_realsense);
 }

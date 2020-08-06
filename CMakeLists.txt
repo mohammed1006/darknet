@@ -13,6 +13,7 @@ option(BUILD_AS_CPP "Build Darknet using C++ compiler also for C files" OFF)
 option(BUILD_USELIB_TRACK "Build uselib_track" ON)
 option(MANUALLY_EXPORT_TRACK_OPTFLOW "Manually export the TRACK_OPTFLOW=1 define" OFF)
 option(ENABLE_OPENCV "Enable OpenCV integration" ON)
+option(ENABLE_REALSENSE "Enable Realsense support" ON)
 option(ENABLE_CUDA "Enable CUDA support" ON)
 option(ENABLE_CUDNN "Enable CUDNN" ON)
 option(ENABLE_CUDNN_HALF "Enable CUDNN Half precision" ON)
@@ -132,6 +133,10 @@ if(ENABLE_OPENCV)
       list(APPEND OpenCV_LINKED_COMPONENTS ${OpenCV_LIBS})
     endif()
   endif()
+endif()
+if(ENABLE_REALSENSE)
+  find_package(realsense2 REQUIRED)
+  list(APPEND realsense2_LINKED_COMPONENTS ${realsense2_LIBRARY})
 endif()
 find_package(Stb REQUIRED)
 find_package(OpenMP)
@@ -275,6 +280,10 @@ list(APPEND sources
   ${CMAKE_CURRENT_LIST_DIR}/src/http_stream.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/image_opencv.cpp
 )
+#add also .hpp files
+list(APPEND sources
+  ${CMAKE_CURRENT_LIST_DIR}/src/realsense-opencv-helpers.hpp
+)
 #remove darknet.c file which is necessary only for the executable, not for the lib
 list(REMOVE_ITEM sources
   ${CMAKE_CURRENT_LIST_DIR}/src/darknet.c
@@ -352,6 +361,14 @@ if(OpenCV_FOUND)
   target_include_directories(dark PUBLIC ${OpenCV_INCLUDE_DIRS})
   target_compile_definitions(darknet PRIVATE -DOPENCV)
   target_compile_definitions(dark PUBLIC -DOPENCV)
+endif()
+
+if(ENABLE_REALSENSE)
+  target_link_libraries(darknet PRIVATE ${realsense2_LINKED_COMPONENTS})
+  target_link_libraries(uselib PRIVATE ${realsense2_LINKED_COMPONENTS})
+  target_link_libraries(dark PUBLIC ${realsense2_LINKED_COMPONENTS})
+  target_compile_definitions(darknet PRIVATE -DREALSENSE)
+  target_compile_definitions(dark PUBLIC -DREALSENSE)
 endif()
 
 if(OPENMP_FOUND)

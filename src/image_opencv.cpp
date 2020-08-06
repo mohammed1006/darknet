@@ -1480,7 +1480,7 @@ extern "C" void cv_draw_object(image sized, float *truth_cpu, int max_boxes, int
 // ====================================================================
 // Show Anchors
 // ====================================================================
-extern "C" void show_acnhors(int number_of_boxes, int num_of_clusters, float *rel_width_height_array, model anchors_data, int width, int height)
+extern "C" void show_anchors(int number_of_boxes, int num_of_clusters, float *rel_width_height_array, model anchors_data, int width, int height)
 {
     cv::Mat labels = cv::Mat(number_of_boxes, 1, CV_32SC1);
     cv::Mat points = cv::Mat(number_of_boxes, 2, CV_32FC1);

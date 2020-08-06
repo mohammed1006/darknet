@@ -1580,7 +1580,7 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 
     if (show) {
 #ifdef OPENCV
-        show_acnhors(number_of_boxes, num_of_clusters, rel_width_height_array, anchors_data, width, height);
+        show_anchors(number_of_boxes, num_of_clusters, rel_width_height_array, anchors_data, width, height);
 #endif // OPENCV
     }
     free(rel_width_height_array);

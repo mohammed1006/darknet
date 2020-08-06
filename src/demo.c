@@ -62,7 +62,11 @@ void *fetch_in_thread(void *ptr)
         }
         int dont_close_stream = 0;    // set 1 if your IP-camera periodically turns off and turns on video-stream
         if (input_realsense) {
+#ifndef REALSENSE
+            error("Program was not compiled with REALSENSE support...");
+#else
             in_s = get_image_from_realsense(net.w, net.h, net.c, &in_img, &in_depth, dont_close_stream, letter_box);
+#endif
         } else {
             if (letter_box) {
                 in_s = get_image_from_stream_letterbox(cap, net.w, net.h, net.c, &in_img, dont_close_stream);

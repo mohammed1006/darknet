@@ -1326,7 +1326,7 @@ extern "C" void blend_images_cv(image new_img, float alpha, image old_img, float
     cv::addWeighted(new_mat, alpha, old_mat, beta, 0.0, new_mat);
 }
 
-// bilateralFilter bluring
+// bilateralFilter blurring
 extern "C" image blur_image(image src_img, int ksize)
 {
     cv::Mat src = image_to_mat(src_img);

@@ -47,6 +47,8 @@ mat_cv* det_img;
 mat_cv* show_img;
 #ifdef REALSENSE2
 mat_cv* depth_img;
+mat_cv* depth_value;
+
 #endif
 
 static volatile int flag_exit;
@@ -305,6 +307,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 				depth = (cv::Mat*)get_depth_frame_cv(cap);
 				depth_img = (mat_cv *)depth ;
 
+				cv::Mat *depth_v = NULL;
+				depth_v = (cv::Mat*)get_depth_value_cv(cap);
+				depth_value = (mat_cv *)depth_v ;
+					
 				//check size
 				cv::Mat *s_img = (cv::Mat*)show_img;
 				cv::Mat *d_img = (cv::Mat*)depth_img;
@@ -320,7 +326,12 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 					}
 					
 					draw_detections_cv_v3(depth_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
+
+					//depth value roi
 				}
+
+				
+				
 				#endif
             }
 			

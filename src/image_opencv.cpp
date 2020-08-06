@@ -691,6 +691,68 @@ extern "C" mat_cv* get_depth_frame_cv(cap_cv *cap)
 	
 	return (mat_cv *)mat;
 }
+
+extern "C" mat_cv* get_depth_value_cv(cap_cv *cap, const int x, const int y, const int w, const int h)
+{
+	cv::Mat *mat = NULL;
+	try 
+	{
+		mat = new cv::Mat();
+		if (cap) 
+		{
+			CRealsense &cpp_cap = *(CRealsense *)cap;
+
+			cv::Mat mat_roi = cpp_cap.Get_Value_Depth() ;
+
+			cv::Rect roi(x,y,w,h) ;
+			if( roi.x < 0 && roi.y < 0 && roi.width < 0 && roi.height < 0 )
+			{
+				roi.x = 0 ;
+				roi.y = 0 ;
+				roi.width = mat_roi.cols ;
+				roi.height = mat_roi.rows ;
+			}
+			else
+			{
+				if( roi.x = 0 ) roi.x = 0 ;
+				else if( roi.x > mat_roi.cols ) roi.x = mat_roi.cols ;
+				if( roi.y = 0 ) roi.y = 0 ;
+				else if( roi.y > mat_roi.rows ) roi.y = mat_roi.rows ;
+				
+				if( roi.x + roi.width > mat_roi.cols )
+				{
+					roi.width = mat_roi.cols - roi.x ;
+					if( roi.width < 0 )
+					{
+						roi.width = 0 ;
+					}
+				}
+
+				if( roi.y + roi.height > mat_roi.rows )
+				{
+					roi.height = mat_roi.rows - roi.y ;
+					if( roi.height < 0 )
+					{
+						roi.height = 0 ;
+					}
+				}				
+			}
+			
+			 *mat = mat_roi(roi) ;
+		}
+		else
+		{
+			cerr << " Realsense isn't created \n";
+		}
+	}
+	catch (...) 
+	{
+		std::cout << " Realsense exception: Video-stream stoped! \n";
+	}
+	
+	return (mat_cv *)mat;
+}
+
 #endif
 
 

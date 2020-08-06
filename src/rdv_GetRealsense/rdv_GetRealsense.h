@@ -60,6 +60,7 @@ private:
 
 	cv::Mat m_mat_color ;
 	cv::Mat m_mat_depth ;
+	cv::Mat m_mat_depth_color ;
 	cv::Mat m_mat_filtered ;
 	
 };

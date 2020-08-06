@@ -80,6 +80,8 @@ mat_cv* get_capture_frame_cv(cap_cv *cap);
 
 #ifdef REALSENSE2
 mat_cv* get_depth_frame_cv(cap_cv *cap);
+mat_cv* get_depth_value_cv(cap_cv *cap, const int x=-1, const int y=-1, const int w=-1, const int h=-1);
+
 #endif
 
 int get_stream_fps_cpp_cv(cap_cv *cap);

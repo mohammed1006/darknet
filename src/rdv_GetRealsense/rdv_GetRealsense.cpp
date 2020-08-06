@@ -87,8 +87,9 @@ void CRealsense::ThreadFunction(void)
 
 		// Align
         frames = align_to_color.process(frames);
+		
 		rs2::frame depth_frame = frames.get_depth_frame();
-		depth_frame = color_filter.process(depth_frame);
+		rs2::frame depth_frame_color = color_filter.process(depth_frame);
 		
 		
 		//rs2::frame depth_color_frame = color_map(depth_frame); // Find and colorize the depth data
@@ -134,7 +135,10 @@ void CRealsense::ThreadFunction(void)
 		// Creating OpenCV matrix from IR image
 	    //if( m_mat_depth.empty() ) m_mat_depth = cv::Mat(cv::Size(width, height), CV_16UC1, (void*)depth_frame.get_data(), cv::Mat::AUTO_STEP);
 	    //cv::Mat mat_depth = cv::Mat(cv::Size(width, height), CV_16UC1, (void*)depth_frame.get_data(), cv::Mat::AUTO_STEP);
-	    cv::Mat mat_depth = cv::Mat(cv::Size(width, height), CV_8UC3, (void*)depth_frame.get_data(), cv::Mat::AUTO_STEP);
+	    cv::Mat mat_depth_color = cv::Mat(cv::Size(width, height), CV_8UC3, (void*)depth_frame_color.get_data(), cv::Mat::AUTO_STEP);
+		mat_depth_color.copyTo(m_mat_depth_color) ;
+
+		cv::Mat mat_depth = cv::Mat(cv::Size(width, height), CV_16UC1, (void*)depth_frame.get_data(), cv::Mat::AUTO_STEP);
 		mat_depth.copyTo(m_mat_depth) ;
 		//Mat ir(Size(640, 480), CV_8UC1, (void*)ir_frame.get_data(), Mat::AUTO_STEP);
 
@@ -192,7 +196,7 @@ cv::Mat CRealsense::Get_Image_Depth(void)
 	cv::Mat ret_mat ;
 	
 	m_mutex.lock() ;
-	m_mat_depth.copyTo(ret_mat) ;
+	m_mat_depth_color.copyTo(ret_mat) ;
 	//ret_mat.convertTo(ret_mat, CV_8UC1, 15 / 256.0);
 	m_mutex.unlock() ;
 

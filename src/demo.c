@@ -54,6 +54,10 @@ mat_cv* depth_value;
 static volatile int flag_exit;
 static int letter_box = 0;
 
+#ifdef REALSENSE2
+static volatile int flag_select_roi;
+#endif
+
 static const int thread_wait_ms = 1;
 static volatile int run_fetch_in_thread = 0;
 static volatile int run_detect_in_thread = 0;
@@ -203,6 +207,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
     flag_exit = 0;
 
+	#ifdef REALSENSE2
+	flag_select_roi = 0 ;
+	#endif
+
     custom_thread_t fetch_thread = NULL;
     custom_thread_t detect_thread = NULL;
     if (custom_create_thread(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
@@ -229,6 +237,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     if(!prefix && !dont_show){
         int full_screen = 0;
         create_window_cv("Demo", full_screen, 1352, 1013);
+
+		#ifdef REALSENSE2
+		create_window_cv("Depth", full_screen, 1280, 720);
+		#endif
     }
 
 
@@ -309,8 +321,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
 				cv::Mat *depth_v = NULL;
 				depth_v = (cv::Mat*)get_depth_value_cv(cap);
-				depth_value = (mat_cv *)depth_v ;
-					
+
 				//check size
 				cv::Mat *s_img = (cv::Mat*)show_img;
 				cv::Mat *d_img = (cv::Mat*)depth_img;
@@ -327,11 +338,55 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 					
 					draw_detections_cv_v3(depth_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
 
-					//depth value roi
-				}
+					//select roi
+					if( flag_select_roi == 1 )
+					{
+						if( depth_v && d_img)
+						{
+							cv::Rect2d r = cv::selectROI(*d_img);
+							
+							cv::Point pt_roi_center = cv::Point(r.width/2, r.height/2) ;
+								
+							cv::Mat roi_depth_value = (*depth_v)(r) ;
+							cv::Mat roi_depth_image = (*d_img)(r) ;
 
-				
-				
+							cv::imwrite("roi_depth_value.png", roi_depth_value) ;
+							cv::imwrite("roi_depth_image.png", roi_depth_image) ;
+
+							//roi raw data file save
+							FILE * file_save_roi_data;
+  							file_save_roi_data = fopen ("roi_raw.txt","w");
+
+							FILE * file_save_roi_data_center;
+  							file_save_roi_data_center = fopen ("roi_raw_center.txt","w");
+							
+							unsigned short* ptr_roi_depth_value = (unsigned short*)roi_depth_value.data; // v+1행 첫 칸의 주소를 불러온다. 
+							int y_index = 0 ;
+							for(int y= 0;y<roi_depth_value.rows ; y++)
+							{
+								y_index = y*roi_depth_value.cols ;
+								
+								for(int x = 0 ; x<roi_depth_value.cols; x++)
+								{
+									unsigned short z = ptr_roi_depth_value[y_index + x] ; 
+
+									fprintf (file_save_roi_data, "%.3f %.3f %.3f\n",(float)x, (float)y, (float)z);
+
+									//roi center
+									int save_x = x - pt_roi_center.x ;
+									int save_y = y - pt_roi_center.y ;
+									fprintf (file_save_roi_data_center, "%.3f %.3f %.3f\n",(float)save_x, (float)save_y, (float)z);
+									
+								}
+							}
+
+							fclose(file_save_roi_data);
+							fclose(file_save_roi_data_center);
+						}
+					
+						flag_select_roi = 0 ;
+					}
+				}
 				#endif
             }
 			
@@ -362,6 +417,13 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
                     {
                         flag_exit = 1;
                     }
+					#ifdef REALSENSE2
+					else if( c == 's' || c == 'S' )
+					{
+						flag_select_roi = 1 ;
+						
+					}
+					#endif
                 }
             }else{
                 char buff[256];

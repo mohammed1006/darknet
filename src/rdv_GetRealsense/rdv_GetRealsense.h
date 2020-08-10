@@ -65,6 +65,7 @@ private:
 	cv::Mat m_mat_depth_color ;
 	cv::Mat m_mat_filtered ;
 
+	cv::Mat m_mat_cloud ;
 	cv::Mat Points_to_Mat(const rs2::points& points) ;
 	
 };

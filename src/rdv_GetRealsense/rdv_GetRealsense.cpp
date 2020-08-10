@@ -151,7 +151,7 @@ void CRealsense::ThreadFunction(void)
 		// Generate the pointcloud and texture mappings
 	    points = pc.calculate(depth_frame);
     	//m_p_cloud = points_to_pcl(points);
-    	Points_to_Mat(points);
+    	m_mat_cloud = Points_to_Mat(points);
 		
 
 #if 0
@@ -201,8 +201,34 @@ cv::Mat CRealsense::Points_to_Mat(const rs2::points& points)
 	const int sp_size = points.size();
 
 	printf("Points_to_Mat : w(%d), h(%d), s(%d)\n", sp_width, sp_height, sp_size) ;
-	
-	return cv::Mat() ;
+
+	if( (m_mat_cloud.cols != sp_width || m_mat_cloud.rows != sp_height) && !m_mat_cloud.empty() )
+	{
+		m_mat_cloud.release() ;
+	}
+
+	if( m_mat_cloud.empty() )	m_mat_cloud = cv::Mat(cv::Size(sp_width, sp_height), CV_16UC1) ;
+
+	unsigned short* ptr_cloud_data = (unsigned short*)m_mat_cloud.data; // v+1행 첫 칸의 주소를 불러온다. 
+
+	auto ptr_s = points.get_vertices();
+	int y_index = 0 ;
+	for(int y= 0;y<m_mat_cloud.rows ; y++)
+	{
+		y_index = y * m_mat_cloud.cols ;
+		
+		for(int x = 0 ; x<m_mat_cloud.cols ; x++)
+		{
+			int index = y_index + x ;
+			
+			auto ptr = ptr_s + index ;
+			
+			ptr_cloud_data[y_index + x] = ptr->z; ; // v+1행 u+1열에 대한 연산을 수행한다. 
+			
+		}
+	}
+
+	return m_mat_cloud ;
 
 #if 0	
 	if( m_p_cloud == NULL )
@@ -263,7 +289,7 @@ cv::Mat CRealsense::Get_Value_Depth(void)
 
 cv::Mat CRealsense::Get_Value_Depth2(void)
 {
-	return cv::Mat() ;
+	return m_mat_cloud ;
 }
 
 cv::Mat CRealsense::Get_Image_Colormap(void)

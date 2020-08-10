@@ -17,8 +17,8 @@ void CRealsense::ThreadFunction(void)
 {
 	printf("CRealsense : 1\n") ;
 	
-	const int width = 1280 ;
-	const int height = 720 ;
+	const int width = 640 ;
+	const int height = 480 ;
 	
 	//Add desired streams to configuration
     m_cfg.enable_stream(RS2_STREAM_COLOR, width, height, RS2_FORMAT_BGR8, 30);

@@ -236,10 +236,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     int count = 0;
     if(!prefix && !dont_show){
         int full_screen = 0;
-        create_window_cv("Demo", full_screen, 1352, 1013);
+        create_window_cv("Demo", full_screen, 640, 480);
 
 		#ifdef REALSENSE2
-		create_window_cv("Depth", full_screen, 1280, 720);
+		create_window_cv("Depth", full_screen, 640, 480);
 		#endif
     }
 

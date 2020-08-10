@@ -1,6 +1,6 @@
 #include "rdv_GetRealsense.h"
 
-CRealsense::CRealsense(void)
+CRealsense::CRealsense(void) 
 {	
 	//Start Network Accept Thread
 	m_run_thread = true;
@@ -76,6 +76,11 @@ void CRealsense::ThreadFunction(void)
 	printf("CRealsense : 4\n") ;
 	//rs2::colorizer color_map;
 	rs2::colorizer color_filter;	// Colorize - convert from depth to RGB color
+
+	// Declare pointcloud object, for calculating pointclouds and texture mappings
+    rs2::pointcloud pc;
+    // We want the points object to be persistent so we can display the last cloud when a frame drops
+    rs2::points points;
 	
 	while(m_run_thread)
 	{
@@ -142,6 +147,13 @@ void CRealsense::ThreadFunction(void)
 		mat_depth.copyTo(m_mat_depth) ;
 		//Mat ir(Size(640, 480), CV_8UC1, (void*)ir_frame.get_data(), Mat::AUTO_STEP);
 
+		//pcl point cloud
+		// Generate the pointcloud and texture mappings
+	    points = pc.calculate(depth_frame);
+    	//m_p_cloud = points_to_pcl(points);
+    	Points_to_Mat(points);
+		
+
 #if 0
 		// Creating OpenCV matrix from IR image
 		// Query frame size (width and height)
@@ -180,6 +192,41 @@ void CRealsense::ThreadFunction(void)
 	m_pipe.stop() ;
 }
 
+cv::Mat CRealsense::Points_to_Mat(const rs2::points& points)
+{
+	auto sp = points.get_profile().as<rs2::video_stream_profile>();
+
+	const int sp_width = sp.width();
+	const int sp_height = sp.height();
+	const int sp_size = points.size();
+
+	printf("Points_to_Mat : w(%d), h(%d), s(%d)\n", sp_width, sp_height, sp_size) ;
+	
+	return cv::Mat() ;
+
+#if 0	
+	if( m_p_cloud == NULL )
+	{
+		m_p_cloud = new pcl::PointCloud<pcl::PointXYZ> ;
+	}
+	
+    m_p_cloud->width = sp.width();
+    m_p_cloud->height = sp.height();
+    m_p_cloud->is_dense = false;
+    m_p_cloud->points.resize(points.size());
+    auto ptr = points.get_vertices();
+    for (auto& p : m_p_cloud->points)
+    {
+        p.x = ptr->x;
+        p.y = ptr->y;
+        p.z = ptr->z;
+        ptr++;
+    }
+
+    return m_p_cloud;
+#endif	
+}
+
 cv::Mat CRealsense::Get_Image_RGB(void)
 {
 	cv::Mat ret_mat ;
@@ -212,6 +259,11 @@ cv::Mat CRealsense::Get_Value_Depth(void)
 	m_mutex.unlock() ;
 
 	return ret_mat ;
+}
+
+cv::Mat CRealsense::Get_Value_Depth2(void)
+{
+	return cv::Mat() ;
 }
 
 cv::Mat CRealsense::Get_Image_Colormap(void)

@@ -162,7 +162,7 @@ OBJ+=convolutional_kernels.o activation_kernels.o im2col_kernels.o col2im_kernel
 endif
 
 ifeq ($(REALSENSE2_CAMERA), 1)
-CFLAGS+= -DREALSENSE2 -I./src/rdv_GetRealsense
+CFLAGS+= -DREALSENSE2 -I./src/rdv_GetRealsense 
 LDFLAGS+= -Xlinker --start-group -lpthread -ldl -lm -lrt -lc -lstdc++ -lboost_system -lboost_thread -lboost_filesystem -lboost_regex -lboost_date_time -lboost_program_options -lstdc++fs -lrealsense2 -Xlinker --end-group
 OBJ+=rdv_GetRealsense.o
 endif

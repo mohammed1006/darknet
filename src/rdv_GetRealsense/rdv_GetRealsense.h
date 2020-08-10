@@ -46,6 +46,8 @@ public :
 	cv::Mat Get_Image_Depth(void) ;
 	cv::Mat Get_Value_Depth(void) ;
 	cv::Mat Get_Image_Colormap(void) ;
+
+	cv::Mat Get_Value_Depth2(void) ;
 	
 private:
 	//Network Thread
@@ -62,6 +64,8 @@ private:
 	cv::Mat m_mat_depth ;
 	cv::Mat m_mat_depth_color ;
 	cv::Mat m_mat_filtered ;
+
+	cv::Mat Points_to_Mat(const rs2::points& points) ;
 	
 };
 

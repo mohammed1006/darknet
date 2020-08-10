@@ -382,6 +382,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
 							fclose(file_save_roi_data);
 							fclose(file_save_roi_data_center);
+
+							//cv::destroyWindow("ROI Selector") ;
 						}
 					
 						flag_select_roi = 0 ;

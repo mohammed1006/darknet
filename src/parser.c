@@ -1659,13 +1659,15 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
     rewind( fp );
 
     /* allocate memory for entire content */
-    data = (char*) xmalloc(data_size);
+    data = (char*) xmalloc(data_size + 1);
 
     /* copy the file into the buffer */
     if( fread( data , data_size, 1 , fp) != 1)
     {
         error("Copy file to buffer failed");
     }
+
+    data[data_size] = '\0'; // NUL-terminate!
 
     network net = parse_network_cfg_custom_mem(data, batch, time_steps);
     fclose(fp);
@@ -1678,14 +1680,12 @@ list *read_cfg_mem(const char* str)
 {
     if(str == NULL) error("string is NULL!");
 
-    int nu = 0;
     list *sections = make_list();
     section *current = 0;
 
     const char * curLine = str;
     while(curLine)
     {
-        ++nu;
         const char * nextLine = strchr(curLine, '\n');
         int curLineLen = nextLine ? (nextLine-curLine) : strlen(curLine);
         char * line = (char *) xmalloc(curLineLen+1);
@@ -1707,7 +1707,7 @@ list *read_cfg_mem(const char* str)
                 break;
             default:
                 if(!read_option(line, current->options)){
-                    fprintf(stderr, "Config file error line %d, could parse: %s\n", nu, line);
+                    fprintf(stderr, "Config file error, could parse: %s\n", line);
                     free(line);
                 }
             break;
@@ -1733,13 +1733,15 @@ list *read_cfg(char *filename)
     rewind( fp );
 
     /* allocate memory for entire content */
-    data = (char*) xmalloc(data_size);
+    data = (char*) xmalloc(data_size + 1);
 
     /* copy the file into the buffer */
     if( fread( data , data_size, 1 , fp) != 1)
     {
         error("Copy file to buffer failed");
     }
+
+    data[data_size] = '\0'; // NUL-terminate!
 
     sections = read_cfg_mem(data);
 

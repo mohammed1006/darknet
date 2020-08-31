@@ -70,6 +70,7 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[gru]")==0) return GRU;
     if (strcmp(type, "[lstm]")==0) return LSTM;
     if (strcmp(type, "[conv_lstm]") == 0) return CONV_LSTM;
+    if (strcmp(type, "[history]") == 0) return HISTORY;
     if (strcmp(type, "[rnn]")==0) return RNN;
     if (strcmp(type, "[conn]")==0
             || strcmp(type, "[connected]")==0) return CONNECTED;
@@ -229,6 +230,7 @@ convolutional_layer parse_convolutional(list *options, size_params params)
     layer.angle = option_find_float_quiet(options, "angle", 15);
     layer.grad_centr = option_find_int_quiet(options, "grad_centr", 0);
     layer.reverse = option_find_float_quiet(options, "reverse", 0);
+    layer.coordconv = option_find_int_quiet(options, "coordconv", 0);
 
     if(params.net.adam){
         layer.B1 = params.net.B1;
@@ -330,6 +332,13 @@ layer parse_conv_lstm(list *options, size_params params)
     return l;
 }
 
+layer parse_history(list *options, size_params params)
+{
+    int history_size = option_find_int(options, "history_size", 4);
+    layer l = make_history_layer(params.batch, params.h, params.w, params.c, history_size, params.time_steps, params.train);
+    return l;
+}
+
 connected_layer parse_connected(list *options, size_params params)
 {
     int output = option_find_int(options, "output",1);
@@ -360,8 +369,21 @@ softmax_layer parse_softmax(list *options, size_params params)
 contrastive_layer parse_contrastive(list *options, size_params params)
 {
     int classes = option_find_int(options, "classes", 1000);
-    contrastive_layer layer = make_contrastive_layer(params.batch, params.w, params.h, params.c, classes, params.inputs);
+    layer *yolo_layer = NULL;
+    int yolo_layer_id = option_find_int_quiet(options, "yolo_layer", 0);
+    if (yolo_layer_id < 0) yolo_layer_id = params.index + yolo_layer_id;
+    if(yolo_layer_id != 0) yolo_layer = params.net.layers + yolo_layer_id;
+    if (yolo_layer->type != YOLO) {
+        printf(" Error: [contrastive] layer should point to the [yolo] layer instead of %d layer! \n", yolo_layer_id);
+        getchar();
+        exit(0);
+    }
+
+    contrastive_layer layer = make_contrastive_layer(params.batch, params.w, params.h, params.c, classes, params.inputs, yolo_layer);
     layer.temperature = option_find_float_quiet(options, "temperature", 1);
+    layer.steps = params.time_steps;
+    layer.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1);
+    layer.max_delta = option_find_float_quiet(options, "max_delta", FLT_MAX);   // set 10
     return layer;
 }
 
@@ -387,7 +409,7 @@ int *parse_yolo_mask(char *a, int *num)
     return mask;
 }
 
-float *get_classes_multipliers(char *cpc, const int classes)
+float *get_classes_multipliers(char *cpc, const int classes, const float max_delta)
 {
     float *classes_multipliers = NULL;
     if (cpc) {
@@ -399,9 +421,15 @@ float *get_classes_multipliers(char *cpc, const int classes)
         }
         float max_counter = 0;
         int i;
-        for (i = 0; i < classes_counters; ++i) if (max_counter < counters_per_class[i]) max_counter = counters_per_class[i];
+        for (i = 0; i < classes_counters; ++i) {
+            if (counters_per_class[i] < 1) counters_per_class[i] = 1;
+            if (max_counter < counters_per_class[i]) max_counter = counters_per_class[i];
+        }
         classes_multipliers = (float *)calloc(classes_counters, sizeof(float));
-        for (i = 0; i < classes_counters; ++i) classes_multipliers[i] = max_counter / counters_per_class[i];
+        for (i = 0; i < classes_counters; ++i) {
+            classes_multipliers[i] = max_counter / counters_per_class[i];
+            if(classes_multipliers[i] > max_delta) classes_multipliers[i] = max_delta;
+        }
         free(counters_per_class);
         printf(" classes_multipliers: ");
         for (i = 0; i < classes_counters; ++i) printf("%.1f, ", classes_multipliers[i]);
@@ -426,15 +454,17 @@ layer parse_yolo(list *options, size_params params)
     }
     //assert(l.outputs == params.inputs);
 
+    l.max_delta = option_find_float_quiet(options, "max_delta", FLT_MAX);   // set 10
     char *cpc = option_find_str(options, "counters_per_class", 0);
-    l.classes_multipliers = get_classes_multipliers(cpc, classes);
+    l.classes_multipliers = get_classes_multipliers(cpc, classes, l.max_delta);
 
     l.label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
     l.scale_x_y = option_find_float_quiet(options, "scale_x_y", 1);
     l.objectness_smooth = option_find_int_quiet(options, "objectness_smooth", 0);
-    l.max_delta = option_find_float_quiet(options, "max_delta", FLT_MAX);   // set 10
     l.iou_normalizer = option_find_float_quiet(options, "iou_normalizer", 0.75);
+    l.obj_normalizer = option_find_float_quiet(options, "obj_normalizer", 1);
     l.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1);
+    l.delta_normalizer = option_find_float_quiet(options, "delta_normalizer", 1);
     char *iou_loss = option_find_str_quiet(options, "iou_loss", "mse");   //  "iou");
 
     if (strcmp(iou_loss, "mse") == 0) l.iou_loss = MSE;
@@ -442,8 +472,8 @@ layer parse_yolo(list *options, size_params params)
     else if (strcmp(iou_loss, "diou") == 0) l.iou_loss = DIOU;
     else if (strcmp(iou_loss, "ciou") == 0) l.iou_loss = CIOU;
     else l.iou_loss = IOU;
-    fprintf(stderr, "[yolo] params: iou loss: %s (%d), iou_norm: %2.2f, cls_norm: %2.2f, scale_x_y: %2.2f\n",
-        iou_loss, l.iou_loss, l.iou_normalizer, l.cls_normalizer, l.scale_x_y);
+    fprintf(stderr, "[yolo] params: iou loss: %s (%d), iou_norm: %2.2f, obj_norm: %2.2f, cls_norm: %2.2f, delta_norm: %2.2f, scale_x_y: %2.2f\n",
+        iou_loss, l.iou_loss, l.iou_normalizer, l.obj_normalizer, l.cls_normalizer, l.delta_normalizer, l.scale_x_y);
 
     char *iou_thresh_kind_str = option_find_str_quiet(options, "iou_thresh_kind", "iou");
     if (strcmp(iou_thresh_kind_str, "iou") == 0) l.iou_thresh_kind = IOU;
@@ -473,6 +503,26 @@ layer parse_yolo(list *options, size_params params)
     l.truth_thresh = option_find_float(options, "truth_thresh", 1);
     l.iou_thresh = option_find_float_quiet(options, "iou_thresh", 1); // recommended to use iou_thresh=0.213 in [yolo]
     l.random = option_find_float_quiet(options, "random", 0);
+
+    l.track_history_size = option_find_int_quiet(options, "track_history_size", 5);
+    l.sim_thresh = option_find_int_quiet(options, "sim_thresh", 0.8);
+    l.dets_for_track = option_find_int_quiet(options, "dets_for_track", 1);
+    l.dets_for_show = option_find_int_quiet(options, "dets_for_show", 1);
+    l.track_ciou_norm = option_find_float_quiet(options, "track_ciou_norm", 0.01);
+    int embedding_layer_id = option_find_int_quiet(options, "embedding_layer", 999999);
+    if (embedding_layer_id < 0) embedding_layer_id = params.index + embedding_layer_id;
+    if (embedding_layer_id != 999999) {
+        printf(" embedding_layer_id = %d, ", embedding_layer_id);
+        layer le = params.net.layers[embedding_layer_id];
+        l.embedding_layer_id = embedding_layer_id;
+        l.embedding_output = (float*)xcalloc(le.batch * le.outputs, sizeof(float));
+        l.embedding_size = le.n / l.n;
+        printf(" embedding_size = %d \n", l.embedding_size);
+        if (le.n % l.n != 0) {
+            printf(" Warning: filters=%d number in embedding_layer=%d isn't divisable by number of anchors %d \n", le.n, embedding_layer_id, l.n);
+            getchar();
+        }
+    }
 
     char *map_file = option_find_str(options, "map", 0);
     if (map_file) l.map = read_map(map_file);
@@ -535,17 +585,18 @@ layer parse_gaussian_yolo(list *options, size_params params) // Gaussian_YOLOv3
         exit(EXIT_FAILURE);
     }
     //assert(l.outputs == params.inputs);
-
+    l.max_delta = option_find_float_quiet(options, "max_delta", FLT_MAX);   // set 10
     char *cpc = option_find_str(options, "counters_per_class", 0);
-    l.classes_multipliers = get_classes_multipliers(cpc, classes);
+    l.classes_multipliers = get_classes_multipliers(cpc, classes, l.max_delta);
 
     l.label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
     l.scale_x_y = option_find_float_quiet(options, "scale_x_y", 1);
     l.objectness_smooth = option_find_int_quiet(options, "objectness_smooth", 0);
-    l.max_delta = option_find_float_quiet(options, "max_delta", FLT_MAX);   // set 10
     l.uc_normalizer = option_find_float_quiet(options, "uc_normalizer", 1.0);
     l.iou_normalizer = option_find_float_quiet(options, "iou_normalizer", 0.75);
-    l.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1.0);
+    l.obj_normalizer = option_find_float_quiet(options, "obj_normalizer", 1.0);
+    l.cls_normalizer = option_find_float_quiet(options, "cls_normalizer", 1);
+    l.delta_normalizer = option_find_float_quiet(options, "delta_normalizer", 1);
     char *iou_loss = option_find_str_quiet(options, "iou_loss", "mse");   //  "iou");
 
     if (strcmp(iou_loss, "mse") == 0) l.iou_loss = MSE;
@@ -580,8 +631,8 @@ layer parse_gaussian_yolo(list *options, size_params params) // Gaussian_YOLOv3
     else if (strcmp(yolo_point, "right_bottom") == 0) l.yolo_point = YOLO_RIGHT_BOTTOM;
     else l.yolo_point = YOLO_CENTER;
 
-    fprintf(stderr, "[Gaussian_yolo] iou loss: %s (%d), iou_norm: %2.2f, cls_norm: %2.2f, scale: %2.2f, point: %d\n",
-        iou_loss, l.iou_loss, l.iou_normalizer, l.cls_normalizer, l.scale_x_y, l.yolo_point);
+    fprintf(stderr, "[Gaussian_yolo] iou loss: %s (%d), iou_norm: %2.2f, obj_norm: %2.2f, cls_norm: %2.2f, delta_norm: %2.2f, scale: %2.2f, point: %d\n",
+        iou_loss, l.iou_loss, l.iou_normalizer, l.obj_normalizer, l.cls_normalizer, l.delta_normalizer, l.scale_x_y, l.yolo_point);
 
     l.jitter = option_find_float(options, "jitter", .2);
     l.resize = option_find_float_quiet(options, "resize", 1.0);
@@ -804,6 +855,7 @@ maxpool_layer parse_maxpool(list *options, size_params params)
     if(!(h && w && c)) error("Layer before [maxpool] layer must output image.");
 
     maxpool_layer layer = make_maxpool_layer(batch, h, w, c, size, stride_x, stride_y, padding, maxpool_depth, out_channels, antialiasing, avgpool, params.train);
+    layer.maxpool_zero_nonmax = option_find_int_quiet(options, "maxpool_zero_nonmax", 0);
     return layer;
 }
 
@@ -1096,9 +1148,10 @@ void parse_net_options(list *options, network *net)
     net->init_sequential_subdivisions = net->sequential_subdivisions = option_find_int_quiet(options, "sequential_subdivisions", subdivs);
     if (net->sequential_subdivisions > subdivs) net->init_sequential_subdivisions = net->sequential_subdivisions = subdivs;
     net->try_fix_nan = option_find_int_quiet(options, "try_fix_nan", 0);
-    net->batch /= subdivs;
-    net->batch *= net->time_steps;
-    net->subdivisions = subdivs;
+    net->batch /= subdivs;          // mini_batch
+    const int mini_batch = net->batch;
+    net->batch *= net->time_steps;  // mini_batch * time_steps
+    net->subdivisions = subdivs;    // number of mini_batches
 
     *net->seen = 0;
     *net->cur_iteration = 0;
@@ -1132,7 +1185,12 @@ void parse_net_options(list *options, network *net)
     net->letter_box = option_find_int_quiet(options, "letter_box", 0);
     net->mosaic_bound = option_find_int_quiet(options, "mosaic_bound", 0);
     net->contrastive = option_find_int_quiet(options, "contrastive", 0);
+    net->contrastive_jit_flip = option_find_int_quiet(options, "contrastive_jit_flip", 0);
     net->unsupervised = option_find_int_quiet(options, "unsupervised", 0);
+    if (net->contrastive && mini_batch < 2) {
+        printf(" Error: mini_batch size (batch/subdivisions) should be higher than 1 for Contrastive loss \n");
+        exit(0);
+    }
     net->label_smooth_eps = option_find_float_quiet(options, "label_smooth_eps", 0.0f);
     net->resize_step = option_find_float_quiet(options, "resize_step", 32);
     net->attention = option_find_int_quiet(options, "attention", 0);
@@ -1338,6 +1396,8 @@ network parse_network_cfg_custom_mem(const char *str, int batch, int time_steps)
             l = parse_lstm(options, params);
         }else if (lt == CONV_LSTM) {
             l = parse_conv_lstm(options, params);
+        }else if (lt == HISTORY) {
+            l = parse_history(options, params);
         }else if(lt == CRNN){
             l = parse_crnn(options, params);
         }else if(lt == CONNECTED){
@@ -1617,6 +1677,8 @@ network parse_network_cfg_custom_mem(const char *str, int batch, int time_steps)
         }
 
         // pre-allocate memory for inference on Tensor Cores (fp16)
+        *net.max_input16_size = 0;
+        *net.max_output16_size = 0;
         if (net.cudnn_half) {
             *net.max_input16_size = max_inputs;
             CHECK_CUDA(cudaMalloc((void **)net.input16_gpu, *net.max_input16_size * sizeof(short))); //sizeof(half)

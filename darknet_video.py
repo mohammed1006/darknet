@@ -69,6 +69,7 @@ def video_capture(frame_queue, darknet_image_queue):
         frame_resized = cv2.resize(frame_rgb, (width, height),
                                    interpolation=cv2.INTER_LINEAR)
         frame_queue.put(frame_resized)
+        darknet_image = darknet.make_image(width, height, 3)
         darknet.copy_image_from_bytes(darknet_image, frame_resized.tobytes())
         darknet_image_queue.put(darknet_image)
     cap.release()
@@ -110,9 +111,9 @@ def drawing(frame_queue, detections_queue, fps_queue):
 
 if __name__ == '__main__':
     frame_queue = Queue()
-    darknet_image_queue = Queue(maxsize=1)
-    detections_queue = Queue(maxsize=1)
-    fps_queue = Queue(maxsize=1)
+    darknet_image_queue = Queue()
+    detections_queue = Queue()
+    fps_queue = Queue()
 
     args = parser()
     check_arguments_errors(args)
@@ -126,7 +127,6 @@ if __name__ == '__main__':
     # Create one with image we reuse for each detect
     width = darknet.network_width(network)
     height = darknet.network_height(network)
-    darknet_image = darknet.make_image(width, height, 3)
     input_path = str2int(args.input)
     cap = cv2.VideoCapture(input_path)
     Thread(target=video_capture, args=(frame_queue, darknet_image_queue)).start()

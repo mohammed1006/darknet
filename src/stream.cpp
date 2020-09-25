@@ -245,7 +245,7 @@ void stream(char *cfgfile, char *weightfile, float thresh, float hier_thresh, in
     demo_thresh = thresh;
     demo_ext_output = ext_output;
     demo_json_port = json_port;
-    printf("Demo\n");
+    printf("Stream\n");
     net = parse_network_cfg_custom(cfgfile, 1, 1);    // set batch=1
     if(weightfile){
         load_weights(&net, weightfile);
@@ -315,11 +315,12 @@ void stream(char *cfgfile, char *weightfile, float thresh, float hier_thresh, in
     }
 
     int count = 0;
+    /*
     if(!prefix && !dont_show){
         int full_screen = 0;
         //create_window_cv("Demo", full_screen, 1352, 1013);
     }
-
+    */
 
     write_cv* output_video_writer = NULL;
     if (out_filename && !flag_exit)
@@ -575,6 +576,6 @@ void stream(char *cfgfile, char *weightfile, float thresh, float hier_thresh, in
     int benchmark, int benchmark_layers,
     int stream_bitrate, char *dst_stream_addr, int dst_frame_width, int dst_frame_height, char *stream_profile, int stream_gop_size, int stream_fps)
 {
-    fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
+    fprintf(stderr, "Stream needs OpenCV for webcam images.\n");
 }
 #endif

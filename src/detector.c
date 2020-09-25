@@ -8,7 +8,10 @@
 #include "box.h"
 #include "demo.h"
 #include "option_list.h"
+
+#ifdef STREAM
 #include "stream.h"
+#endif
 
 #ifndef __COMPAR_FN_T
 #define __COMPAR_FN_T
@@ -2033,11 +2036,14 @@ void run_detector(int argc, char **argv)
         if (0 == strcmp(argv[2], "demo")){
             demo(cfg, weights, thresh, hier_thresh, cam_index, filename, names, classes, avgframes, frame_skip, prefix, out_filename,
             mjpeg_port, dontdraw_bbox, json_port, dont_show, ext_output, letter_box, time_limit_sec, http_post_host, benchmark, benchmark_layers);
-        }else if (0 == strcmp(argv[2], "stream")){
+        }
+#ifdef STREAM
+        if (0 == strcmp(argv[2], "stream")){
             stream(cfg, weights, thresh, hier_thresh, cam_index, filename, names, classes, avgframes, frame_skip, prefix, out_filename,
             mjpeg_port, dontdraw_bbox, json_port, dont_show, ext_output, letter_box, time_limit_sec, http_post_host, benchmark, benchmark_layers,
             stream_bitrate, stream_addr, stream_frame_width, stream_frame_height, stream_profile, stream_gop_size, stream_fps);
         }
+#endif
         free_list_contents_kvp(options);
         free_list(options);
     }

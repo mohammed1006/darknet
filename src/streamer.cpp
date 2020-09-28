@@ -1,3 +1,4 @@
+//from https://github.com/andreanobile/opencv_ffmpeg_streaming/
 #include "streamer.hpp"
 
 #include <string>

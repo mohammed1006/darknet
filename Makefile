@@ -69,9 +69,9 @@ endif
 CPP=g++ -std=c++11
 NVCC=nvcc
 OPTS=-Ofast
-LDFLAGS= -lm -pthread -L/usr/local/lib -L/usr/local/Cellar/ffmpeg/4.1.3/lib -lavformat -lavcodec -lavutil -lswscale 
-COMMON= -Iinclude/ -I3rdparty/stb/include -I/usr/local/include -I/usr/local/Cellar/ffmpeg/4.1.3/include
-CFLAGS=-Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas #-fPIC -lavformat -lavcodec -lavutil -lswscale
+LDFLAGS= -lm -pthread
+COMMON= -Iinclude/ -I3rdparty/stb/include
+CFLAGS=-Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC
 
 ifeq ($(STREAM), 1)
 COMMON+= -DSTREAM

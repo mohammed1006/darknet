@@ -134,6 +134,7 @@ if __name__ == '__main__':
     height = darknet.network_height(network)
     input_path = str2int(args.input)
     cap = cv2.VideoCapture(input_path)
+    darknet_images = []
     for i in range(maxsize):
         darknet_image = darknet.make_image(width, height, 3)
         darknet_images.append(darknet_image)

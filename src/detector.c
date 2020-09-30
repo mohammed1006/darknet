@@ -192,11 +192,23 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     //while(i*imgs < N*120){
     while (get_current_iteration(net) < net.max_batches) {
         if (l.random && count++ % 10 == 0) {
-            float rand_coef = 1.4;
-            if (l.random != 1.0) rand_coef = l.random;
-            printf("Resizing, random_coef = %.2f \n", rand_coef);
-            float random_val = rand_scale(rand_coef);    // *x or /x
-            int dim_w = roundl(random_val*init_w / net.resize_step + 1) * net.resize_step;
+	    float rand_coef = l.random; // 0 or custom value
+	    float random_val = 0;
+            if (l.random == 1.0){
+		 rand_coef = 1.4; // resizing default value /1.4 - x1.4 
+	    }
+	    else if (l.random == 0.5) {
+		 rand_coef = 2.0; // resizing /2.0 - x1.0 (downsize only)
+	    }
+	    if (l.random == 0.5){
+		random_val = rand_scale_only_downsample(rand_coef);
+		printf("Resizing(only downsampling), random_coef = %.2f \n", rand_coef);
+	    } 
+	    else {
+		 random_val = rand_scale(rand_coef);    // *x or /x
+	    	 printf("Resizing, random_coef = %.2f \n", rand_coef);
+            }
+	    int dim_w = roundl(random_val*init_w / net.resize_step + 1) * net.resize_step;
             int dim_h = roundl(random_val*init_h / net.resize_step + 1) * net.resize_step;
             if (random_val < 1 && (dim_w > init_w || dim_h > init_h)) dim_w = init_w, dim_h = init_h;
 
@@ -228,7 +240,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
                         nets[k].layers[j].batch = dim_b;
                 }
                 net.batch = dim_b;
-                imgs = net.batch * net.subdivisions * ngpus;
+            
+	        imgs = net.batch * net.subdivisions * ngpus;
                 args.n = imgs;
                 printf("\n %d x %d  (batch = %d) \n", dim_w, dim_h, net.batch);
             }

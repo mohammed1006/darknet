@@ -13,7 +13,7 @@ Discussion:
  - [Google-groups](https://groups.google.com/forum/#!forum/darknet)
  - [Discord](https://discord.gg/zSq8rtW)
 
-About Darknet framework: http://pjreddie.com/darknet/
+About the Darknet framework: http://pjreddie.com/darknet/
 
 [![Darknet Continuous Integration](https://github.com/AlexeyAB/darknet/workflows/Darknet%20Continuous%20Integration/badge.svg)](https://github.com/AlexeyAB/darknet/actions?query=workflow%3A%22Darknet+Continuous+Integration%22)
 [![CircleCI](https://circleci.com/gh/AlexeyAB/darknet.svg?style=svg)](https://circleci.com/gh/AlexeyAB/darknet)

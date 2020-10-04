@@ -25,6 +25,15 @@ namespace layer
 
     }
 
+    void Activation::backward(std::shared_ptr<network::NetworkState>& netState)
+    {
+
+    }
+    void Activation::update(int, float, float, float)
+    {
+
+    }
+
     void Activation::activateOnOutput()
     {
         int i;

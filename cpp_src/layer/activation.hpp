@@ -6,7 +6,7 @@
 
 #include "layer/layer.hpp"
 #include "types/enum.hpp"
-
+#include "ops/activation.hpp"
 
 namespace darknet
 {
@@ -46,7 +46,6 @@ namespace layer
             std::cerr << "Couldn't find activation function " << s << ", going with ReLU" << std::endl;
             return ActivationType::RELU;
         }
-        ActivationType actType;
         static inline float stair(float x)
         {
             int n = std::floor(x);
@@ -128,12 +127,14 @@ namespace layer
         }
         static inline float plse_gradient(float x){return (x < 0 || x > 1) ? .01f : .125f;}
 
+
         /******************************************************
          * Array operations                                   *
          ******************************************************/
-
         void activateOnOutput();
         float activate(float x);
+
+        ActivationType actType;
     public:
         /**
          * @brief Construct a new Activation layer

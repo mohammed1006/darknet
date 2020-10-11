@@ -1,3 +1,9 @@
+# Design Decisions
+
+- CUDA/C++: http://alanpryorjr.com/2017-02-11-Flexible-CUDA/
+- Memory management: https://github.com/NVIDIA/cnmem
+- c++ style cuda api: https://github.com/eyalroz/cuda-api-wrappers
+
 # Yolo v4, v3 and v2 for Windows and Linux
 
 ## (neural networks for object detection)

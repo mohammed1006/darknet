@@ -1,8 +1,26 @@
 #pragma once
 
+#include <ostream>
 
 namespace darknet
 {
+    enum DeviceType {
+        CPUDEVICE,
+        GPUDEVICE
+    };
+
+    enum DataType {
+        DT_FLOAT16,
+        DT_FLOAT32,
+        DT_FLOAT64,
+        DT_INT8,
+        DT_INT32,
+        DT_INT64,
+        DT_UINT8,
+        DT_UINT32,
+        DT_UINT64
+    };
+    
     enum ActivationType {
         LOGISTIC,
         RELU,
@@ -71,4 +89,7 @@ namespace darknet
         CONTRASTIVE
     };
 
+    
+    std::ostream& operator<< (std::ostream& out, const DataType& obj);
+    std::ostream& operator<< (std::ostream& out, const DeviceType& obj);
 } // namespace darknet

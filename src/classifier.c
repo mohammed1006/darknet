@@ -1,9 +1,9 @@
+#include <cassert>
 #include "network.h"
 #include "utils.h"
 #include "parser.h"
 #include "option_list.h"
 #include "blas.h"
-#include "assert.h"
 #include "classifier.h"
 #include "dark_cuda.h"
 #ifdef WIN32

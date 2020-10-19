@@ -1,4 +1,3 @@
-
 #include "network.h"
 #include "parser.h"
 #include "blas.h"

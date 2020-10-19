@@ -13,9 +13,9 @@ def parser():
     parser = argparse.ArgumentParser(description="YOLO Object Detection")
     parser.add_argument("--input", type=str, default="",
                         help="image source. It can be a single image, a"
-                        "txt with paths to them, or a folder. Image valid"
-                        " formats are jpg, jpeg or png."
-                        "If no input is given, ")
+                             "txt with paths to them, or a folder. Image valid"
+                             " formats are jpg, jpeg or png."
+                             "If no input is given, ")
     parser.add_argument("--batch_size", default=1, type=int,
                         help="number of images to be processed at the same time")
     parser.add_argument("--weights", default="yolov4.weights",
@@ -38,13 +38,13 @@ def parser():
 def check_arguments_errors(args):
     assert 0 < args.thresh < 1, "Threshold should be a float between zero and one (non-inclusive)"
     if not os.path.exists(args.config_file):
-        raise(ValueError("Invalid config path {}".format(os.path.abspath(args.config_file))))
+        raise (ValueError("Invalid config path {}".format(os.path.abspath(args.config_file))))
     if not os.path.exists(args.weights):
-        raise(ValueError("Invalid weight path {}".format(os.path.abspath(args.weights))))
+        raise (ValueError("Invalid weight path {}".format(os.path.abspath(args.weights))))
     if not os.path.exists(args.data_file):
-        raise(ValueError("Invalid data file path {}".format(os.path.abspath(args.data_file))))
+        raise (ValueError("Invalid data file path {}".format(os.path.abspath(args.data_file))))
     if args.input and not os.path.exists(args.input):
-        raise(ValueError("Invalid image path {}".format(os.path.abspath(args.input))))
+        raise (ValueError("Invalid image path {}".format(os.path.abspath(args.input))))
 
 
 def check_batch_shape(images, batch_size):
@@ -75,8 +75,8 @@ def load_images(images_path):
     else:
         return glob.glob(
             os.path.join(images_path, "*.jpg")) + \
-            glob.glob(os.path.join(images_path, "*.png")) + \
-            glob.glob(os.path.join(images_path, "*.jpeg"))
+               glob.glob(os.path.join(images_path, "*.png")) + \
+               glob.glob(os.path.join(images_path, "*.jpeg"))
 
 
 def prepare_batch(images, network, channels=3):
@@ -92,7 +92,7 @@ def prepare_batch(images, network, channels=3):
         darknet_images.append(custom_image)
 
     batch_array = np.concatenate(darknet_images, axis=0)
-    batch_array = np.ascontiguousarray(batch_array.flat, dtype=np.float32)/255.0
+    batch_array = np.ascontiguousarray(batch_array.flat, dtype=np.float32) / 255.0
     darknet_images = batch_array.ctypes.data_as(darknet.POINTER(darknet.c_float))
     return darknet.IMAGE(width, height, channels, darknet_images)
 
@@ -141,7 +141,7 @@ def convert2relative(image, bbox):
     """
     x, y, w, h = bbox
     height, width, _ = image.shape
-    return x/width, y/height, w/width, h/height
+    return x / width, y / height, w / width, h / height
 
 
 def save_annotations(name, image, detections, class_names):
@@ -169,8 +169,8 @@ def batch_detection_example():
     )
     image_names = ['data/horses.jpg', 'data/horses.jpg', 'data/eagle.jpg']
     images = [cv2.imread(image) for image in image_names]
-    images, detections,  = batch_detection(network, images, class_names,
-                                           class_colors, batch_size=batch_size)
+    images, detections, = batch_detection(network, images, class_names,
+                                          class_colors, batch_size=batch_size)
     for name, image in zip(image_names, images):
         cv2.imwrite(name.replace("data/", ""), image)
     print(detections)
@@ -202,11 +202,11 @@ def main():
         prev_time = time.time()
         image, detections = image_detection(
             image_name, network, class_names, class_colors, args.thresh
-            )
+        )
         if args.save_labels:
             save_annotations(image_name, image, detections, class_names)
         darknet.print_detections(detections, args.ext_output)
-        fps = int(1/(time.time() - prev_time))
+        fps = int(1 / (time.time() - prev_time))
         print("FPS: {}".format(fps))
         if not args.dont_show:
             cv2.imshow('Inference', image)

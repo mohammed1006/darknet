@@ -44,13 +44,13 @@ def str2int(video_path):
 def check_arguments_errors(args):
     assert 0 < args.thresh < 1, "Threshold should be a float between zero and one (non-inclusive)"
     if not os.path.exists(args.config_file):
-        raise(ValueError("Invalid config path {}".format(os.path.abspath(args.config_file))))
+        raise (ValueError("Invalid config path {}".format(os.path.abspath(args.config_file))))
     if not os.path.exists(args.weights):
-        raise(ValueError("Invalid weight path {}".format(os.path.abspath(args.weights))))
+        raise (ValueError("Invalid weight path {}".format(os.path.abspath(args.weights))))
     if not os.path.exists(args.data_file):
-        raise(ValueError("Invalid data file path {}".format(os.path.abspath(args.data_file))))
+        raise (ValueError("Invalid data file path {}".format(os.path.abspath(args.data_file))))
     if str2int(args.input) == str and not os.path.exists(args.input):
-        raise(ValueError("Invalid video path {}".format(os.path.abspath(args.input))))
+        raise (ValueError("Invalid video path {}".format(os.path.abspath(args.input))))
 
 
 def set_saved_video(input_video, output_video, size):
@@ -80,7 +80,7 @@ def inference(darknet_image_queue, detections_queue, fps_queue):
         prev_time = time.time()
         detections = darknet.detect_image(network, class_names, darknet_image, thresh=args.thresh)
         detections_queue.put(detections)
-        fps = int(1/(time.time() - prev_time))
+        fps = int(1 / (time.time() - prev_time))
         fps_queue.put(fps)
         print("FPS: {}".format(fps))
         darknet.print_detections(detections, args.ext_output)
@@ -118,11 +118,11 @@ if __name__ == '__main__':
     args = parser()
     check_arguments_errors(args)
     network, class_names, class_colors = darknet.load_network(
-            args.config_file,
-            args.data_file,
-            args.weights,
-            batch_size=1
-        )
+        args.config_file,
+        args.data_file,
+        args.weights,
+        batch_size=1
+    )
     # Darknet doesn't accept numpy images.
     # Create one with image we reuse for each detect
     width = darknet.network_width(network)

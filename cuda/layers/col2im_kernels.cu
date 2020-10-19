@@ -2,7 +2,7 @@
 #include <curand.h>
 #include <cublas_v2.h>
 
-#include "col2im.h"
+#include "layers/col2im.h"
 #include "dark_cuda.h"
 
 // src: https://github.com/BVLC/caffe/blob/master/src/caffe/util/im2col.cu

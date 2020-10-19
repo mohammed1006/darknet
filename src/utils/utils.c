@@ -1,7 +1,7 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
-#include "utils.h"
+#include "utils/utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,7 +12,7 @@
 #include <assert.h>
 #include <float.h>
 #include <limits.h>
-#include "darkunistd.h"
+#include "utils/darkunistd.h"
 #ifdef WIN32
 #include "gettimeofday.h"
 #else

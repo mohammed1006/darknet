@@ -2,13 +2,13 @@
 #include <curand.h>
 #include <cublas_v2.h>
 
-#include "convolutional_layer.h"
-#include "deconvolutional_layer.h"
-#include "gemm.h"
-#include "blas.h"
-#include "im2col.h"
-#include "col2im.h"
-#include "utils.h"
+#include "layers/convolutional_layer.h"
+#include "layers/deconvolutional_layer.h"
+#include "layers/im2col.h"
+#include "layers/col2im.h"
+#include "utils/blas.h"
+#include "utils/gemm.h"
+#include "utils/utils.h"
 #include "dark_cuda.h"
 
 extern "C" void forward_deconvolutional_layer_gpu(deconvolutional_layer layer, network_state state) {

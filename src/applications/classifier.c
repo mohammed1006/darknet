@@ -1,10 +1,10 @@
 #include "assert.h"
 #include "network.h"
-#include "utils.h"
-#include "parser.h"
-#include "option_list.h"
-#include "blas.h"
-#include "classifier.h"
+#include "utils/utils.h"
+#include "utils/parser.h"
+#include "utils/option_list.h"
+#include "utils/blas.h"
+#include "applications/classifier.h"
 #include "dark_cuda.h"
 #ifdef WIN32
 #include <time.h>

@@ -2,9 +2,9 @@
 #define CONVOLUTIONAL_LAYER_H
 
 #include "dark_cuda.h"
-#include "image.h"
-#include "activations.h"
-#include "layer.h"
+#include "images/image.h"
+#include "layers/activations.h"
+#include "layers/layer.h"
 #include "network.h"
 
 typedef layer convolutional_layer;

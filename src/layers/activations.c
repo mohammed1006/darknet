@@ -1,4 +1,4 @@
-#include "activations.h"
+#include "layers/activations.h"
 
 #include <math.h>
 #include <stdio.h>

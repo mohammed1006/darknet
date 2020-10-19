@@ -6,7 +6,7 @@
 #include "darknet.h"
 #include "matrix.h"
 #include "list.h"
-#include "image.h"
+#include "images/image.h"
 #ifdef __cplusplus
 extern "C" {
 #endif

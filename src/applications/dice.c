@@ -1,6 +1,6 @@
 #include "network.h"
-#include "utils.h"
-#include "parser.h"
+#include "utils/utils.h"
+#include "utils/parser.h"
 
 char *dice_labels[] = {"face1","face2","face3","face4","face5","face6"};
 

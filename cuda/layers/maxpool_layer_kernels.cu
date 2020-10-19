@@ -2,9 +2,9 @@
 #include <curand.h>
 #include <cublas_v2.h>
 
-#include "maxpool_layer.h"
-#include "convolutional_layer.h"
-#include "blas.h"
+#include "layers/maxpool_layer.h"
+#include "layers/convolutional_layer.h"
+#include "utils/blas.h"
 #include "dark_cuda.h"
 
 __global__ void

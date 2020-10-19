@@ -4,7 +4,7 @@
 #include <cublas_v2.h>
 #include <float.h>
 
-#include "activations.h"
+#include "layers/activations.h"
 #include "dark_cuda.h"
 
 __device__ float lhtan_activate_kernel(float x) {

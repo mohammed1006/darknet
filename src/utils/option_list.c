@@ -1,9 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "option_list.h"
-#include "utils.h"
-#include "data.h"
+#include "utils/option_list.h"
+#include "utils/utils.h"
+#include "utils/data.h"
 
 list *read_data_cfg(char *filename)
 {

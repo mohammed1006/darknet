@@ -1,9 +1,9 @@
 #include "network.h"
-#include "utils.h"
-#include "parser.h"
-#include "option_list.h"
-#include "blas.h"
-#include "classifier.h"
+#include "utils/utils.h"
+#include "utils/parser.h"
+#include "utils/option_list.h"
+#include "utils/blas.h"
+#include "applications/classifier.h"
 #ifdef WIN32
 #include <time.h>
 #include "gettimeofday.h"

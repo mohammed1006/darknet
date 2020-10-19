@@ -1,9 +1,9 @@
 #include "network.h"
-#include "detection_layer.h"
-#include "cost_layer.h"
-#include "utils.h"
-#include "parser.h"
-#include "box.h"
+#include "layers/box.h"
+#include "layers/cost_layer.h"
+#include "layers/detection_layer.h"
+#include "utils/utils.h"
+#include "utils/parser.h"
 
 void train_swag(char *cfgfile, char *weightfile)
 {

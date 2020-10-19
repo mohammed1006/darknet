@@ -1,5 +1,5 @@
-#include "blas.h"
-#include "utils.h"
+#include "utils/blas.h"
+#include "utils/utils.h"
 
 #include <math.h>
 #include <assert.h>

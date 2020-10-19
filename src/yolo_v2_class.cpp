@@ -4,15 +4,15 @@
 #include "network.h"
 
 extern "C" {
-#include "detection_layer.h"
-#include "region_layer.h"
-#include "cost_layer.h"
-#include "utils.h"
-#include "parser.h"
-#include "box.h"
-#include "image.h"
+#include "layers/box.h"
+#include "layers/cost_layer.h"
+#include "layers/detection_layer.h"
+#include "layers/region_layer.h"
+#include "images/image.h"
+#include "utils/option_list.h"
+#include "utils/parser.h"
+#include "utils/utils.h"
 #include "demo.h"
-#include "option_list.h"
 #include "stb_image.h"
 }
 //#include <sys/time.h>

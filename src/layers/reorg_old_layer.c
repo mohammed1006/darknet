@@ -1,7 +1,7 @@
-#include "reorg_old_layer.h"
-#include "utils.h"
+#include "layers/reorg_old_layer.h"
 #include "dark_cuda.h"
-#include "blas.h"
+#include "utils/blas.h"
+#include "utils/utils.h"
 #include <stdio.h>
 
 

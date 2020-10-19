@@ -1,23 +1,23 @@
 #include "network.h"
-#include "detection_layer.h"
-#include "region_layer.h"
-#include "cost_layer.h"
-#include "utils.h"
-#include "parser.h"
-#include "box.h"
-#include "image.h"
+#include "layers/box.h"
+#include "layers/cost_layer.h"
+#include "layers/detection_layer.h"
+#include "layers/region_layer.h"
+#include "utils/utils.h"
+#include "utils/parser.h"
+#include "images/image.h"
 #include "demo.h"
 #include "darknet.h"
 #ifdef WIN32
 #include <time.h>
-#include "gettimeofday.h"
+#include "utils/gettimeofday.h"
 #else
 #include <sys/time.h>
 #endif
 
 #ifdef OPENCV
 
-#include "http_stream.h"
+#include "images/http_stream.h"
 
 static char **demo_names;
 static image **demo_alphabet;

@@ -1,8 +1,8 @@
-#include "softmax_layer.h"
-#include "blas.h"
+#include "layers/softmax_layer.h"
 #include "dark_cuda.h"
-#include "utils.h"
-#include "blas.h"
+#include "utils/blas.h"
+#include "utils/utils.h"
+#include "utils/blas.h"
 
 #include <float.h>
 #include <math.h>

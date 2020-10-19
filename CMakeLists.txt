@@ -8,15 +8,12 @@ set(Darknet_VERSION ${Darknet_MAJOR_VERSION}.${Darknet_MINOR_VERSION}.${Darknet_
 
 project(Darknet VERSION ${Darknet_VERSION})
 
-message("${CMAKE_CURRENT_LIST_DIR}")
-message("${CMAKE_MODULE_PATH}")
-
-message("${INSTALL_INCLUDE_DIR}")
 include(cmake/darknetOptions.cmake)
-message("${INSTALL_INCLUDE_DIR}")
 
 set(DARKNET_INSTALL_INCLUDE_DIR ${INSTALL_INCLUDE_DIR})
-# Make relative paths absolute (needed later on)
+
+### Make relative paths absolute (needed later on)
+
 foreach (p LIB BIN INCLUDE CMAKE)
     set(var INSTALL_${p}_DIR)
     if (NOT IS_ABSOLUTE "${${var}}")
@@ -29,57 +26,73 @@ configure_file(
         "${CMAKE_CURRENT_LIST_DIR}/include/version.h"
 )
 
-#look for all *.h files in include folder
-file(GLOB headers "${CMAKE_CURRENT_LIST_DIR}/include/*.h")
-#add also files in the include folder
-list(APPEND headers
-        ${CMAKE_CURRENT_LIST_DIR}/include/darknet.h
-        )
-#add also *.hpp files
-list(APPEND headers
-        ${CMAKE_CURRENT_LIST_DIR}/include/realsense-opencv-helpers.hpp
-        )
-#remove windows only files
-if (NOT MSVC)
-    list(REMOVE_ITEM headers
-            ${CMAKE_CURRENT_LIST_DIR}/include/gettimeofday.h
-            ${CMAKE_CURRENT_LIST_DIR}/include/getopt.h
-            )
-endif ()
-#set(exported_headers ${headers})
+### Collect all source files
 
-#look for all *.c files in src folder
-file(GLOB sources "${CMAKE_CURRENT_LIST_DIR}/src/*.c")
-#add also .cpp files
-list(APPEND sources
-        ${CMAKE_CURRENT_LIST_DIR}/src/http_stream.cpp
-        ${CMAKE_CURRENT_LIST_DIR}/src/image_opencv.cpp
-        )
-#remove darknet.c file which is necessary only for the executable, not for the lib
-list(REMOVE_ITEM sources
-        ${CMAKE_CURRENT_LIST_DIR}/src/darknet.c
-        )
-#remove windows only files
+file(GLOB sources_src_c "${CMAKE_CURRENT_LIST_DIR}/src/*.c")
 if (NOT MSVC)
-    list(REMOVE_ITEM sources
+    list(REMOVE_ITEM sources_src_c
             ${CMAKE_CURRENT_LIST_DIR}/src/gettimeofday.c
             ${CMAKE_CURRENT_LIST_DIR}/src/getopt.c
             )
 endif ()
+list(REMOVE_ITEM sources_src_c ${CMAKE_CURRENT_LIST_DIR}/src/darknet.c)  # only needed for executable and added explicitly there
+file(GLOB sources_src_cpp "${CMAKE_CURRENT_LIST_DIR}/src/*.cpp")
+list(REMOVE_ITEM sources_src_cpp ${CMAKE_CURRENT_LIST_DIR}/src/yolo_v2_class.cpp)  # not needed for executable but for library
+list(REMOVE_ITEM sources_src_cpp ${CMAKE_CURRENT_LIST_DIR}/src/yolo_console_dll.cpp)  # needed only for uselib
+SET(SOURCES_SRC ${sources_src_c} ${sources_src_cpp})
+
+file(GLOB sources_src_applications_c "${CMAKE_CURRENT_LIST_DIR}/src/applications/*.c")
+file(GLOB sources_src_applications_cpp "${CMAKE_CURRENT_LIST_DIR}/src/applications/*.cpp")
+SET(SOURCES_SRC_APPLICATIONS ${sources_src_applications_c} ${sources_src_applications_cpp})
+
+file(GLOB sources_src_images_c "${CMAKE_CURRENT_LIST_DIR}/src/images/*.c")
+file(GLOB sources_src_images_cpp "${CMAKE_CURRENT_LIST_DIR}/src/images/*.cpp")
+SET(SOURCES_SRC_IMAGES ${sources_src_images_c} ${sources_src_images_cpp})
+
+file(GLOB sources_src_layers_c "${CMAKE_CURRENT_LIST_DIR}/src/layers/*.c")
+file(GLOB sources_src_layers_cpp "${CMAKE_CURRENT_LIST_DIR}/src/layers/*.cpp")
+SET(SOURCES_SRC_LAYERS ${sources_src_layers_c} ${sources_src_layers_cpp})
+
+file(GLOB sources_src_utils_c "${CMAKE_CURRENT_LIST_DIR}/src/utils/*.c")
+file(GLOB sources_src_utils_cpp "${CMAKE_CURRENT_LIST_DIR}/src/utils/*.cpp")
+SET(SOURCES_SRC_UTILS ${sources_src_utils_c} ${sources_src_utils_cpp})
+
+SET(SOURCES ${SOURCES_SRC} ${SOURCES_SRC_APPLICATIONS} ${SOURCES_SRC_IMAGES} ${SOURCES_SRC_LAYERS} ${SOURCES_SRC_UTILS})
+
+### Collect all cuda files
 
 if (ENABLE_CUDA)
-    file(GLOB cuda_sources "${CMAKE_CURRENT_LIST_DIR}/cuda/*.cu")
+    file(GLOB cuda_sources_cuda_cu "${CMAKE_CURRENT_LIST_DIR}/cuda/*.cu")
+    SET(CUDA_SOURCES_CUDA ${cuda_sources_cuda_cu})
+
+    file(GLOB cuda_sources_cuda_layers_cu "${CMAKE_CURRENT_LIST_DIR}/cuda/layers/*.cu")
+    SET(CUDA_SOURCES_CUDA_LAYERS ${cuda_sources_cuda_layers_cu})
+
+    file(GLOB cuda_sources_cuda_utils_cu "${CMAKE_CURRENT_LIST_DIR}/cuda/utils/*.cu")
+    SET(CUDA_SOURCES_CUDA_UTILS ${cuda_sources_cuda_utils_cu})
+
+    SET(CUDA_SOURCES ${CUDA_SOURCES_CUDA} ${CUDA_SOURCES_CUDA_LAYERS} ${CUDA_SOURCES_CUDA_UTILS})
     message("WITH CUDA!!!")
-else()
+else ()
     message("NO CUDA!!!")
 endif ()
 
+message("${SOURCES}")
+message("${CUDA_SOURCES}")
+
+### Set source files as c++/cpp files
+
 if (BUILD_AS_CPP)
-    set_source_files_properties(${sources} PROPERTIES LANGUAGE CXX)
+    set_source_files_properties(${SOURCES} PROPERTIES LANGUAGE CXX)
 endif ()
 
-include_directories(dark include)
-add_library(dark ${CMAKE_CURRENT_LIST_DIR}/include/yolo_v2_class.hpp ${CMAKE_CURRENT_LIST_DIR}/src/yolo_v2_class.cpp ${sources} ${headers} ${cuda_sources})
+### SET INCLUDE DIRECTORIES
+
+include_directories(include)
+
+### TARGET DARK ###
+
+add_library(dark ${CMAKE_CURRENT_LIST_DIR}/src/yolo_v2_class.cpp ${SOURCES} ${CUDA_SOURCES})
 set_target_properties(dark PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if (ENABLE_CUDA)
     set_target_properties(dark PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
@@ -91,35 +104,35 @@ if (BUILD_AS_CPP)
     set_target_properties(dark PROPERTIES LINKER_LANGUAGE CXX)
 endif ()
 set_target_properties(dark PROPERTIES OUTPUT_NAME "darknet")
+target_include_directories(dark PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/cuda> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:${DARKNET_INSTALL_INCLUDE_DIR}> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
+
+### TARGET uselib_track ###
 
 if (OpenCV_FOUND AND OpenCV_VERSION VERSION_GREATER "3.0" AND BUILD_USELIB_TRACK)
-    include_directories(uselib_track include)
     add_executable(uselib_track ${CMAKE_CURRENT_LIST_DIR}/src/yolo_console_dll.cpp)
 endif ()
 
-include_directories(uselib include)
+### TARGET uselib ###
+
 add_executable(uselib ${CMAKE_CURRENT_LIST_DIR}/src/yolo_console_dll.cpp)
 if (BUILD_AS_CPP)
     set_target_properties(uselib PROPERTIES LINKER_LANGUAGE CXX)
 endif ()
+target_include_directories(uselib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/cuda> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:${DARKNET_INSTALL_INCLUDE_DIR}> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
 
-include_directories(darknet include)
-message("${sources}")
-message("${headers}")
-message("${cuda_sources}")
-add_executable(darknet ${CMAKE_CURRENT_LIST_DIR}/src/darknet.c ${sources} ${headers} ${cuda_sources})
+### TARGET DARKNET ###
+
+add_executable(darknet ${CMAKE_CURRENT_LIST_DIR}/src/darknet.c ${SOURCES} ${CUDA_SOURCES})
 if (BUILD_AS_CPP)
     set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/src/darknet.c PROPERTIES LANGUAGE CXX)
     set_target_properties(darknet PROPERTIES LINKER_LANGUAGE CXX)
 endif ()
+target_include_directories(darknet PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/cuda> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:${DARKNET_INSTALL_INCLUDE_DIR}> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
 
-target_include_directories(darknet PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:${DARKNET_INSTALL_INCLUDE_DIR}> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
-target_include_directories(dark PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:${DARKNET_INSTALL_INCLUDE_DIR}> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
-target_include_directories(uselib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:${DARKNET_INSTALL_INCLUDE_DIR}> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
+### FINAL THINGS: link libraries
 
 include(cmake/darknetLinkLibraries.cmake)
 
-message("${INSTALL_BIN_DIR}")
-message("${INSTALL_LIB_DIR}")
-message("${INSTALL_INCLUDE_DIR}")
+### FINAL THINGS: set install paths
+
 include(cmake/darknetInstall.cmake)

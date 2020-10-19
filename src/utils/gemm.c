@@ -1,6 +1,6 @@
-#include "gemm.h"
-#include "utils.h"
-#include "im2col.h"
+#include "utils/gemm.h"
+#include "utils/utils.h"
+#include "layers/im2col.h"
 #include "dark_cuda.h"
 #include <stdlib.h>
 #include <stdio.h>

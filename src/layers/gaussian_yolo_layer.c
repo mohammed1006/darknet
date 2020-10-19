@@ -4,12 +4,12 @@
 // arxiv.org: https://arxiv.org/abs/1904.04620v2
 // source code: https://github.com/jwchoi384/Gaussian_YOLOv3
 
-#include "gaussian_yolo_layer.h"
-#include "activations.h"
-#include "blas.h"
-#include "box.h"
+#include "layers/gaussian_yolo_layer.h"
+#include "layers/activations.h"
+#include "layers/box.h"
 #include "dark_cuda.h"
-#include "utils.h"
+#include "utils/blas.h"
+#include "utils/utils.h"
 
 #include <stdio.h>
 #include <assert.h>

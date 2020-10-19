@@ -2,10 +2,10 @@
 #include <curand.h>
 #include <cublas_v2.h>
 
-#include "crop_layer.h"
-#include "utils.h"
+#include "layers/crop_layer.h"
 #include "dark_cuda.h"
-#include "image.h"
+#include "utils/utils.h"
+#include "images/image.h"
 
 __device__ float get_pixel_kernel(float *image, int w, int h, int x, int y, int c) {
     if (x < 0 || x >= w || y < 0 || y >= h) return 0;

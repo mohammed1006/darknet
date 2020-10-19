@@ -2,15 +2,15 @@
 #include <curand.h>
 #include <cublas_v2.h>
 
-#include "convolutional_layer.h"
-#include "batchnorm_layer.h"
-#include "gemm.h"
-#include "blas.h"
-#include "im2col.h"
-#include "col2im.h"
-#include "utils.h"
+#include "layers/convolutional_layer.h"
+#include "layers/batchnorm_layer.h"
+#include "layers/im2col.h"
+#include "layers/col2im.h"
+#include "layers/box.h"
+#include "utils/blas.h"
+#include "utils/gemm.h"
+#include "utils/utils.h"
 #include "dark_cuda.h"
-#include "box.h"
 
 
 __global__ void binarize_kernel(float *x, int n, float *binary) {

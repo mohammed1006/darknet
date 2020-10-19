@@ -1,7 +1,7 @@
 #ifndef OPTION_LIST_H
 #define OPTION_LIST_H
 #include "darknet.h"
-#include "list.h"
+#include "utils/list.h"
 
 typedef struct{
     char *key;

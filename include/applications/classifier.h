@@ -1,7 +1,7 @@
 #ifndef CLASSIFIER_H
 #define CLASSIFIER_H
 
-#include "list.h"
+#include "utils/list.h"
 #ifdef __cplusplus
 extern "C" {
 #endif

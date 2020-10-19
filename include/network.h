@@ -4,12 +4,12 @@
 #include "darknet.h"
 
 #include <stdint.h>
-#include "layer.h"
+#include "layers/layer.h"
 
 
-#include "image.h"
-#include "data.h"
-#include "tree.h"
+#include "images/image.h"
+#include "utils/data.h"
+#include "utils/tree.h"
 
 #ifdef __cplusplus
 extern "C" {

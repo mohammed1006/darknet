@@ -1,8 +1,8 @@
 #ifndef IMAGE_OPENCV_H
 #define IMAGE_OPENCV_H
 
-#include "image.h"
-#include "matrix.h"
+#include "images/image.h"
+#include "utils/matrix.h"
 
 #ifdef __cplusplus
 extern "C" {

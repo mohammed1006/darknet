@@ -5,7 +5,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "image.h"
+#include "images/image.h"
 #include <stdint.h>
 
 void send_json(detection *dets, int nboxes, int classes, char **names, long long int frame_id, int port, int timeout);

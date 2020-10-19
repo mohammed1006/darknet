@@ -1,9 +1,9 @@
-#include "yolo_layer.h"
-#include "activations.h"
-#include "blas.h"
-#include "box.h"
+#include "layers/yolo_layer.h"
+#include "layers/activations.h"
+#include "layers/box.h"
 #include "dark_cuda.h"
-#include "utils.h"
+#include "utils/blas.h"
+#include "utils/utils.h"
 
 #include <math.h>
 #include <stdio.h>

@@ -1,9 +1,9 @@
-#include "shortcut_layer.h"
-#include "convolutional_layer.h"
+#include "layers/shortcut_layer.h"
+#include "layers/convolutional_layer.h"
 #include "dark_cuda.h"
-#include "blas.h"
-#include "utils.h"
-#include "gemm.h"
+#include "utils/blas.h"
+#include "utils/utils.h"
+#include "utils/gemm.h"
 #include <stdio.h>
 #include <assert.h>
 

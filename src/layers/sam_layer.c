@@ -1,7 +1,7 @@
-#include "sam_layer.h"
-#include "utils.h"
+#include "layers/sam_layer.h"
 #include "dark_cuda.h"
-#include "blas.h"
+#include "utils/utils.h"
+#include "utils/blas.h"
 #include <stdio.h>
 #include <assert.h>
 

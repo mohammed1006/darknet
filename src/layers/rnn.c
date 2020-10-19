@@ -1,8 +1,8 @@
 #include "network.h"
-#include "cost_layer.h"
-#include "utils.h"
-#include "blas.h"
-#include "parser.h"
+#include "layers/cost_layer.h"
+#include "utils/blas.h"
+#include "utils/parser.h"
+#include "utils/utils.h"
 
 typedef struct {
     float *x;

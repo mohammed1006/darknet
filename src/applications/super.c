@@ -1,7 +1,7 @@
 #include "network.h"
-#include "cost_layer.h"
-#include "utils.h"
-#include "parser.h"
+#include "layers/cost_layer.h"
+#include "utils/utils.h"
+#include "utils/parser.h"
 
 
 void train_super(char *cfgfile, char *weightfile)

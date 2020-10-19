@@ -6,11 +6,11 @@
 #include <crtdbg.h>
 #endif
 
-#include "parser.h"
-#include "utils.h"
+#include "utils/parser.h"
+#include "utils/utils.h"
 #include "dark_cuda.h"
-#include "blas.h"
-#include "connected_layer.h"
+#include "utils/blas.h"
+#include "layers/connected_layer.h"
 
 
 extern void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filename, int top);
@@ -181,7 +181,7 @@ void partial(char *cfgfile, char *weightfile, char *outfile, int max)
     save_weights_upto(net, outfile, max);
 }
 
-#include "convolutional_layer.h"
+#include "layers/convolutional_layer.h"
 void rescale_net(char *cfgfile, char *weightfile, char *outfile)
 {
     gpu_index = -1;

@@ -1,6 +1,6 @@
 #ifndef GEMM_H
 #define GEMM_H
-#include "activations.h"
+#include "layers/activations.h"
 #include <stdint.h>
 #include <stddef.h>
 #ifdef __cplusplus

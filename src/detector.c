@@ -1,13 +1,13 @@
-#include <stdlib.h>
+#include "stdlib.h"
 #include "darknet.h"
 #include "network.h"
-#include "region_layer.h"
-#include "cost_layer.h"
-#include "utils.h"
-#include "parser.h"
-#include "box.h"
+#include "layers/box.h"
+#include "layers/cost_layer.h"
+#include "layers/region_layer.h"
+#include "utils/option_list.h"
+#include "utils/parser.h"
+#include "utils/utils.h"
 #include "demo.h"
-#include "option_list.h"
 
 #ifndef __COMPAR_FN_T
 #define __COMPAR_FN_T
@@ -17,7 +17,7 @@ typedef __compar_fn_t comparison_fn_t;
 #endif
 #endif
 
-#include "http_stream.h"
+#include "images/http_stream.h"
 
 int check_mistakes = 0;
 

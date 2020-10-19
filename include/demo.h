@@ -1,7 +1,7 @@
 #ifndef DEMO_H
 #define DEMO_H
 
-#include "image.h"
+#include "images/image.h"
 #ifdef __cplusplus
 extern "C" {
 #endif

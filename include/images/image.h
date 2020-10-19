@@ -8,9 +8,9 @@
 #include <string.h>
 #include <math.h>
 
-#include "image_opencv.h"
+#include "images/image_opencv.h"
 
-#include "box.h"
+#include "layers/box.h"
 #ifdef __cplusplus
 extern "C" {
 #endif

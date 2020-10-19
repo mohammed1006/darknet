@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
-#include "list.h"
-#include "utils.h"
-#include "option_list.h"
+#include "utils/list.h"
+#include "utils/utils.h"
+#include "utils/option_list.h"
 
 list *make_list()
 {

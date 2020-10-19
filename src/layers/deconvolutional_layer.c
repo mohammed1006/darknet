@@ -1,10 +1,10 @@
-#include "deconvolutional_layer.h"
-#include "convolutional_layer.h"
-#include "utils.h"
-#include "im2col.h"
-#include "col2im.h"
-#include "blas.h"
-#include "gemm.h"
+#include "layers/deconvolutional_layer.h"
+#include "layers/convolutional_layer.h"
+#include "layers/im2col.h"
+#include "layers/col2im.h"
+#include "utils/blas.h"
+#include "utils/gemm.h"
+#include "utils/utils.h"
 #include <stdio.h>
 #include <time.h>
 

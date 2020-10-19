@@ -1,9 +1,9 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
-#include "image.h"
-#include "utils.h"
-#include "blas.h"
+#include "images/image.h"
+#include "utils/utils.h"
+#include "utils/blas.h"
 #include "dark_cuda.h"
 #include <stdio.h>
 #ifndef _USE_MATH_DEFINES

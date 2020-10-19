@@ -1,7 +1,7 @@
 #ifndef SCALE_CHANNELS_LAYER_H
 #define SCALE_CHANNELS_LAYER_H
 
-#include "layer.h"
+#include "layers/layer.h"
 #include "network.h"
 
 #ifdef __cplusplus

@@ -1,6 +1,6 @@
 #include "network.h"
-#include "utils.h"
-#include "parser.h"
+#include "utils/utils.h"
+#include "utils/parser.h"
 
 void fix_data_captcha(data d, int mask)
 {

@@ -1,6 +1,6 @@
-#include "batchnorm_layer.h"
-#include "blas.h"
-#include "utils.h"
+#include "layers/batchnorm_layer.h"
+#include "utils/blas.h"
+#include "utils/utils.h"
 #include <stdio.h>
 
 layer make_batchnorm_layer(int batch, int w, int h, int c, int train)

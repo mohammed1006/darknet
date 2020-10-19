@@ -2,7 +2,7 @@
 #define YOLO_LAYER_H
 
 //#include "darknet.h"
-#include "layer.h"
+#include "layers/layer.h"
 #include "network.h"
 
 #ifdef __cplusplus

@@ -1,6 +1,6 @@
-#include "utils.h"
-#include "crop_layer.h"
+#include "layers/crop_layer.h"
 #include "dark_cuda.h"
+#include "utils/utils.h"
 #include <stdio.h>
 
 image get_crop_image(crop_layer l)

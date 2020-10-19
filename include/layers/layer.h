@@ -1,9 +1,9 @@
 #ifndef BASE_LAYER_H
 #define BASE_LAYER_H
 
-#include "activations.h"
+#include "layers/activations.h"
 #include "stddef.h"
-#include "tree.h"
+#include "utils/tree.h"
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -1,7 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 #include "darknet.h"
-#include "list.h"
+#include "utils/list.h"
 
 #include <stdio.h>
 #include <time.h>

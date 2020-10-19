@@ -5,7 +5,7 @@
 
 #ifdef GPU
 #include "dark_cuda.h"
-#include "tree.h"
+#include "utils/tree.h"
 #endif
 
 #ifdef __cplusplus

@@ -1,7 +1,7 @@
-#include "upsample_layer.h"
+#include "layers/upsample_layer.h"
 #include "dark_cuda.h"
-#include "utils.h"
-#include "blas.h"
+#include "utils/utils.h"
+#include "utils/blas.h"
 
 #include <stdio.h>
 

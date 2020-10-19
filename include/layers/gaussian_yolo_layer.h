@@ -3,7 +3,7 @@
 #define GAUSSIAN_YOLO_LAYER_H
 
 #include "darknet.h"
-#include "layer.h"
+#include "layers/layer.h"
 #include "network.h"
 
 layer make_gaussian_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int classes, int max_boxes);

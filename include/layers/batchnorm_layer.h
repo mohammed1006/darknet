@@ -1,8 +1,8 @@
 #ifndef BATCHNORM_LAYER_H
 #define BATCHNORM_LAYER_H
 
-#include "image.h"
-#include "layer.h"
+#include "images/image.h"
+#include "layers/layer.h"
 #include "network.h"
 
 #ifdef __cplusplus

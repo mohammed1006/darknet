@@ -3,13 +3,13 @@
 #include <cublas_v2.h>
 #include <cstring>
 
-#include "dropout_layer.h"
+#include "layers/dropout_layer.h"
 #include "dark_cuda.h"
-#include "utils.h"
-#include "blas.h"
+#include "utils/blas.h"
+#include "utils/utils.h"
 
-#include "image_opencv.h"
-#include "image.h"
+#include "images/image_opencv.h"
+#include "images/image.h"
 
 
 __global__ void

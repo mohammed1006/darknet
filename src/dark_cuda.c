@@ -10,8 +10,8 @@ int gpu_index = 0;
 #ifdef GPU
 
 #include "dark_cuda.h"
-#include "utils.h"
-#include "blas.h"
+#include "utils/utils.h"
+#include "utils/blas.h"
 #include "assert.h"
 #include <stdlib.h>
 #include <time.h>

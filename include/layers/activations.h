@@ -3,7 +3,7 @@
 #include "darknet.h"
 #include "dark_cuda.h"
 #include "math.h"
-#include "utils.h"
+#include "utils/utils.h"
 
 //typedef enum{
 //    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU, SWISH, MISH

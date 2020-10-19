@@ -3,7 +3,7 @@
 #include <cublas_v2.h>
 #include <stdint.h>
 
-#include "im2col.h"
+#include "layers/im2col.h"
 #include "dark_cuda.h"
 
 #include <stdio.h>

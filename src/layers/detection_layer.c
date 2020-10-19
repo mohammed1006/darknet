@@ -1,10 +1,10 @@
-#include "detection_layer.h"
-#include "activations.h"
-#include "softmax_layer.h"
-#include "blas.h"
-#include "box.h"
+#include "layers/detection_layer.h"
+#include "layers/activations.h"
+#include "layers/softmax_layer.h"
+#include "layers/box.h"
 #include "dark_cuda.h"
-#include "utils.h"
+#include "utils/blas.h"
+#include "utils/utils.h"
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>

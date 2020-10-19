@@ -2,8 +2,8 @@
 #ifndef RNN_LAYER_H
 #define RNN_LAYER_H
 
-#include "activations.h"
-#include "layer.h"
+#include "layers/activations.h"
+#include "layers/layer.h"
 #include "network.h"
 #define USET
 

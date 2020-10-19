@@ -27,7 +27,7 @@ static int nboxes = 0;
 static detection *dets = NULL;
 
 static network net;
-static image in_s ;
+static image in_s;
 static image det_s;
 
 static cap_cv *cap;
@@ -37,22 +37,21 @@ static int demo_ext_output = 0;
 static long long int frame_id = 0;
 static int demo_json_port = -1;
 
-
 static int avg_frames;
 static int demo_index = 0;
-static mat_cv** cv_images;
+static mat_cv **cv_images, **cv_depth_images;
 
-mat_cv* in_img;
-mat_cv* det_img;
-mat_cv* show_img;
+mat_cv *in_img, *in_depth;
+mat_cv *det_img, *det_depth;
+mat_cv *show_img, *show_depth;
 
 static volatile int flag_exit;
 static int letter_box = 0;
+static int input_realsense = 0;
 
 static const int thread_wait_ms = 1;
 static volatile int run_fetch_in_thread = 0;
 static volatile int run_detect_in_thread = 0;
-
 
 void *fetch_in_thread(void *ptr)
 {
@@ -62,10 +61,19 @@ void *fetch_in_thread(void *ptr)
             this_thread_yield();
         }
         int dont_close_stream = 0;    // set 1 if your IP-camera periodically turns off and turns on video-stream
-        if (letter_box)
-            in_s = get_image_from_stream_letterbox(cap, net.w, net.h, net.c, &in_img, dont_close_stream);
-        else
-            in_s = get_image_from_stream_resize(cap, net.w, net.h, net.c, &in_img, dont_close_stream);
+        if (input_realsense) {
+#ifndef REALSENSE
+            error("Program was not compiled with REALSENSE support...");
+#else
+            in_s = get_image_from_realsense(net.w, net.h, net.c, &in_img, &in_depth, dont_close_stream, letter_box);
+#endif
+        } else {
+            if (letter_box) {
+                in_s = get_image_from_stream_letterbox(cap, net.w, net.h, net.c, &in_img, dont_close_stream);
+            } else {
+                in_s = get_image_from_stream_resize(cap, net.w, net.h, net.c, &in_img, dont_close_stream);
+            }
+        }
         if (!in_s.data) {
             printf("Stream closed.\n");
             custom_atomic_store_int(&flag_exit, 1);
@@ -99,6 +107,10 @@ void *detect_in_thread(void *ptr)
         float *X = det_s.data;
         float *prediction = network_predict(net, X);
 
+        if (input_realsense) {
+            cv_depth_images[demo_index] = det_depth;
+            det_depth = cv_depth_images[(demo_index + avg_frames / 2 + 1) % avg_frames];
+        }
         cv_images[demo_index] = det_img;
         det_img = cv_images[(demo_index + avg_frames / 2 + 1) % avg_frames];
         demo_index = (demo_index + 1) % avg_frames;
@@ -130,10 +142,18 @@ double get_wall_time()
     return (double)walltime.tv_sec + (double)walltime.tv_usec * .000001;
 }
 
-void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes, int avgframes,
-    int frame_skip, char *prefix, char *out_filename, int mjpeg_port, int dontdraw_bbox, int json_port, int dont_show, int ext_output, int letter_box_in, int time_limit_sec, char *http_post_host,
-    int benchmark, int benchmark_layers)
+void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename,
+          char **names, int classes, int avgframes, int frame_skip, char *prefix, char *out_filename, int mjpeg_port,
+          int dontdraw_bbox, int json_port, int dont_show, int ext_output, int letter_box_in, int time_limit_sec,
+          char *http_post_host, int benchmark, int benchmark_layers, int use_realsense)
 {
+    input_realsense = use_realsense;
+#ifndef REALSENSE
+    if (input_realsense) {
+        error("Program was not compiled with REALSENSE support...");
+    }
+#endif
+
     if (avgframes < 1) avgframes = 1;
     avg_frames = avgframes;
     letter_box = letter_box_in;
@@ -157,25 +177,32 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     calculate_binary_weights(net);
     srand(2222222);
 
-    if(filename){
-        printf("video file: %s\n", filename);
-        cap = get_capture_video_stream(filename);
-    }else{
-        printf("Webcam index: %d\n", cam_index);
-        cap = get_capture_webcam(cam_index);
-    }
+    if (input_realsense) {
+        printf("Using Realsense as input device\n");
+    } else {
+        if(filename){
+            printf("video file: %s\n", filename);
+            cap = get_capture_video_stream(filename);
+        } else {
+            printf("Webcam index: %d\n", cam_index);
+            cap = get_capture_webcam(cam_index);
+        }
 
-    if (!cap) {
+        if (!cap) {
 #ifdef WIN32
-        printf("Check that you have copied file opencv_ffmpeg340_64.dll to the same directory where is darknet.exe \n");
+            printf("Check that you have copied file opencv_ffmpeg340_64.dll to the same directory where is darknet.exe \n");
 #endif
-        error("Couldn't connect to webcam.\n");
+            error("Couldn't connect to webcam.\n");
+        }
     }
 
     layer l = net.layers[net.n-1];
     int j;
 
     cv_images = (mat_cv**)xcalloc(avg_frames, sizeof(mat_cv));
+    if (input_realsense) {
+        cv_depth_images = (mat_cv **) xcalloc(avg_frames, sizeof(mat_cv));
+    }
 
     int i;
     for (i = 0; i < net.n; ++i) {
@@ -201,11 +228,17 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
     fetch_in_thread_sync(0); //fetch_in_thread(0);
     det_img = in_img;
+    if (input_realsense) {
+        det_depth = in_depth;
+    }
     det_s = in_s;
 
     fetch_in_thread_sync(0); //fetch_in_thread(0);
     detect_in_thread_sync(0); //fetch_in_thread(0);
     det_img = in_img;
+    if (input_realsense) {
+        det_depth = in_depth;
+    }
     det_s = in_s;
 
     for (j = 0; j < avg_frames / 2; ++j) {
@@ -213,6 +246,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
         fetch_in_thread_sync(0); //fetch_in_thread(0);
         detect_in_thread_sync(0); //fetch_in_thread(0);
         det_img = in_img;
+        if (input_realsense) {
+            det_depth = in_depth;
+        }
         det_s = in_s;
     }
 
@@ -227,7 +263,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     if (out_filename && !flag_exit)
     {
         int src_fps = 25;
-        src_fps = get_stream_fps_cpp_cv(cap);
+        if (input_realsense) {
+            src_fps = 30;
+        } else {
+            src_fps = get_stream_fps_cpp_cv(cap);
+        }
         output_video_writer =
             create_video_writer(out_filename, 'D', 'I', 'V', 'X', src_fps, get_width_mat(det_img), get_height_mat(det_img), 1);
 
@@ -289,7 +329,15 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
                 }
             }
 
-            if (!benchmark && !dontdraw_bbox) draw_detections_cv_v3(show_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes, demo_ext_output);
+            if (!benchmark && !dontdraw_bbox) {
+                if (input_realsense) {
+                    draw_detections_cv_depth(show_img, show_depth, local_dets, local_nboxes, demo_thresh, demo_names,
+                                             demo_alphabet, demo_classes, demo_ext_output);
+                } else {
+                    draw_detections_cv_v3(show_img, local_dets, local_nboxes, demo_thresh, demo_names, demo_alphabet,
+                                          demo_classes, demo_ext_output);
+                }
+            }
             free_detections(local_dets, local_nboxes);
 
             printf("\nFPS:%.1f \t AVG_FPS:%.1f\n", fps, avg_fps);
@@ -350,10 +398,21 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             if (flag_exit == 1) break;
 
             if(delay == 0){
-                if(!benchmark) release_mat(&show_img);
+                if(!benchmark) {
+                    release_mat(&show_img);
+                    if (input_realsense) {
+                        release_mat(&show_depth);
+                    }
+                }
                 show_img = det_img;
+                if (input_realsense) {
+                    show_depth = det_depth;
+                }
             }
             det_img = in_img;
+            if (input_realsense) {
+                det_depth = in_depth;
+            }
             det_s = in_s;
         }
         --delay;
@@ -398,6 +457,12 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             release_mat(&cv_images[j]);
     }
     free(cv_images);
+    if (input_realsense) {
+        for (j = 0; j < avg_frames; ++j) {
+            release_mat(&cv_depth_images[j]);
+        }
+        free(cv_depth_images);
+    }
 
     free_ptrs((void **)names, net.layers[net.n - 1].classes);
 
@@ -413,9 +478,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     //cudaProfilerStop();
 }
 #else
-void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes, int avgframes,
-    int frame_skip, char *prefix, char *out_filename, int mjpeg_port, int dontdraw_bbox, int json_port, int dont_show, int ext_output, int letter_box_in, int time_limit_sec, char *http_post_host,
-    int benchmark, int benchmark_layers)
+void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename,
+          char **names, int classes, int avgframes, int frame_skip, char *prefix, char *out_filename, int mjpeg_port,
+          int dontdraw_bbox, int json_port, int dont_show, int ext_output, int letter_box_in, int time_limit_sec,
+          char *http_post_host, int benchmark, int benchmark_layers, int use_realsense)
 {
     fprintf(stderr, "Demo needs OpenCV for webcam images.\n");
 }

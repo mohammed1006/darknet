@@ -36,6 +36,12 @@
 #include <opencv2/core/version.hpp>
 #endif
 
+#ifdef REALSENSE
+#include <librealsense2/rs.hpp>
+#include <exception>
+#include "realsense-opencv-helpers.hpp"
+#endif
+
 //using namespace cv;
 
 using std::cerr;
@@ -834,6 +840,68 @@ extern "C" image get_image_from_stream_letterbox(cap_cv *cap, int w, int h, int 
 }
 // ----------------------------------------
 
+#ifdef REALSENSE
+extern "C" image get_image_from_realsense(int w, int h, int c, mat_cv **in_img, mat_cv **in_depth, int dont_close,
+                                          int letterbox) {
+    c = c ? c : 3;
+    cv::Mat *src = NULL;
+    static int once = 1;
+    static rs2::pipeline pipe;
+    static rs2::align alignTo(RS2_STREAM_COLOR);
+    if (once) {
+        once = 0;
+        try {
+            pipe.start();
+        } catch (const rs2::error &e) {
+            printf("RealSense error calling %s (%s): %s\n", e.get_failed_function(), e.get_failed_args(), e.what());
+            error("RealSense error!\n");
+        }
+        printf("Started Realsense pipeline!\n");
+    }
+    cv::Mat depth;
+    try {
+        rs2::frameset currentFrame = pipe.wait_for_frames();
+        currentFrame = alignTo.process(currentFrame);  // Make sure the frames are spatially aligned
+
+        depth = depth_frame_to_meters(currentFrame.get_depth_frame());
+        src = new cv::Mat();
+        *src = frame_to_mat(currentFrame.get_color_frame());
+    } catch (const rs2::error &e) {
+        printf("RealSense error calling %s (%s): %s\n", e.get_failed_function(), e.get_failed_args(), e.what());
+        error("RealSense error!\n");
+    } catch (...) {
+        error("Error!\n");
+    }
+
+    image im;
+    if (letterbox) {
+        *in_img = (mat_cv * )
+        new cv::Mat(src->rows, src->cols, CV_8UC(c));
+        cv::resize(*src, **(cv::Mat **) in_img, (*(cv::Mat **) in_img)->size(), 0, 0, cv::INTER_LINEAR);
+        *in_depth = (mat_cv * )
+        new cv::Mat(src->rows, src->cols, CV_8UC(c));
+        cv::resize(depth, **(cv::Mat **) in_depth, (*(cv::Mat **) in_depth)->size(), 0, 0, cv::INTER_LINEAR);
+
+        if (c > 1) cv::cvtColor(*src, *src, cv::COLOR_RGB2BGR);
+        image tmp = mat_to_image(*src);
+        im = letterbox_image(tmp, w, h);
+        free_image(tmp);
+        release_mat((mat_cv * *) & src);
+    } else {
+        *(cv::Mat **) in_img = src;
+        *(cv::Mat **) in_depth = new cv::Mat(depth);
+
+        cv::Mat new_img = cv::Mat(h, w, CV_8UC(c));
+        cv::resize(*src, new_img, new_img.size(), 0, 0, cv::INTER_LINEAR);
+        if (c > 1) cv::cvtColor(new_img, new_img, cv::COLOR_RGB2BGR);
+        im = mat_to_image(new_img);
+    }
+
+    return im;
+}
+// ----------------------------------------
+#endif
+
 // ====================================================================
 // Image Saving
 // ====================================================================
@@ -877,15 +945,23 @@ extern "C" void save_cv_jpg(mat_cv *img_src, const char *name)
 // ====================================================================
 extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output)
 {
+    draw_detections_cv_depth(mat, NULL, dets, num, thresh, names, alphabet, classes, ext_output);
+}
+// ----------------------------------------
+
+extern "C" void draw_detections_cv_depth(mat_cv *mat, mat_cv *depth_mat, detection *dets, int num, float thresh,
+                                         char **names, image **alphabet, int classes, int ext_output) {
+    int use_depth = (depth_mat != NULL);
     try {
-        cv::Mat *show_img = (cv::Mat*)mat;
+        cv::Mat *show_img = (cv::Mat *) mat;
+        cv::Mat *show_depth = (cv::Mat *) depth_mat;
         int i, j;
-        if (!show_img) return;
+        if (!show_img || !show_depth) return;
         static int frame_id = 0;
         frame_id++;
 
         for (i = 0; i < num; ++i) {
-            char labelstr[4096] = { 0 };
+            char labelstr[4096] = {0};
             int class_id = -1;
             for (j = 0; j < classes; ++j) {
                 int show = strncmp(names[j], "dont_show", 9);
@@ -902,8 +978,7 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
                         strcat(labelstr, buff);
                         printf("%s: %.0f%% ", names[j], dets[i].prob[j] * 100);
                         if (dets[i].track_id) printf("(track = %d, sim = %f) ", dets[i].track_id, dets[i].sim);
-                    }
-                    else {
+                    } else {
                         strcat(labelstr, ", ");
                         strcat(labelstr, names[j]);
                         printf(", %s: %.0f%% ", names[j], dets[i].prob[j] * 100);
@@ -913,19 +988,11 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
             if (class_id >= 0) {
                 int width = std::max(1.0f, show_img->rows * .002f);
 
-                //if(0){
-                //width = pow(prob, 1./2.)*10+1;
-                //alphabet = 0;
-                //}
-
-                //printf("%d %s: %.0f%%\n", i, names[class_id], prob*100);
                 int offset = class_id * 123457 % classes;
                 float red = get_color(2, offset, classes);
                 float green = get_color(1, offset, classes);
                 float blue = get_color(0, offset, classes);
                 float rgb[3];
-
-                //width = prob*20+2;
 
                 rgb[0] = red;
                 rgb[1] = green;
@@ -939,23 +1006,31 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
                 b.h = (b.h < 1) ? b.h : 1;
                 b.x = (b.x < 1) ? b.x : 1;
                 b.y = (b.y < 1) ? b.y : 1;
-                //printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
 
-                int left = (b.x - b.w / 2.)*show_img->cols;
-                int right = (b.x + b.w / 2.)*show_img->cols;
-                int top = (b.y - b.h / 2.)*show_img->rows;
-                int bot = (b.y + b.h / 2.)*show_img->rows;
+                int left = (b.x - b.w / 2.) * show_img->cols;
+                int right = (b.x + b.w / 2.) * show_img->cols;
+                int top = (b.y - b.h / 2.) * show_img->rows;
+                int bot = (b.y + b.h / 2.) * show_img->rows;
 
                 if (left < 0) left = 0;
                 if (right > show_img->cols - 1) right = show_img->cols - 1;
                 if (top < 0) top = 0;
                 if (bot > show_img->rows - 1) bot = show_img->rows - 1;
 
-                //int b_x_center = (left + right) / 2;
-                //int b_y_center = (top + bot) / 2;
-                //int b_width = right - left;
-                //int b_height = bot - top;
-                //sprintf(labelstr, "%d x %d - w: %d, h: %d", b_x_center, b_y_center, b_width, b_height);
+                float depth = 0.0;
+                int box_x_center = (left + right) / 2;
+                int box_y_center = (top + bot) / 2;
+                int scaled_x_center = (int) (((float) box_x_center) / show_img->cols *  show_depth->cols);
+                int scaled_y_center = (int) (((float) box_y_center) / show_img->rows *  show_depth->rows);
+                if (use_depth) {
+                    depth = show_depth->at<float>(scaled_y_center, scaled_x_center);
+                    if (depth < 0.1 || depth > 10) {
+                        depth = -1;
+                    }
+                    char buff[40];
+                    sprintf(buff, "; depth = %.2fm", depth);
+                    strcat(labelstr, buff);
+                }
 
                 float const font_size = show_img->rows / 1000.F;
                 cv::Size const text_size = cv::getTextSize(labelstr, cv::FONT_HERSHEY_COMPLEX_SMALL, font_size, 1, 0);
@@ -976,35 +1051,28 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
                 color.val[1] = green * 256;
                 color.val[2] = blue * 256;
 
-                // you should create directory: result_img
-                //static int copied_frame_id = -1;
-                //static IplImage* copy_img = NULL;
-                //if (copied_frame_id != frame_id) {
-                //    copied_frame_id = frame_id;
-                //    if(copy_img == NULL) copy_img = cvCreateImage(cvSize(show_img->width, show_img->height), show_img->depth, show_img->nChannels);
-                //    cvCopy(show_img, copy_img, 0);
-                //}
-                //static int img_id = 0;
-                //img_id++;
-                //char image_name[1024];
-                //sprintf(image_name, "result_img/img_%d_%d_%d_%s.jpg", frame_id, img_id, class_id, names[class_id]);
-                //CvRect rect = cvRect(pt1.x, pt1.y, pt2.x - pt1.x, pt2.y - pt1.y);
-                //cvSetImageROI(copy_img, rect);
-                //cvSaveImage(image_name, copy_img, 0);
-                //cvResetImageROI(copy_img);
-
                 cv::rectangle(*show_img, pt1, pt2, color, width, 8, 0);
-                if (ext_output)
-                    printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f)\n",
-                    (float)left, (float)top, b.w*show_img->cols, b.h*show_img->rows);
-                else
+                if (ext_output) {
+                    if (use_depth) {
+                        printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f    depth: %.2f)\n",
+                               (float) left, (float) top, b.w * show_img->cols, b.h * show_img->rows, depth);
+                    } else {
+                        printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f)\n",
+                               (float) left, (float) top, b.w * show_img->cols, b.h * show_img->rows);
+                    }
+                } else {
                     printf("\n");
+                    if (use_depth) {
+                        printf("Located at depth = %.2f & center (%d, %d) -> (%d, %d)\n", depth,
+                               box_x_center, box_y_center, scaled_x_center, scaled_y_center);
+                    }
+                }
 
                 cv::rectangle(*show_img, pt_text_bg1, pt_text_bg2, color, width, 8, 0);
                 cv::rectangle(*show_img, pt_text_bg1, pt_text_bg2, color, CV_FILLED, 8, 0);    // filled
                 cv::Scalar black_color = CV_RGB(0, 0, 0);
-                cv::putText(*show_img, labelstr, pt_text, cv::FONT_HERSHEY_COMPLEX_SMALL, font_size, black_color, 2 * font_size, CV_AA);
-                // cv::FONT_HERSHEY_COMPLEX_SMALL, cv::FONT_HERSHEY_SIMPLEX
+                cv::putText(*show_img, labelstr, pt_text, cv::FONT_HERSHEY_COMPLEX_SMALL, font_size, black_color,
+                            2 * font_size, CV_AA);
             }
         }
         if (ext_output) {
@@ -1012,7 +1080,7 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
         }
     }
     catch (...) {
-        cerr << "OpenCV exception: draw_detections_cv_v3() \n";
+        cerr << "OpenCV exception: draw_detections_cv_depth() \n";
     }
 }
 // ----------------------------------------

@@ -883,7 +883,8 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
         if (!show_img) return;
         static int frame_id = 0;
         frame_id++;
-
+        //FILE* f = fopen("tmp.txt", "w");
+        //printf("This is test information \n");
         for (i = 0; i < num; ++i) {
             char labelstr[4096] = { 0 };
             int class_id = -1;
@@ -999,6 +1000,16 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
                     (float)left, (float)top, b.w*show_img->cols, b.h*show_img->rows);
                 else
                     printf("\n");
+                //****************
+                /*if (f)
+                {
+                    fprintf(f,"\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f)\n",
+                        (float)left, (float)top, b.w* show_img->cols, b.h* show_img->rows);
+                    fclose(f);
+                }
+                else printf("Unable to open the target file\n");*/
+                //******************
+
 
                 cv::rectangle(*show_img, pt_text_bg1, pt_text_bg2, color, width, 8, 0);
                 cv::rectangle(*show_img, pt_text_bg1, pt_text_bg2, color, CV_FILLED, 8, 0);    // filled

@@ -1757,6 +1757,68 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     free_network(net);
 }
 
+void ground_truth(char *datacfg, char *cfgfile, char *filename)
+{
+    list *options = read_data_cfg(datacfg);
+    char *name_list = option_find_str(options, "names", "data/names.list");
+    int names_size = 0;
+    char **names = get_labels_custom(name_list, &names_size); //get_labels(name_list);
+    image **alphabet = load_alphabet();
+    network net = parse_network_cfg_custom(cfgfile, 1, 1); // set batch=1
+    layer l = net.layers[net.n - 1];
+
+    srand(2222222);
+    char buff[256];
+    char *input = buff;
+
+    int j;
+    float nms = .45;    // 0.4F
+    while (1) {
+        if (filename) {
+            strncpy(input, filename, 256);
+            if (strlen(input) > 0)
+                if (input[strlen(input) - 1] == 0x0d) input[strlen(input) - 1] = 0;
+        }
+        else {
+            printf("Enter Image Path: ");
+            fflush(stdout);
+            input = fgets(input, 256, stdin);
+            if (!input) break;
+            strtok(input, "\n");
+        }
+
+        image im = load_image(input, 0, 0, net.c);
+        image sized = resize_image(im, net.w, net.h);
+
+         char labelpath[4096];
+         replace_image_to_label(input, labelpath);
+
+       int nboxes = 0;
+       box_label *truth = read_boxes(labelpath, &nboxes);
+
+        for (int j = 0; j < nboxes; ++j)
+        {
+            draw_ground_truth(im, nboxes, truth[j].id, truth[j].x, truth[j].y, truth[j].w, truth[j].h, names, alphabet, l.classes);
+        }
+
+        save_image(im, "predictions");
+        printf("saved");
+
+        free_image(im);
+        free_image(sized);
+
+        break;
+    }
+
+    // free memory
+    free_ptrs((void**)names, net.layers[net.n - 1].classes);
+    free_list_contents_kvp(options);
+    free_list(options);
+
+    free(alphabet);
+    free_network(net);
+}
+
 #if defined(OPENCV) && defined(GPU)
 
 // adversarial attack dnn
@@ -2025,6 +2087,9 @@ void run_detector(int argc, char **argv)
 
         free_list_contents_kvp(options);
         free_list(options);
+    }
+    else if (0 == strcmp(argv[2], "ground_truth")) {
+        ground_truth(datacfg, cfg, filename);
     }
     else printf(" There isn't such command: %s", argv[2]);
 

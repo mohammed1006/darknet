@@ -1757,6 +1757,66 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     free_network(net);
 }
 
+void ground_truth(char *datacfg, int channels, char *filename) {
+    if (filename == 0) {
+        printf("Usage: darknet detector ground_truth cfg/voc.data -channels 3 -gt_filename data/dog.jpg \n");
+        printf("Error: set gt_filename \n");
+        return;
+    }
+
+    list *options = read_data_cfg(datacfg);
+    char *name_list = option_find_str(options, "names", "data/names.list");
+    int names_size = 0;
+    char **names = get_labels_custom(name_list, &names_size); //get_labels(name_list);
+    image **alphabet = load_alphabet();
+
+    srand(2222222);
+    char buff[256];
+    char *input = buff;
+
+    while (1) {
+        if (filename) {
+            strncpy(input, filename, 256);
+            if (strlen(input) > 0)
+                if (input[strlen(input) - 1] == 0x0d) input[strlen(input) - 1] = 0;
+        } else {
+            printf("Enter Image Path: ");
+            fflush(stdout);
+            input = fgets(input, 256, stdin);
+            if (!input) break;
+            strtok(input, "\n");
+        }
+
+        image im = load_image(input, 0, 0, channels);
+
+        char labelpath[4096];
+        replace_image_to_label(input, labelpath);
+
+        int nboxes = 0;
+        box_label *truth = read_boxes(labelpath, &nboxes);
+
+        if (nboxes == 0) {
+            printf("Error: label file must be in the same directory as the image\n");
+            free_image(im);
+            free_list_contents_kvp(options);
+            free_list(options);
+            free(alphabet);
+            return;
+        }
+
+        draw_ground_truth(im, truth, names, alphabet, names_size, nboxes);
+        save_image(im, "ground_truth");
+        printf("Image saved to ground_truth.jpg");
+        free_image(im);
+        break;
+    }
+
+    // free memory
+    free_list_contents_kvp(options);
+    free_list(options);
+    free(alphabet);
+}
+
 #if defined(OPENCV) && defined(GPU)
 
 // adversarial attack dnn
@@ -1960,6 +2020,8 @@ void run_detector(int argc, char **argv)
     int num_of_clusters = find_int_arg(argc, argv, "-num_of_clusters", 5);
     int width = find_int_arg(argc, argv, "-width", -1);
     int height = find_int_arg(argc, argv, "-height", -1);
+    int channels = find_int_arg(argc, argv, "-channels", 3);
+    char *gt_filename = find_char_arg(argc, argv, "-gt_filename", 0);
     // extended output in test mode (output of rect bound coords)
     // and for recall mode (extended output table-like format with results for best_class fit)
     int ext_output = find_arg(argc, argv, "-ext_output");
@@ -2025,6 +2087,9 @@ void run_detector(int argc, char **argv)
 
         free_list_contents_kvp(options);
         free_list(options);
+    }
+    else if (0 == strcmp(argv[2], "ground_truth")) {
+        ground_truth(datacfg, channels, gt_filename);
     }
     else printf(" There isn't such command: %s", argv[2]);
 

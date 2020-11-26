@@ -523,6 +523,34 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
     }
 }
 
+void draw_ground_truth(image im, box_label *truth, char **names, image **alphabet, int classes, int nboxes) {
+    for (int i = 0; i < nboxes; ++i) {
+        int width = im.h * .002;
+        int offset = truth[i].id * 123457 % classes;
+        float red = get_color(2, offset, classes);
+        float green = get_color(1, offset, classes);
+        float blue = get_color(0, offset, classes);
+        float rgb[3] = {red, green, blue};
+
+        int left = (truth[i].x - truth[i].w / 2.) * im.w;
+        int right = (truth[i].x + truth[i].w / 2.) * im.w;
+        int top = (truth[i].y - truth[i].h / 2.) * im.h;
+        int bot = (truth[i].y + truth[i].h / 2.) * im.h;
+
+        if (left < 0) left = 0;
+        if (right > im.w - 1) right = im.w - 1;
+        if (top < 0) top = 0;
+        if (bot > im.h - 1) bot = im.h - 1;
+
+        draw_box_width(im, left, top, right, bot, width, red, green, blue);
+        if (alphabet) {
+            image label = get_label_v3(alphabet, names[truth[i].id], (im.h * .02));
+            draw_weighted_label(im, top + width, left, label, rgb, 0.7);
+            free_image(label);
+        }
+    }
+}
+
 void transpose_image(image im)
 {
     assert(im.w == im.h);

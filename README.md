@@ -81,6 +81,8 @@ tkDNN-TensorRT accelerates YOLOv4 **~2x** times for batch=1 and **3x-4x** times 
 
 #### Youtube video of results
 
+[![Yolo Evolution](http://img.youtube.com/vi/0AVuR0FeHmo/0.jpg)](http://www.youtube.com/watch?v=0AVuR0FeHmo "The evolution of Yolo - v2,v3 and v4")
+
 [![Yolo v4](http://img.youtube.com/vi/1_SiUOYUoOI/0.jpg)](https://youtu.be/1_SiUOYUoOI "Yolo v4")
 
 Others: https://www.youtube.com/user/pjreddie/videos

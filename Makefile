@@ -1,13 +1,14 @@
-GPU=0
-CUDNN=0
+GPU=1
+CUDNN=1
 CUDNN_HALF=0
-OPENCV=0
+OPENCV=1
 AVX=0
 OPENMP=0
-LIBSO=0
+LIBSO=1
 ZED_CAMERA=0
 ZED_CAMERA_v2_8=0
 STREAM=0
+FFMPEG=1
 
 # set GPU=1 and CUDNN=1 to speedup on GPU
 # set CUDNN_HALF=1 to further speedup 3 x times (Mixed-precision on Tensor Cores) GPU: Volta, Xavier, Turing and higher
@@ -16,7 +17,7 @@ STREAM=0
 # set ZED_CAMERA_v2_8=1 to enable ZED SDK 2.X
 
 USE_CPP=0
-DEBUG=0
+DEBUG=1
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_35,code=sm_35 \
@@ -72,9 +73,9 @@ endif
 CPP=g++ -std=c++11
 NVCC=nvcc
 OPTS=-Ofast
-LDFLAGS= -lm -pthread
+LDFLAGS=-L/usr/local/lib -lm -pthread
 COMMON= -Iinclude/ -I3rdparty/stb/include
-CFLAGS=-Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC
+CFLAGS=-Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -fpermissive
 
 ifeq ($(STREAM), 1)
 COMMON+= -DSTREAM
@@ -83,8 +84,15 @@ LDFLAGS+= `pkg-config --libs libavformat libavcodec libavutil libswscale 2>/dev/
 COMMON+= `pkg-config --cflags libavformat libavcodec libavutil libswscale 2>/dev/null`
 endif
 
+ifeq ($(FFMPEG), 1)
+COMMON+= -DFFMPEG
+CFLAGS+= -DFFMPEG
+LDFLAGS+= `pkg-config --libs libswresample libswscale libavutil libavcodec libavformat 2>/dev/null`
+COMMON+= `pkg-config --cflags libswresample libswscale libavutil libavcodec libavformat 2>/dev/null`
+endif
+
 ifeq ($(DEBUG), 1)
-#OPTS= -O0 -g
+OPTS= -O0 -g
 #OPTS= -Og -g
 COMMON+= -DDEBUG
 CFLAGS+= -DDEBUG
@@ -161,6 +169,9 @@ OBJ+=convolutional_kernels.o activation_kernels.o im2col_kernels.o col2im_kernel
 endif
 ifeq ($(STREAM), 1)
 OBJ+=stream.o streamer.o
+endif
+ifeq ($(FFMPEG), 1)
+OBJ+=image_ffmpeg.o
 endif
 
 OBJS = $(addprefix $(OBJDIR), $(OBJ))

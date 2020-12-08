@@ -15,6 +15,10 @@
 #include <sys/time.h>
 #endif
 
+#ifdef FFMPEG
+#include "image_ffmpeg.h"
+#endif
+
 #ifdef OPENCV
 
 #include "http_stream.h"
@@ -68,6 +72,10 @@ static int letter_box = 0;
 static const int thread_wait_ms = 1;
 static volatile int run_fetch_in_thread = 0;
 static volatile int run_detect_in_thread = 0;
+
+#ifdef FFMPEG
+static int input_is_stream = 0;
+#endif
 
 class MovingAverage
 {
@@ -160,10 +168,16 @@ void *fetch_in_thread(void *ptr)
             this_thread_yield();
         }
         int dont_close_stream = 0;    // set 1 if your IP-camera periodically turns off and turns on video-stream
-        if (letter_box)
+        if (letter_box){
             in_s = get_image_from_stream_letterbox(cap, net.w, net.h, net.c, &in_img, dont_close_stream);
-        else
+        }else{
+#ifdef FFMPEG
+            if (input_is_stream) in_s = get_image_from_ffmpeg_stream_resize(&in_img, net.w, net.h, net.c);
+            else in_s = get_image_from_stream_resize(cap, net.w, net.h, net.c, &in_img, dont_close_stream);
+#else
             in_s = get_image_from_stream_resize(cap, net.w, net.h, net.c, &in_img, dont_close_stream);
+#endif
+        }
         if (!in_s.data) {
             printf("Stream closed.\n");
             custom_atomic_store_int(&flag_exit, 1);
@@ -257,6 +271,10 @@ void stream(char *cfgfile, char *weightfile, float thresh, float hier_thresh, in
 
     if(filename){
         printf("video file: %s\n", filename);
+#ifdef FFMPEG
+        open_video_stream(filename);
+        input_is_stream = 1;
+#endif
         cap = get_capture_video_stream(filename);
     }else{
         printf("Webcam index: %d\n", cam_index);
@@ -534,7 +552,9 @@ void stream(char *cfgfile, char *weightfile, float thresh, float hier_thresh, in
 
         //ok = video_capture.read(read_frame);
         time_prev = time_stop;
-
+#ifdef FFMPEG
+        av_pkt_unref();
+#endif
     }
     printf("input video stream closed. \n");
     if (output_video_writer) {

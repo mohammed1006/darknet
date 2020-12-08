@@ -13,6 +13,10 @@
 #include "stream.h"
 #endif
 
+#ifdef FFMPEG
+#include "image_ffmpeg.h"
+#endif
+
 #ifndef __COMPAR_FN_T
 #define __COMPAR_FN_T
 typedef int (*__compar_fn_t)(const void*, const void*);

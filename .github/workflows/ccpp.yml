@@ -100,7 +100,9 @@ jobs:
     - name: Restore from cache and run vcpkg
       uses: lukka/run-vcpkg@v6
       with:
+        setupOnly: true
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+        vcpkgGitCommitId: 'dd4421808cc9131a0a68e71d9c41b0b6b9ce06d3'
         appendedCacheKey: ${{ hashFiles( '**/vcpkg.json' ) }}
         vcpkgTriplet: 'x64-linux'
 
@@ -257,7 +259,7 @@ jobs:
 
 
   osx-vcpkg:
-    runs-on: macOS-latest
+    runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
 
@@ -269,7 +271,9 @@ jobs:
     - name: Restore from cache and run vcpkg
       uses: lukka/run-vcpkg@v6
       with:
+        setupOnly: true
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+        vcpkgGitCommitId: 'dd4421808cc9131a0a68e71d9c41b0b6b9ce06d3'
         appendedCacheKey: ${{ hashFiles( '**/vcpkg.json' ) }}
         vcpkgTriplet: 'x64-osx'
 
@@ -303,7 +307,7 @@ jobs:
 
 
   osx:
-    runs-on: macOS-latest
+    runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
 
@@ -342,7 +346,7 @@ jobs:
 
 
   osx-no-ocv-no-omp-cpp:
-    runs-on: macOS-latest
+    runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
 
@@ -381,7 +385,9 @@ jobs:
         CUDACXX: "C:\\Program\ Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v10.2\\bin\\nvcc.exe"
       uses: lukka/run-vcpkg@v6
       with:
+        setupOnly: true
         vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+        vcpkgGitCommitId: 'dd4421808cc9131a0a68e71d9c41b0b6b9ce06d3'
         appendedCacheKey: ${{ hashFiles( '**/vcpkg.json' ) }}
         vcpkgTriplet: 'x64-windows'
 

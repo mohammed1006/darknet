@@ -33,12 +33,6 @@
 #include <vector>
 #include <opencv2/opencv.hpp>
 
-using namespace streamer;
-using time_point = std::chrono::high_resolution_clock::time_point;
-using high_resolution_clock = std::chrono::high_resolution_clock;
-using std::cerr;
-using std::endl;
-
 static char **demo_names;
 static image **demo_alphabet;
 static int demo_classes;
@@ -76,6 +70,12 @@ static volatile int run_detect_in_thread = 0;
 #ifdef FFMPEG
 static int input_is_stream = 0;
 #endif
+
+using namespace streamer;
+using time_point = std::chrono::high_resolution_clock::time_point;
+using high_resolution_clock = std::chrono::high_resolution_clock;
+using std::cerr;
+using std::endl;
 
 class MovingAverage
 {
@@ -147,7 +147,6 @@ void process_frame(mat_cv *mat_ptr, cv::Mat &out)
         cerr << "OpenCV exception: process_frame \n";
     }
 }
-
 
 void stream_frame(Streamer &streamer, const cv::Mat &image)
 {
@@ -241,6 +240,7 @@ double get_wall_time()
     }
     return (double)walltime.tv_sec + (double)walltime.tv_usec * .000001;
 }
+
 void stream(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes, int avgframes,
     int frame_skip, char *prefix, char *out_filename, int mjpeg_port, int dontdraw_bbox, int json_port, int dont_show, int ext_output, int letter_box_in, int time_limit_sec, char *http_post_host,
     int benchmark, int benchmark_layers,
@@ -365,6 +365,7 @@ void stream(char *cfgfile, char *weightfile, float thresh, float hier_thresh, in
     int frame_counter = 0;
     int global_frame_counter = 0;
 
+
     Streamer streamer;
     int src_frame_width = get_width_mat(det_img);
     int src_frame_height = get_height_mat(det_img);
@@ -375,11 +376,12 @@ void stream(char *cfgfile, char *weightfile, float thresh, float hier_thresh, in
         fprintf(stderr, "Please input a valid stream address \n");
         exit(1);
     }
+
     if (!dst_frame_width) dst_frame_width = src_frame_width;
     if (!dst_frame_height) dst_frame_height = src_frame_height;
     if (!stream_bitrate) stream_bitrate = 500000;
     if (!stream_fps) stream_fps = src_fps;
-    //if (!stream_profile) stream_profile = "high444";
+    if (!stream_profile) stream_profile = "high444";
     if (!stream_gop_size) stream_gop_size = 10;
 
     StreamerConfig streamer_config(src_frame_width, src_frame_height,
@@ -454,7 +456,8 @@ void stream(char *cfgfile, char *weightfile, float thresh, float hier_thresh, in
             if(!prefix){
                 if (!dont_show) {
                     const int each_frame = max_val_cmp(1, avg_fps / 60);
-                    if(global_frame_counter % each_frame == 0){ //show_image_mat(show_img, "Demo");
+                    if(global_frame_counter % each_frame == 0){
+                        //show_image_mat(show_img, "Demo");
                         process_frame(show_img, proc_frame);
                         if(!filename){
                             stream_frame(streamer, proc_frame);
@@ -541,6 +544,9 @@ void stream(char *cfgfile, char *weightfile, float thresh, float hier_thresh, in
                 start_time = get_time_point();
             }
         }
+#ifdef FFMPEG
+        av_pkt_unref();
+#endif
         time_stop = clk.now();
         elapsed_time = std::chrono::duration_cast<std::chrono::duration<double>>(time_stop - time_start);
         frame_time = std::chrono::duration_cast<std::chrono::duration<double>>(time_stop - time_prev);
@@ -548,13 +554,10 @@ void stream(char *cfgfile, char *weightfile, float thresh, float hier_thresh, in
         streamed_frames++;
         moving_average.add_value(frame_time.count());
         avg_frame_time = moving_average.get_average();
-        add_delay(streamed_frames, stream_fps, elapsed_time.count(), avg_frame_time);
+        //add_delay(streamed_frames, stream_fps, elapsed_time.count(), avg_frame_time);
 
         //ok = video_capture.read(read_frame);
         time_prev = time_stop;
-#ifdef FFMPEG
-        av_pkt_unref();
-#endif
     }
     printf("input video stream closed. \n");
     if (output_video_writer) {

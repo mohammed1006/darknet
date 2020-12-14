@@ -98,10 +98,10 @@ static int set_options_and_open_encoder(AVFormatContext *fctx, AVStream *stream,
     av_dict_set(&codec_options, "preset", "ultrafast", 0);
     av_dict_set(&codec_options, "tune", "zerolatency", 0);
     av_dict_set(&codec_options, "crf", "30", 0);
-    //av_dict_set(&codec_options, "g", "1", 0);
-    //av_dict_set(&codec_options, "ar", "44100", 0);
-    //av_dict_set(&codec_options, "strict", "-2", 0);
-    //av_dict_set(&codec_options, "-ac", "1", 0);
+    av_dict_set(&codec_options, "g", "1", 0);
+    av_dict_set(&codec_options, "ar", "44100", 0);
+    av_dict_set(&codec_options, "strict", "-2", 0);
+    av_dict_set(&codec_options, "ac", "1", 0);
     av_dict_set(&codec_options, "q", "10", 0);
 
     // open video encoder

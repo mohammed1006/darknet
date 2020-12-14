@@ -171,6 +171,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     if(weightfile){
         load_weights(&net, weightfile);
     }
+    if (net.letter_box) letter_box = 1;
     net.benchmark_layers = benchmark_layers;
     fuse_conv_batchnorm(net);
     calculate_binary_weights(net);

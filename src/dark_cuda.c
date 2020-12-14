@@ -391,7 +391,7 @@ float *cuda_make_array_init2zero(size_t n) {
     fprintf(stderr, " Try to set subdivisions=64 in your cfg-file. \n");
   CHECK_CUDA(status);
   // status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
-  status =cudaMemset(x_gpu, 0, size);
+  status =cudaMemsetAsync(x_gpu, 0, size, 0);
   CHECK_CUDA(status);
   if (!x_gpu)
     error("Cuda malloc failed\n");

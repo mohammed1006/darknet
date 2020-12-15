@@ -78,7 +78,7 @@ endif
 CPP=g++ -std=c++11
 NVCC=nvcc
 OPTS=-Ofast
-LDFLAGS=-L/usr/local/lib -lm -pthread
+LDFLAGS= -lm -pthread
 COMMON= -Iinclude/ -I3rdparty/stb/include
 CFLAGS=-Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -fpermissive
 
@@ -97,7 +97,7 @@ COMMON+= `pkg-config --cflags libswresample libswscale libavutil libavcodec liba
 endif
 
 ifeq ($(DEBUG), 1)
-OPTS= -O0 -g
+#OPTS= -O0 -g
 #OPTS= -Og -g
 COMMON+= -DDEBUG
 CFLAGS+= -DDEBUG

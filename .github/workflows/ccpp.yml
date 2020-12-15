@@ -82,7 +82,7 @@ jobs:
 
     - name: Restore from cache and run vcpkg
       env:
-        ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+        ACTIONS_ALLOW_UNSECURE_COMMANDS: true
         vcpkgResponseFile: ${{ github.workspace }}/cmake/vcpkg_linux.diff
       uses: lukka/run-vcpkg@v2
       with:

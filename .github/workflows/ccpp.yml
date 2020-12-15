@@ -370,6 +370,8 @@ jobs:
         appendedCacheKey: ${{ hashFiles(env.vcpkgResponseFile) }}
 
     - name: 'Build with CMake and Ninja'
+      env:
+        ACTIONS_ALLOW_UNSECURE_COMMANDS: true
       uses: lukka/run-cmake@v2
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced

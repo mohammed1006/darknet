@@ -192,11 +192,8 @@ if(OpenCV_FOUND)
   endif()
 endif()
 
-if(ENABLE_CUDA)
+if(ENABLE_CUDA AND ENABLE_CUDNN)
   find_package(CUDNN)
-  if(NOT CUDNN_FOUND)
-    set(ENABLE_CUDNN "FALSE" CACHE BOOL "Enable CUDNN" FORCE)
-  endif()
 endif()
 
 if(ENABLE_CUDA)

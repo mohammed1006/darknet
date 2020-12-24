@@ -68,7 +68,7 @@ jobs:
         make clean
 
 
-  ubuntu-vcpkg:
+  ubuntu-vcpkg-cuda:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2

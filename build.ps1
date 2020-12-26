@@ -81,6 +81,7 @@ if ((Test-Path env:VCPKG_ROOT) -and $use_vcpkg) {
 }
 elseif ((Test-Path "${env:WORKSPACE}\vcpkg") -and $use_vcpkg) {
   $vcpkg_path = "${env:WORKSPACE}\vcpkg"
+  $env:VCPKG_ROOT = "${env:WORKSPACE}\vcpkg"
   Write-Host "Found vcpkg in WORKSPACE\vcpkg: $vcpkg_path"
 }
 else {
@@ -190,11 +191,11 @@ if ($use_vcpkg) {
   New-Item -Path .\build_win_release -ItemType directory -Force
   Set-Location build_win_release
   if($use_ninja) {
-    cmake -G "$generator" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Release" $additional_build_setup ..
+    cmake -G "$generator" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Release" $additional_build_setup ..
     $dllfolder = "."
   }
   else {
-    cmake -G "$generator" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Release" $additional_build_setup ..
+    cmake -G "$generator" -T "host=x64" -A "x64" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Release" $additional_build_setup ..
     $dllfolder = "Release"
   }
   cmake --build . --config Release --parallel ${number_of_build_workers} --target install

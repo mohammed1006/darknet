@@ -4,6 +4,7 @@ $number_of_build_workers=8
 $use_vcpkg=$true
 $use_ninja=$false
 $force_cpp_build=$false
+$enable_cuda=false
 
 function getProgramFiles32bit() {
   $out = ${env:PROGRAMFILES(X86)}
@@ -155,8 +156,12 @@ if (Test-Path env:CUDA_PATH) {
   }
 }
 
-if($force_cpp_build) {
-  $additional_build_setup="-DBUILD_AS_CPP:BOOL=TRUE"
+if ($force_cpp_build) {
+  $additional_build_setup = $additional_build_setup + " -DBUILD_AS_CPP:BOOL=TRUE"
+}
+
+if (-Not($enable_cuda)) {
+  $additional_build_setup = $additional_build_setup + " -DENABLE_CUDA:BOOL=FALSE"
 }
 
 if ($use_vcpkg) {
@@ -171,8 +176,7 @@ if ($use_vcpkg) {
     #cmake -G "$generator" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Debug" $additional_build_setup ..
     #$dllfolder = "Debug"
   #}
-  #cmake --build . --config Debug --target install
-  ##cmake --build . --config Debug --parallel ${number_of_build_workers} --target install  #valid only for CMake 3.12+
+  #cmake --build . --config Debug --parallel ${number_of_build_workers} --target install
   #Remove-Item DarknetConfig.cmake
   #Remove-Item DarknetConfigVersion.cmake
   #$dllfiles = Get-ChildItem ${dllfolder}\*.dll
@@ -193,8 +197,7 @@ if ($use_vcpkg) {
     cmake -G "$generator" -T "host=x64" -A "x64" "-DCMAKE_TOOLCHAIN_FILE=$vcpkg_path\scripts\buildsystems\vcpkg.cmake" "-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet" "-DCMAKE_BUILD_TYPE=Release" $additional_build_setup ..
     $dllfolder = "Release"
   }
-  cmake --build . --config Release --target install
-  #cmake --build . --config Release --parallel ${number_of_build_workers} --target install  #valid only for CMake 3.12+
+  cmake --build . --config Release --parallel ${number_of_build_workers} --target install
   Remove-Item DarknetConfig.cmake
   Remove-Item DarknetConfigVersion.cmake
   $dllfiles = Get-ChildItem ${dllfolder}\*.dll
@@ -215,8 +218,7 @@ else {
   else {
     cmake -G "$generator" -T "host=x64" -A "x64" $additional_build_setup ..
   }
-  cmake --build . --config Release --target install
-  #cmake --build . --config Release --parallel ${number_of_build_workers} --target install  #valid only for CMake 3.12+
+  cmake --build . --config Release --parallel ${number_of_build_workers} --target install
   Remove-Item DarknetConfig.cmake
   Remove-Item DarknetConfigVersion.cmake
   $dllfolder = "..\3rdparty\pthreads\bin"

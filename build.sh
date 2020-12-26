@@ -3,6 +3,7 @@
 number_of_build_workers=8
 bypass_vcpkg=true
 force_cpp_build=false
+enable_cuda=false
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
   vcpkg_triplet="x64-osx"
@@ -31,15 +32,19 @@ fi
 
 if [ "$force_cpp_build" = true ]
 then
-  additional_build_setup="-DBUILD_AS_CPP:BOOL=TRUE"
+  additional_build_setup=${additional_build_setup}" -DBUILD_AS_CPP:BOOL=TRUE"
+fi
+
+if [ "$enable_cuda" = false ]
+then
+  additional_build_setup=${additional_build_setup}" -DENABLE_CUDA:BOOL=FALSE"
 fi
 
 ## DEBUG
 #mkdir -p build_debug
 #cd build_debug
 #cmake .. -DCMAKE_BUILD_TYPE=Debug ${vcpkg_define} ${vcpkg_triplet_define} ${additional_defines} ${additional_build_setup}
-#cmake --build . --target install -- -j${number_of_build_workers}
-##cmake --build . --target install --parallel ${number_of_build_workers}  #valid only for CMake 3.12+
+#cmake --build . --target install --parallel ${number_of_build_workers}
 #rm -f DarknetConfig.cmake
 #rm -f DarknetConfigVersion.cmake
 #cd ..
@@ -49,8 +54,7 @@ fi
 mkdir -p build_release
 cd build_release
 cmake .. -DCMAKE_BUILD_TYPE=Release ${vcpkg_define} ${vcpkg_triplet_define} ${additional_defines} ${additional_build_setup}
-cmake --build . --target install -- -j${number_of_build_workers}
-#cmake --build . --target install --parallel ${number_of_build_workers}  #valid only for CMake 3.12+
+cmake --build . --target install --parallel ${number_of_build_workers}
 rm -f DarknetConfig.cmake
 rm -f DarknetConfigVersion.cmake
 cd ..

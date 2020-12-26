@@ -36,6 +36,10 @@ endif()
 include("${Darknet_CMAKE_DIR}/DarknetTargets.cmake")
 include("${Darknet_CMAKE_DIR}/DarknetConfigVersion.cmake")
 
+if(@OpenCV_FOUND@)
+  target_include_directories(Darknet::dark PRIVATE ${OpenCV_INCLUDE_DIRS})
+endif()
+
 get_target_property(FULL_DARKNET_INCLUDE_DIRS Darknet::dark INTERFACE_INCLUDE_DIRECTORIES)
 list(GET FULL_DARKNET_INCLUDE_DIRS 0 Darknet_INCLUDE_DIR)
 get_filename_component(Darknet_INCLUDE_DIR "${Darknet_INCLUDE_DIR}" REALPATH)

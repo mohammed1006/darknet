@@ -14,14 +14,13 @@ fi
 if [[ ! -z "${VCPKG_ROOT}" ]] && [ -d ${VCPKG_ROOT} ] && [ ! "$bypass_vcpkg" = true ]
 then
   vcpkg_path="${VCPKG_ROOT}"
-  vcpkg_define="-DCMAKE_TOOLCHAIN_FILE=${vcpkg_path}/scripts/buildsystems/vcpkg.cmake"
   vcpkg_triplet_define="-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet"
   echo "Found vcpkg in VCPKG_ROOT: ${vcpkg_path}"
   additional_defines="-DBUILD_SHARED_LIBS=OFF"
 elif [[ ! -z "${WORKSPACE}" ]] && [ -d ${WORKSPACE}/vcpkg ] && [ ! "$bypass_vcpkg" = true ]
 then
+  export VCPKG_ROOT="${WORKSPACE}/vcpkg"
   vcpkg_path="${WORKSPACE}/vcpkg"
-  vcpkg_define="-DCMAKE_TOOLCHAIN_FILE=${vcpkg_path}/scripts/buildsystems/vcpkg.cmake"
   vcpkg_triplet_define="-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet"
   echo "Found vcpkg in WORKSPACE/vcpkg: ${vcpkg_path}"
   additional_defines="-DBUILD_SHARED_LIBS=OFF"

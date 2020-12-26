@@ -43,7 +43,7 @@ else()
 endif()
 
 cmake_dependent_option(ENABLE_SSE_AND_AVX_FLAGS "Enable AVX and SSE optimizations (x86-only)" ON "CMAKE_COMPILER_IS_GNUCC_OR_CLANG;IS_X86" OFF)
-cmake_dependent_option(CMAKE_CUDA_ARCHITECTURES "Build for these CUDA architectures" "50;70;80" "ENABLE_CUDA" OFF)
+set(CMAKE_CUDA_ARCHITECTURES "50" CACHE STRING "Build for these CUDA architectures")
 
 if(ENABLE_VCPKG_INTEGRATION AND DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
@@ -95,6 +95,7 @@ elseif(ENABLE_CUDA)
     message(STATUS "Unsupported CUDA version, please upgrade to CUDA 9+. Disabling CUDA support")
     set(ENABLE_CUDA "FALSE" CACHE BOOL "Enable CUDA support" FORCE)
   else()
+    message(STATUS "Building for these CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES},${CUDA_ARCHITECTURES}")
     if(70 IN_LIST CMAKE_CUDA_ARCHITECTURES OR
        72 IN_LIST CMAKE_CUDA_ARCHITECTURES OR
        75 IN_LIST CMAKE_CUDA_ARCHITECTURES OR

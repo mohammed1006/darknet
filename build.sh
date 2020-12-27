@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 number_of_build_workers=8
-bypass_vcpkg=true
+use_vcpkg=false
 force_cpp_build=false
 enable_cuda=false
 
@@ -11,22 +11,24 @@ else
   vcpkg_triplet="x64-linux"
 fi
 
-if [[ ! -z "${VCPKG_ROOT}" ]] && [ -d ${VCPKG_ROOT} ] && [ ! "$bypass_vcpkg" = true ]
+if [[ ! -z "${VCPKG_ROOT}" ]] && [ -d ${VCPKG_ROOT} ] && [ "$use_vcpkg" = true ]
 then
   vcpkg_path="${VCPKG_ROOT}"
   vcpkg_triplet_define="-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet"
   echo "Found vcpkg in VCPKG_ROOT: ${vcpkg_path}"
   additional_defines="-DBUILD_SHARED_LIBS=OFF"
-elif [[ ! -z "${WORKSPACE}" ]] && [ -d ${WORKSPACE}/vcpkg ] && [ ! "$bypass_vcpkg" = true ]
+elif [[ ! -z "${WORKSPACE}" ]] && [ -d ${WORKSPACE}/vcpkg ] && [ "$use_vcpkg" = true ]
 then
   export VCPKG_ROOT="${WORKSPACE}/vcpkg"
   vcpkg_path="${WORKSPACE}/vcpkg"
   vcpkg_triplet_define="-DVCPKG_TARGET_TRIPLET=$vcpkg_triplet"
   echo "Found vcpkg in WORKSPACE/vcpkg: ${vcpkg_path}"
   additional_defines="-DBUILD_SHARED_LIBS=OFF"
-elif [ ! "$bypass_vcpkg" = true ]
+elif [ "$use_vcpkg" = true ]
 then
   (>&2 echo "darknet is unsupported without vcpkg, use at your own risk!")
+else
+  additional_build_setup=${additional_build_setup}" -DENABLE_VCPKG_INTEGRATION:BOOL=FALSE"
 fi
 
 if [ "$force_cpp_build" = true ]

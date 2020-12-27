@@ -43,7 +43,6 @@ else()
 endif()
 
 cmake_dependent_option(ENABLE_SSE_AND_AVX_FLAGS "Enable AVX and SSE optimizations (x86-only)" ON "CMAKE_COMPILER_IS_GNUCC_OR_CLANG;IS_X86" OFF)
-set(CMAKE_CUDA_ARCHITECTURES "50" CACHE STRING "Build for these CUDA architectures")
 
 if(ENABLE_VCPKG_INTEGRATION AND DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
@@ -85,32 +84,34 @@ set(INSTALL_LIB_DIR      "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Path where lib 
 set(INSTALL_INCLUDE_DIR  "include/darknet"           CACHE PATH "Path where headers will be installed")
 set(INSTALL_CMAKE_DIR    "share/darknet"             CACHE PATH "Path where cmake configs will be installed")
 
-include(CheckLanguage)
-check_language(CUDA)
-if(ENABLE_CUDA AND NOT CMAKE_CUDA_COMPILER)
-  message(FATAL_ERROR "CUDA not found, please build explicitly with -DENABLE_CUDA=OFF if you do not want CUDA")
-elseif(ENABLE_CUDA)
-  enable_language(CUDA)
-  if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS "9.0")
-    message(FATAL_ERROR "Unsupported CUDA version, please upgrade to CUDA 9+ or disable CUDA with explicitly with -DENABLE_CUDA=OFF")
-  else()
-    message(STATUS "Building for these CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES},${CUDA_ARCHITECTURES}")
-    if(70 IN_LIST CMAKE_CUDA_ARCHITECTURES OR
-       72 IN_LIST CMAKE_CUDA_ARCHITECTURES OR
-       75 IN_LIST CMAKE_CUDA_ARCHITECTURES OR
-       80 IN_LIST CMAKE_CUDA_ARCHITECTURES OR
-       86 IN_LIST CMAKE_CUDA_ARCHITECTURES)
-      set(ENABLE_CUDNN_HALF "TRUE" CACHE BOOL "Enable CUDNN Half precision" FORCE)
-      message(STATUS "Your setup supports half precision (it requires CC >= 7.0)")
+if(ENABLE_CUDA)
+  include(CheckLanguage)
+  check_language(CUDA)
+  if(NOT CMAKE_CUDA_COMPILER)
+    message(FATAL_ERROR "CUDA not found, please build explicitly with -DENABLE_CUDA=OFF if you do not want CUDA")
+  elseif(ENABLE_CUDA)
+    enable_language(CUDA)
+    if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS "9.0")
+      message(FATAL_ERROR "Unsupported CUDA version, please upgrade to CUDA 9+ or disable CUDA with explicitly with -DENABLE_CUDA=OFF")
     else()
-      set(ENABLE_CUDNN_HALF "FALSE" CACHE BOOL "Enable CUDNN Half precision" FORCE)
-      message(STATUS "Your setup does not support half precision (it requires CC >= 7.0)")
+      message(STATUS "Selected CMAKE_CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
+      if(70 IN_LIST CMAKE_CUDA_ARCHITECTURES OR
+         72 IN_LIST CMAKE_CUDA_ARCHITECTURES OR
+         75 IN_LIST CMAKE_CUDA_ARCHITECTURES OR
+         80 IN_LIST CMAKE_CUDA_ARCHITECTURES OR
+         86 IN_LIST CMAKE_CUDA_ARCHITECTURES)
+        set(ENABLE_CUDNN_HALF "TRUE" CACHE BOOL "Enable CUDNN Half precision" FORCE)
+        message(STATUS "Your setup supports half precision (it requires CC >= 7.0)")
+      else()
+        set(ENABLE_CUDNN_HALF "FALSE" CACHE BOOL "Enable CUDNN Half precision" FORCE)
+        message(STATUS "Your setup does not support half precision (it requires CC >= 7.0)")
+      endif()
     endif()
-  endif()
-  if(BUILD_SHARED_LIBS)
-    set(CMAKE_CUDA_RUNTIME_LIBRARY "Shared")
-  else()
-    set(CMAKE_CUDA_RUNTIME_LIBRARY "Static")
+    if(BUILD_SHARED_LIBS)
+      set(CMAKE_CUDA_RUNTIME_LIBRARY "Shared")
+    else()
+      set(CMAKE_CUDA_RUNTIME_LIBRARY "Static")
+    endif()
   endif()
 endif()
 

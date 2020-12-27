@@ -523,7 +523,7 @@ jobs:
         cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
         useVcpkgToolchainFile: true
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=OFF"
+        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
         cmakeBuildType: 'Release'
         buildWithCMakeArgs: '--config Release --target install'
 
@@ -545,25 +545,3 @@ jobs:
         cmakeAppendedArgs: "-G\"MinGW Makefiles\" -DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=OFF"
         cmakeBuildType: 'Release'
         buildWithCMakeArgs: '--config Release --target install'
-
-
-  cygwin:
-    runs-on: windows-latest
-    continue-on-error: true
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: 'Install Cygwin'
-      run: |
-        choco install cygwin -y
-        choco install cyg-get -y
-        cyg-get gcc-g++ cmake make libopencv-devel libncurses-devel
-
-    - name: 'Build'
-      run: |
-        mkdir buildDirectory
-        cd buildDirectory
-        path C:\tools\cygwin\bin
-        bash -c 'cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="Release" -DENABLE_CUDA=OFF'
-        bash -c 'cmake --build . --target install -- -j8'
-      shell: cmd

@@ -13,7 +13,7 @@ matrix:
       name: macOS - gcc (llvm backend)
       osx_image: xcode12.3
       env:
-        - additional_defines=""
+        - additional_defines=" -DENABLE_CUDA=OFF"
         - MATRIX_EVAL=""
 
     - os: osx
@@ -22,7 +22,7 @@ matrix:
       osx_image: xcode12.3
       env:
         - OpenCV_DIR="/usr/local/opt/opencv@2/"
-        - additional_defines="-DOpenCV_DIR=${OpenCV_DIR}"
+        - additional_defines="-DOpenCV_DIR=${OpenCV_DIR} -DENABLE_CUDA=OFF"
         - MATRIX_EVAL="brew install opencv@2"
 
     - os: osx
@@ -31,7 +31,7 @@ matrix:
       osx_image: xcode12.3
       env:
         - OpenCV_DIR="/usr/local/opt/opencv@3/"
-        - additional_defines="-DOpenCV_DIR=${OpenCV_DIR}"
+        - additional_defines="-DOpenCV_DIR=${OpenCV_DIR} -DENABLE_CUDA=OFF"
         - MATRIX_EVAL="brew install opencv@3"
 
     - os: osx
@@ -39,7 +39,7 @@ matrix:
       name: macOS - gcc (llvm backend) - opencv(latest)
       osx_image: xcode12.3
       env:
-        - additional_defines=""
+        - additional_defines=" -DENABLE_CUDA=OFF"
         - MATRIX_EVAL="brew install opencv"
 
     - os: osx
@@ -47,7 +47,7 @@ matrix:
       name: macOS - clang
       osx_image: xcode12.3
       env:
-        - additional_defines=""
+        - additional_defines=" -DENABLE_CUDA=OFF"
         - MATRIX_EVAL=""
 
     - os: osx
@@ -55,7 +55,7 @@ matrix:
       name: macOS - clang - C++ mode
       osx_image: xcode12.3
       env:
-        - additional_defines="-DBUILD_AS_CPP:BOOL=TRUE"
+        - additional_defines="-DBUILD_AS_CPP:BOOL=TRUE -DENABLE_CUDA=OFF"
         - MATRIX_EVAL=""
 
     - os: osx
@@ -64,7 +64,7 @@ matrix:
       osx_image: xcode12.3
       env:
         - OpenCV_DIR="/usr/local/opt/opencv@2/"
-        - additional_defines="-DOpenCV_DIR=${OpenCV_DIR}"
+        - additional_defines="-DOpenCV_DIR=${OpenCV_DIR} -DENABLE_CUDA=OFF"
         - MATRIX_EVAL="brew install opencv@2"
 
     - os: osx
@@ -73,7 +73,7 @@ matrix:
       osx_image: xcode12.3
       env:
         - OpenCV_DIR="/usr/local/opt/opencv@3/"
-        - additional_defines="-DOpenCV_DIR=${OpenCV_DIR}"
+        - additional_defines="-DOpenCV_DIR=${OpenCV_DIR} -DENABLE_CUDA=OFF"
         - MATRIX_EVAL="brew install opencv@3"
 
     - os: osx
@@ -81,7 +81,7 @@ matrix:
       name: macOS - clang - opencv(latest)
       osx_image: xcode12.3
       env:
-        - additional_defines=""
+        - additional_defines=" -DENABLE_CUDA=OFF"
         - MATRIX_EVAL="brew install opencv"
 
     - os: osx
@@ -89,14 +89,14 @@ matrix:
       name: macOS - clang - opencv(latest) - libomp
       osx_image: xcode12.3
       env:
-        - additional_defines=""
+        - additional_defines=" -DENABLE_CUDA=OFF"
         - MATRIX_EVAL="brew install opencv libomp"
 
     - os: osx
       name: macOS - clang - vcpkg
       osx_image: xcode12.3
       env:
-        - additional_defines="-DBUILD_SHARED_LIBS=OFF"
+        - additional_defines="-DBUILD_SHARED_LIBS=OFF -DENABLE_CUDA=OFF"
         - MATRIX_EVAL="brew install yasm && unset CC && unset CXX"
         - USE_VCPKG=true
         - VCPKG_ROOT="$HOME/vcpkg"
@@ -107,7 +107,7 @@ matrix:
       dist: bionic
       name: ubuntu 18.04 - clang
       env:
-        - additional_defines=""
+        - additional_defines=" -DENABLE_CUDA=OFF"
         - MATRIX_EVAL=""
 
     - os: linux
@@ -115,7 +115,7 @@ matrix:
       dist: bionic
       name: ubuntu 18.04 - gcc
       env:
-        - additional_defines=""
+        - additional_defines=" -DENABLE_CUDA=OFF"
         - MATRIX_EVAL=""
 
     - os: linux
@@ -123,7 +123,7 @@ matrix:
       dist: bionic
       name: ubuntu 18.04 - g++
       env:
-        - additional_defines="-DBUILD_AS_CPP:BOOL=TRUE"
+        - additional_defines="-DBUILD_AS_CPP:BOOL=TRUE -DENABLE_CUDA=OFF"
         - MATRIX_EVAL=""
 
     - os: linux
@@ -136,7 +136,7 @@ matrix:
           packages:
             - yasm
       env:
-        - additional_defines="-DBUILD_SHARED_LIBS=OFF"
+        - additional_defines="-DBUILD_SHARED_LIBS=OFF -DENABLE_CUDA=OFF"
         - USE_VCPKG=true
         - VCPKG_ROOT="$HOME/vcpkg"
         - VCPKG_DEFINES="-DCMAKE_TOOLCHAIN_FILE=$HOME/vcpkg/scripts/buildsystems/vcpkg.cmake"
@@ -152,7 +152,7 @@ matrix:
           packages:
             - libopencv-dev
       env:
-        - additional_defines=""
+        - additional_defines=" -DENABLE_CUDA=OFF"
         - MATRIX_EVAL=""
 
     - os: linux
@@ -165,7 +165,7 @@ matrix:
           packages:
             - libopencv-dev
       env:
-        - additional_defines=""
+        - additional_defines=" -DENABLE_CUDA=OFF"
         - MATRIX_EVAL=""
 
     - os: linux

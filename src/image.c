@@ -1724,4 +1724,3 @@ LIB_API void copy_image_from_bytes(image im, char *pdata)
     }
 }
 
-

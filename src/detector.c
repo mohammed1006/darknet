@@ -8,6 +8,9 @@
 #include "box.h"
 #include "demo.h"
 #include "option_list.h"
+#include <string.h>
+#include <dirent.h>
+#include <unistd.h>
 
 #ifndef __COMPAR_FN_T
 #define __COMPAR_FN_T
@@ -382,9 +385,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
         //if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
         //if (i % 100 == 0) {
-        if ((iteration >= (iter_save + 10000) || iteration % 10000 == 0) ||
-            (iteration >= (iter_save + 1000) || iteration % 1000 == 0) && net.max_batches < 10000)
-        {
+        if (iteration >= (iter_save + 1000) || iteration % 1000 == 0) {
             iter_save = iteration;
 #ifdef GPU
             if (ngpus != 1) sync_nets(nets, ngpus, 0);
@@ -402,12 +403,6 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             char buff[256];
             sprintf(buff, "%s/%s_last.weights", backup_directory, base);
             save_weights(net, buff);
-
-            if (net.ema_alpha && is_ema_initialized(net)) {
-                sprintf(buff, "%s/%s_ema.weights", backup_directory, base);
-                save_weights_upto(net, buff, net.n, 1);
-                printf(" EMA weights are saved to the file: %s \n", buff);
-            }
         }
         free_data(train);
     }
@@ -722,7 +717,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     int t;
 
     float thresh = .001;
-    float nms = .6;
+    float nms = .45;
 
     int nthreads = 4;
     if (m < 4) nthreads = m;
@@ -1008,7 +1003,6 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     args.w = net.w;
     args.h = net.h;
     args.c = net.c;
-    letter_box = net.letter_box;
     if (letter_box) args.type = LETTERBOX_DATA;
     else args.type = IMAGE_DATA;
 
@@ -1600,8 +1594,8 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
 }
 
 
-void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh,
-    float hier_thresh, int dont_show, int ext_output, int save_labels, char *outfile, int letter_box, int benchmark_layers)
+
+void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, int dont_show, int ext_output, int save_labels, char *outfile, int letter_box, int benchmark_layers)
 {
     list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
@@ -1613,7 +1607,6 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     if (weightfile) {
         load_weights(&net, weightfile);
     }
-    if (net.letter_box) letter_box = 1;
     net.benchmark_layers = benchmark_layers;
     fuse_conv_batchnorm(net);
     calculate_binary_weights(net);
@@ -1639,11 +1632,15 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     int j;
     float nms = .45;    // 0.4F
 
-    //Adding a folder from which a image files can be read
+
+    //code to select files from a folder and run inference on them and delete them after inference
+
+    //printf("args: %s",detectfolder);
 
     DIR *folder;
     struct dirent *entry;
     int files = 0;
+
     folder = opendir("./imagestodetect/");
 
     if(folder == NULL)
@@ -1651,6 +1648,21 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         perror("Unable to read directory");
         return(1);
     }
+
+    //while( (entry=readdir(folder)) )
+    //{
+        //files++;
+        //char str1[100] = "./imgg/";
+        //strcat(str1, entry->d_name);
+        //printf("File %3d: %s\n",
+                //files,
+                //str1
+              //);
+    //}
+
+    //closedir(folder);
+
+
 
 
 
@@ -1761,17 +1773,25 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
             }
             fclose(fw);
         }
+        
 
         free_detections(dets, nboxes);
         free_image(im);
         free_image(sized);
 
-        if (!dont_show) {
+        if (dont_show) {
             wait_until_press_key_cv();
             destroy_all_windows_cv();
         }
 
         if (filename) break;
+
+        
+        }
+       
+        remove(input);
+        //sleep(0.2);
+          
     }
 
     if (json_file) {
@@ -1973,6 +1993,9 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
 
 void run_detector(int argc, char **argv)
 {
+
+    
+    char *detectfolder = find_char_arg(argc, argv, "-folder_name", "./imagestodetect/");
     int dont_show = find_arg(argc, argv, "-dont_show");
     int benchmark = find_arg(argc, argv, "-benchmark");
     int benchmark_layers = find_arg(argc, argv, "-benchmark_layers");
@@ -2011,6 +2034,8 @@ void run_detector(int argc, char **argv)
         return;
     }
     char *gpu_list = find_char_arg(argc, argv, "-gpus", 0);
+
+    //printf("?????????????????: %s",detectfolder);
     int *gpus = 0;
     int gpu = 0;
     int ngpus = 0;

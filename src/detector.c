@@ -1638,9 +1638,39 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     }
     int j;
     float nms = .45;    // 0.4F
+
+    //Adding a folder from which a image files can be read
+
+    DIR *folder;
+    struct dirent *entry;
+    int files = 0;
+    folder = opendir("./imagestodetect/");
+
+    if(folder == NULL)
+    {
+        perror("Unable to read directory");
+        return(1);
+    }
+
+
+
+
     while (1) {
+        folder = opendir("./imagestodetect/");
+        while( (entry=readdir(folder)) != NULL)
+        
+        {
+        if((strcmp(entry->d_name,".")==0 || strcmp(entry->d_name,"..")==0 || (entry->d_name) == '.' ) || (strcmp(entry->d_name,"Server_v1.py")==0))
+        {
+         printf(".");
+         sleep(0.5);
+         continue;
+        }
         if (filename) {
-            strncpy(input, filename, 256);
+            char str1[100] = "./imagestodetect/";
+            strcat(str1, entry->d_name);
+            strncpy(input, str1, 256);
+            closedir(folder);
             if (strlen(input) > 0)
                 if (input[strlen(input) - 1] == 0x0d) input[strlen(input) - 1] = 0;
         }
@@ -1650,6 +1680,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
             input = fgets(input, 256, stdin);
             if (!input) break;
             strtok(input, "\n");
+        
         }
         //image im;
         //image sized = load_image_resize(input, net.w, net.h, net.c, &im);

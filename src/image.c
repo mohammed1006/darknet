@@ -337,9 +337,13 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
     // text output
     qsort(selected_detections, selected_detections_num, sizeof(*selected_detections), compare_by_lefts);
     int i;
+    char output[100] = "";
     for (i = 0; i < selected_detections_num; ++i) {
         const int best_class = selected_detections[i].best_class;
+        
         printf("%s: %.0f%%", names[best_class],    selected_detections[i].det.prob[best_class] * 100);
+        strcat(output, names[best_class]);
+        //printf("%s",output);
         if (ext_output)
             printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f)\n",
                 round((selected_detections[i].det.bbox.x - selected_detections[i].det.bbox.w / 2)*im.w),
@@ -362,6 +366,21 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
             }
         }
     }
+   
+
+    //saving detections to a text file
+    printf("%s", output);
+    FILE *fptr;
+    fptr = fopen("detections.txt", "a+");
+    if (fptr == NULL) {
+        printf("Error!");
+        exit(1);
+    }
+    char nextline[] = "\n";
+    strcat(output,nextline);
+    fprintf(fptr, "%s", output);
+    fclose(fptr);
+
 
     // image output
     qsort(selected_detections, selected_detections_num, sizeof(*selected_detections), compare_by_probs);
@@ -1704,3 +1723,5 @@ LIB_API void copy_image_from_bytes(image im, char *pdata)
         }
     }
 }
+
+

@@ -1646,7 +1646,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     if(folder == NULL)
     {
         perror("Unable to read directory");
-        return(1);
+        //return(1);
     }
 
     //while( (entry=readdir(folder)) )
@@ -1995,7 +1995,7 @@ void run_detector(int argc, char **argv)
 {
 
     
-    char *detectfolder = find_char_arg(argc, argv, "-folder_name", "./imagestodetect/");
+    //char *detectfolder = find_char_arg(argc, argv, "-folder_name", "./imagestodetect/");
     int dont_show = find_arg(argc, argv, "-dont_show");
     int benchmark = find_arg(argc, argv, "-benchmark");
     int benchmark_layers = find_arg(argc, argv, "-benchmark_layers");

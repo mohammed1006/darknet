@@ -2,9 +2,11 @@
 
 $number_of_build_workers = 8
 $enable_cuda = $true
-$use_vcpkg = $false
+$use_vcpkg = $true
 $use_ninja = $true
 $force_cpp_build = $false
+
+#$additional_build_setup = " -DCMAKE_CUDA_ARCHITECTURES=30"
 
 
 $CMAKE_EXE = Get-Command cmake | Select-Object -ExpandProperty Definition

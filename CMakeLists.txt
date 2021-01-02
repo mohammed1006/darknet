@@ -7,8 +7,8 @@ set(Darknet_PATCH_VERSION 5)
 set(Darknet_TWEAK_VERSION 4)
 set(Darknet_VERSION ${Darknet_MAJOR_VERSION}.${Darknet_MINOR_VERSION}.${Darknet_PATCH_VERSION}.${Darknet_TWEAK_VERSION})
 
-option(CMAKE_VERBOSE_MAKEFILE "Create verbose makefile" OFF)
-option(CUDA_VERBOSE_BUILD "Create verbose CUDA build" OFF)
+option(CMAKE_VERBOSE_MAKEFILE "Create verbose makefile" ON)
+option(CUDA_VERBOSE_BUILD "Create verbose CUDA build" ON)
 option(BUILD_SHARED_LIBS "Create dark as a shared library" ON)
 option(BUILD_AS_CPP "Build Darknet using C++ compiler also for C files" OFF)
 option(BUILD_USELIB_TRACK "Build uselib_track" ON)
@@ -49,6 +49,7 @@ if(ENABLE_VCPKG_INTEGRATION AND DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TO
   set(_VCPKG_INSTALLED_DIR ${CMAKE_CURRENT_LIST_DIR}/vcpkg CACHE STRING "")
   message(STATUS "VCPKG found: $ENV{VCPKG_ROOT}")
   message(STATUS "Using VCPKG integration")
+  message(STATUS "Installing dependencies in ${_VCPKG_INSTALLED_DIR}")
 endif()
 
 project(Darknet VERSION ${Darknet_VERSION})

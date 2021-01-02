@@ -413,7 +413,7 @@ jobs:
         cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
         useVcpkgToolchainFile: true
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DSELECT_OPENCV_MODULES:ON"
+        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DSELECT_OPENCV_MODULES=ON"
         cmakeBuildType: 'Release'
         buildWithCMakeArgs: '--config Release --target install'
 

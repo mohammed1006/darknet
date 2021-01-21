@@ -124,7 +124,7 @@ jobs:
         useVcpkgToolchainFile: true
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
         cmakeBuildType: 'Release'
-        cmakeAppendedArgs: "-DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release"
+        cmakeAppendedArgs: "-DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=OFF"
         buildWithCMakeArgs: '--target install'
 
     - uses: actions/upload-artifact@v2
@@ -227,7 +227,7 @@ jobs:
         cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
         useVcpkgToolchainFile: true
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
+        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=ON"
         cmakeBuildType: 'Release'
         buildWithCMakeArgs: '--target install'
 
@@ -523,7 +523,7 @@ jobs:
         cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
         useVcpkgToolchainFile: true
         buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release"
+        cmakeAppendedArgs: "-DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=ON"
         cmakeBuildType: 'Release'
         buildWithCMakeArgs: '--config Release --target install'
 

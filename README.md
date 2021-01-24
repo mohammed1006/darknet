@@ -288,7 +288,7 @@ On Linux find executable file `./darknet` in the root directory, while on Window
 * To calculate anchors: `darknet.exe detector calc_anchors data/obj.data -num_of_clusters 9 -width 416 -height 416`
 * To check accuracy mAP@IoU=50: `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_7000.weights`
 * To check accuracy mAP@IoU=75: `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_7000.weights -iou_thresh 0.75`
-* To save the cropped image of the object detected: [`uncomment the following lines of code`](https://github.com/AlexeyAB/darknet/blob/64efa721ede91cd8ccc18257f98eeba43b73a6af/src/image_opencv.cpp#L980-L994)
+* To save the cropped image of the object detected: [`uncomment the following lines of code`](https://github.com/AlexeyAB/darknet/blob/master/src/image_opencv.cpp#L980-L996)
 
 ##### For using network video-camera mjpeg-stream with any Android smartphone
 

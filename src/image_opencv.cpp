@@ -977,6 +977,7 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
                 color.val[2] = blue * 256;
 
                 // you should create directory: result_img
+                //converting cv::Mat type to Iplimage type
                 //IplImage* ipltypeimg = new IplImage(*show_image);
                 //static int copied_frame_id = -1;
                 //static IplImage* copy_img = NULL;

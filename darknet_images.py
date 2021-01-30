@@ -187,6 +187,10 @@ def main():
         save_annotations(image_name, image, detections, class_names)
     darknet.print_detections(detections, args.ext_output)
 
+    if not args.dont_show:
+        cv2.imshow('Inference', image)
+        cv2.waitKey()
+
 
 if __name__ == "__main__":
     main()

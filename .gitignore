@@ -55,3 +55,10 @@ include/darknet/
 uselib
 uselib_track
 darknet
+venv
+.idea
+__pycache__/
+darknet.pyc
+weights
+testing-images
+

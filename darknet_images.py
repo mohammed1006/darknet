@@ -166,6 +166,22 @@ def save_annotations(name, image, detections, class_names):
             f.write("{} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}\n".format(label, x, y, w, h, float(confidence)))
 
 
+def convert_from_objects_to_string(detections: list) -> str:
+    str = ""
+    detections.sort(key=lambda x: x[2][0])
+
+    for i in range(len(detections)):
+        if i > 0:
+            current_x, current_y, current_w, current_h = detections[i][2]
+            previous_x, previous_y, previous_w, previous_h = detections[i - 1][2]
+            current_y = current_y + current_h / 2
+
+            if current_y < previous_y:
+                str += "^"
+        str += detections[i][0]
+    return str
+
+
 def main():
     args = parser()
     check_arguments_errors(args)
@@ -183,6 +199,9 @@ def main():
     image, detections = image_detection(
         image_name, network, class_names, class_colors, args.thresh
     )
+
+    print(convert_from_objects_to_string(detections))
+
     if args.save_labels:
         save_annotations(image_name, image, detections, class_names)
     darknet.print_detections(detections, args.ext_output)

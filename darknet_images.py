@@ -167,7 +167,7 @@ def save_annotations(name, image, detections, class_names):
 
 
 def convert_from_objects_to_string(detections: list) -> str:
-    str = ""
+    result = ""
     detections.sort(key=lambda x: x[2][0])
 
     for i in range(len(detections)):
@@ -177,9 +177,9 @@ def convert_from_objects_to_string(detections: list) -> str:
             current_y = current_y + current_h / 2
 
             if current_y < previous_y:
-                str += "^"
-        str += detections[i][0]
-    return str
+                result += "^"
+        result += detections[i][0]
+    return result
 
 
 def main():

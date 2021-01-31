@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 
 import darknet
+from object_to_string import convert_from_objects_to_string
 
 
 def parser():
@@ -183,6 +184,9 @@ def main():
     image, detections = image_detection(
         image_name, network, class_names, class_colors, args.thresh
     )
+
+    print(convert_from_objects_to_string(detections))
+
     if args.save_labels:
         save_annotations(image_name, image, detections, class_names)
     darknet.print_detections(detections, args.ext_output)

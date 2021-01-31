@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 
 import darknet
+from object_to_string import convert_from_objects_to_string
 
 
 def parser():
@@ -164,22 +165,6 @@ def save_annotations(name, image, detections, class_names):
             x, y, w, h = convert2relative(image, bbox)
             label = class_names.index(label)
             f.write("{} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}\n".format(label, x, y, w, h, float(confidence)))
-
-
-def convert_from_objects_to_string(detections: list) -> str:
-    result = ""
-    detections.sort(key=lambda x: x[2][0])
-
-    for i in range(len(detections)):
-        if i > 0:
-            current_x, current_y, current_w, current_h = detections[i][2]
-            previous_x, previous_y, previous_w, previous_h = detections[i - 1][2]
-            current_y = current_y + current_h / 2
-
-            if current_y < previous_y:
-                result += "^"
-        result += detections[i][0]
-    return result
 
 
 def main():

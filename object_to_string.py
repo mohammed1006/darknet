@@ -1,9 +1,8 @@
 import unittest
-import re
 
-operator_and_comma = "[+*/=,\\-]"
-closing_bracket = "[\\}\\)\\]]"
-opening_bracket = "[\\{\\[\\(]"
+operator_and_comma = ["+", "*", "/", "=", "-", "^", ","]
+closing_bracket = ["}", "]", ")"]
+opening_bracket = ["{", "[", "("]
 
 
 def convert_from_objects_to_string(detections: list) -> str:
@@ -21,15 +20,20 @@ def convert_from_objects_to_string(detections: list) -> str:
         # Add pow
         if bottom_current_y <= previous_y:
             result += "^"
-        else:
-            # add *
-            # Ex: 2x => 2*x
-            current_label = get_label(detections[i][0])
-            previous_label = get_label(detections[i - 1][0])
-
-            if can_add_multiple_operator(previous_label, current_label):
-                result += "*"
         result += get_label(detections[i][0])
+    return result
+
+
+def normalize_polynomial(polynomial: str) -> str:
+    result = polynomial[0]
+    for i in range(1, len(polynomial)):
+        current_label = polynomial[i]
+        previous_label = polynomial[i - 1]
+        # add *
+        # Ex: 2x => 2*x
+        if can_add_multiple_operator(previous_label, current_label):
+            result += "*"
+        result += polynomial[i]
     return result
 
 
@@ -40,11 +44,11 @@ def can_add_multiple_operator(previous_label: str, current_label: str) -> bool:
         return False
     # if previous or current are operator or comma return false
     # Ex: '2+','-2','=2','3,'
-    if re.search(operator_and_comma, previous_label) or re.search(operator_and_comma, current_label):
+    if operator_and_comma.__contains__(previous_label) or operator_and_comma.__contains__(current_label):
         return False
-    # if previous is opening bracket or current is closing bracket retrun false
+    # if previous is opening bracket or current is closing bracket return false
     # Ex: '2)','9}','(3','[x'
-    if re.search(closing_bracket, current_label) or re.search(opening_bracket, previous_label):
+    if closing_bracket.__contains__(current_label) or opening_bracket.__contains__(previous_label):
         return False
     return True
 
@@ -77,13 +81,13 @@ class Tests(unittest.TestCase):
                       ("=", 0.4, (0.874711, 0.526536, 0.056284, 0.203911)),
                       ("0", 0.4, (0.941789, 0.467877, 0.060910, 0.343575)),
                       ]
-        self.assertEqual(convert_from_objects_to_string(detections), "2*x^2-3*(x+1)=0")
+        self.assertEqual(convert_from_objects_to_string(detections), "2x^2-3(x+1)=0")
 
         detections = [("=", 0.4, (0.398438, 0.509766, 0.312500, 0.097656)),
                       ("x", 0.4, (0.720703, 0.500000, 0.222656, 0.250000)),
                       ("2", 0.4, (0.921875, 0.423828, 0.140625, 0.228906)),
                       ("4", 0.4, (0.080078, 0.529297, 0.152344, 0.269531))]
-        self.assertEqual(convert_from_objects_to_string(detections), "4=x*2")
+        self.assertEqual(convert_from_objects_to_string(detections), "4=x2")
 
         detections = [("(", 0.4, (0.014786, 0.205150, 0.028478, 0.290698)),
                       ("x", 0.4, (0.052300, 0.209302, 0.055312, 0.149502)),
@@ -111,4 +115,17 @@ class Tests(unittest.TestCase):
                       ("=", 0.4, (0.922508, 0.229236, 0.073932, 0.152824)),
                       ("0", 0.4, (0.978094, 0.226744, 0.043812, 0.227575)),
                       ]
-        self.assertEqual(convert_from_objects_to_string(detections), "(x+1)*(x-2)*2,5-3*(x^2-1)*2=0")
+        self.assertEqual(convert_from_objects_to_string(detections), "(x+1)(x-2)*2,5-3(x^2-1)2=0")
+
+    def test_normalize_polynomial(self):
+        polynomial = "4=x^2"
+        self.assertEqual(normalize_polynomial(polynomial), "4=x^2")
+
+        polynomial = "2x^2-3(x+1)=0"
+        self.assertEqual(normalize_polynomial(polynomial), "2*x^2-3*(x+1)=0")
+
+        polynomial = "4=x2"
+        self.assertEqual(normalize_polynomial(polynomial), "4=x*2")
+
+        polynomial = "(x+1)(x-2)2,5-3(x^2-1)2=0"
+        self.assertEqual(normalize_polynomial(polynomial), "(x+1)*(x-2)*2,5-3*(x^2-1)*2=0")

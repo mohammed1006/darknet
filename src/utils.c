@@ -9,7 +9,7 @@
 #define _USE_MATH_DEFINES
 #endif
 #include <math.h>
-#include <assert.h>
+//#include <assert.h>
 #include <float.h>
 #include <limits.h>
 #include "darkunistd.h"
@@ -323,7 +323,7 @@ void top_k(float *a, int n, int k, int *index)
 void error(const char *s)
 {
     perror(s);
-    assert(0);
+    //assert(0);
     exit(EXIT_FAILURE);
 }
 

@@ -55,5 +55,6 @@ include/darknet/
 uselib
 uselib_track
 darknet
-
 training/
+vcpkg/
+

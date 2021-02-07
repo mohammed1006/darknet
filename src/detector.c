@@ -1785,41 +1785,25 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         while (1) {
             folder = opendir(folder_inference);
             printf("first while\n");
-            //char str1[100] = "./result_img/";
             if(folder){
                 while( (entry=readdir(folder)) != NULL){
-                    printf("second while\n");
-                    //closedir(folder);
-                    //folder = opendir("./result_img/");
-                    printf("%s\n",entry->d_name);
-                    //char str1[100] = "./result_img/";
                     char str1[1024] = "";
                     strncpy(str1,folder_inference,strlen(folder_inference));
                     char cwd[100]="";
                     strncpy(cwd,entry->d_name,strlen(entry->d_name));
                     if(strcmp(cwd,".")==0 || strcmp(cwd,"..")==0){
-                        printf("issue %s\n",entry->d_name);
-                        //sleep(0.5);
                         continue;
                         }
-        //if (filename) {
             
                     strcat(str1, entry->d_name);
                     strncpy(input, str1, 256);
                     //closedir(folder);
                     if (strlen(input) > 0)
                     if (input[strlen(input) - 1] == 0x0d) input[strlen(input) - 1] = 0;
-        //}
-        //else {
-            //printf("Enter Image Path: ");
-            //fflush(stdout);
-            //input = fgets(input, 256, stdin);
-            //if (!input) break;
-            //strtok(input, "\n");
         
-        //}
-        //image im;
-        //image sized = load_image_resize(input, net.w, net.h, net.c, &im);
+        
+                    //image im;
+                    //image sized = load_image_resize(input, net.w, net.h, net.c, &im);
                     image im = load_image(input, 0, 0, net.c);
                     image sized;
                     if(letter_box) sized = letterbox_image(im, net.w, net.h);
@@ -1906,13 +1890,9 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
                     wait_until_press_key_cv();
                     destroy_all_windows_cv();
                 }
-
-                //if (filename) break;
-                //remove(input);
                 char newname[100];
                 removeSubstrr(str1, folder_inference);
-                sprintf(newname, "./pfiles/%s",str1);
-                //printf("newname %s\n",newname);
+                sprintf(newname, "./processed_files/%s",str1);
                 rename (input, newname);
                 }
                 closedir(folder);

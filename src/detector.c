@@ -1784,7 +1784,6 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 
         while (1) {
             folder = opendir(folder_inference);
-            printf("first while\n");
             if(folder){
                 while( (entry=readdir(folder)) != NULL){
                     char str1[1024] = "";

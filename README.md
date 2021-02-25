@@ -359,6 +359,8 @@ This is the recommended approach to build Darknet on Windows.
 
 1. Install Visual Studio 2017 or 2019. In case you need to download it, please go here: [Visual Studio Community](http://visualstudio.com)
 
+2. Setup the [Ninja build system](https://github.com/ninja-build/ninja/releases): Extract Ninja to your preferred location. Add the location to the 'path' environment variable
+
 2. Install CUDA (at least v10.0) enabling VS Integration during installation.
 
 3. Open Powershell (Start -> All programs -> Windows Powershell) and type these commands:

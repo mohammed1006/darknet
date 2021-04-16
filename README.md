@@ -324,11 +324,6 @@ To update CMake on Ubuntu, it's better to follow guide here: https://apt.kitware
 Open a shell and type these commands
 
 ```PowerShell
-PS Code/>              git clone https://github.com/microsoft/vcpkg
-PS Code/>              cd vcpkg
-PS Code/vcpkg>         ./bootstrap-vcpkg.sh
-PS Code/vcpkg>         $env:VCPKG_ROOT=$PWD
-PS Code/vcpkg>         cd ..
 PS Code/>              git clone https://github.com/AlexeyAB/darknet
 PS Code/>              cd darknet
 PS Code/darknet>       ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN
@@ -400,11 +395,6 @@ This is the recommended approach to build Darknet on Windows.
 3. Open Powershell (Start -> All programs -> Windows Powershell) and type these commands:
 
 ```PowerShell
-PS Code/>              git clone https://github.com/microsoft/vcpkg
-PS Code/>              cd vcpkg
-PS Code/vcpkg>         .\bootstrap-vcpkg.bat
-PS Code/vcpkg>         $env:VCPKG_ROOT=$PWD
-PS Code/vcpkg>         cd ..
 PS Code/>              git clone https://github.com/AlexeyAB/darknet
 PS Code/>              cd darknet
 PS Code/darknet>       .\build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN

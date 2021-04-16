@@ -6,6 +6,7 @@ param (
   [switch]$EnableOPENCV = $false,
   [switch]$EnableOPENCV_CUDA = $false,
   [switch]$UseVCPKG = $false,
+  [switch]$DoNotUpdateVCPKG = $false,
   [switch]$DoNotSetupVS = $false,
   [switch]$DoNotUseNinja = $false,
   [switch]$ForceCPP = $false,
@@ -15,6 +16,14 @@ param (
 
 $number_of_build_workers = 8
 #$additional_build_setup = " -DCMAKE_CUDA_ARCHITECTURES=30"
+
+if ($IsLinux -or $IsMacOS) {
+  $bootstrap_ext = ".sh"
+}
+elseif ($IsWindows) {
+  $bootstrap_ext = ".bat"
+}
+Write-Host "Native shell script extension: ${bootstrap_ext}"
 
 if (-Not $IsWindows) {
   $DoNotSetupVS = $true
@@ -109,6 +118,14 @@ else {
 }
 
 Push-Location $PSScriptRoot
+
+$GIT_EXE = Get-Command git 2> $null | Select-Object -ExpandProperty Definition
+if (-Not $GIT_EXE) {
+  throw "Could not find git, please install it"
+}
+else {
+  Write-Host "Using git from ${GIT_EXE}"
+}
 
 $CMAKE_EXE = Get-Command cmake 2> $null | Select-Object -ExpandProperty Definition
 if (-Not $CMAKE_EXE) {
@@ -216,7 +233,10 @@ elseif ((Test-Path "${RUNVCPKG_VCPKG_ROOT_OUT}") -and $UseVCPKG) {
   Write-Host "Found vcpkg in RUNVCPKG_VCPKG_ROOT_OUT: ${RUNVCPKG_VCPKG_ROOT_OUT}"
   $additional_build_setup = $additional_build_setup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
 }
-elseif ((Test-Path "$PWD/vcpkg") -and $UseVCPKG) {
+elseif ($UseVCPKG) {
+  if (-Not (Test-Path "$PWD/vcpkg")) {
+      & $GIT_EXE clone https://github.com/microsoft/vcpkg
+  }
   $vcpkg_path = "$PWD/vcpkg"
   $env:VCPKG_ROOT = "$PWD/vcpkg"
   Write-Host "Found vcpkg in $PWD/vcpkg: $PWD/vcpkg"
@@ -225,6 +245,14 @@ elseif ((Test-Path "$PWD/vcpkg") -and $UseVCPKG) {
 else {
   Write-Host "Skipping vcpkg integration`n" -ForegroundColor Yellow
   $additional_build_setup = $additional_build_setup + " -DENABLE_VCPKG_INTEGRATION:BOOL=OFF"
+}
+
+if ($UseVCPKG -and -not $DoNotUpdateVCPKG) {
+  Push-Location $vcpkg_path
+  & $GIT_EXE pull
+  & $PWD/bootstrap-vcpkg${bootstrap_ext} -disableMetrics
+  Pop-Location
+  exit
 }
 
 if (-Not $DoNotSetupVS) {

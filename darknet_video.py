@@ -89,6 +89,7 @@ def inference(darknet_image_queue, detections_queue, fps_queue):
         fps_queue.put(fps)
         print("FPS: {}".format(fps))
         darknet.print_detections(detections, args.ext_output)
+        darknet.free_image(darknet_image)
     cap.release()
 
 
@@ -128,8 +129,6 @@ if __name__ == '__main__':
             args.weights,
             batch_size=1
         )
-    # Darknet doesn't accept numpy images.
-    # Create one with image we reuse for each detect
     width = darknet.network_width(network)
     height = darknet.network_height(network)
     input_path = str2int(args.input)

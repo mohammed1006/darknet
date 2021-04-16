@@ -91,6 +91,12 @@ elseif ($EnableOPENCV_CUDA -and -not $EnableCUDA -and -not $EnableOPENCV) {
 
 if ($UseVCPKG) {
   Write-Host "VCPKG is enabled"
+  if ($DoNotUpdateVCPKG) {
+    Write-Host "VCPKG will not be updated to latest version if found" -ForegroundColor Yellow
+  }
+  else {
+    Write-Host "VCPKG will be updated to latest version if found"
+  }
 }
 else {
   Write-Host "VCPKG is disabled, please pass -UseVCPKG to the script to enable"
@@ -266,7 +272,7 @@ if (-Not $DoNotSetupVS) {
       }
     }
     Pop-Location
-    Write-Host "Visual Studio Command Prompt variables set" -ForegroundColor Yellow
+    Write-Host "Visual Studio Command Prompt variables set"
   }
 
   $tokens = getLatestVisualStudioWithDesktopWorkloadVersion
@@ -297,13 +303,13 @@ if (-Not $DoNotSetupVS) {
 if ($DoNotSetupVS -and $DoNotUseNinja) {
   $generator = "Unix Makefiles"
 }
-Write-Host "Setting up environment to use CMake generator: $generator" -ForegroundColor Yellow
+Write-Host "Setting up environment to use CMake generator: $generator"
 
 if (-Not $IsMacOS -and $EnableCUDA) {
   if ($null -eq (Get-Command "nvcc" -ErrorAction SilentlyContinue)) {
     if (Test-Path env:CUDA_PATH) {
       $env:PATH += ";${env:CUDA_PATH}/bin"
-      Write-Host "Found cuda in ${env:CUDA_PATH}" -ForegroundColor Yellow
+      Write-Host "Found cuda in ${env:CUDA_PATH}"
     }
     else {
       Write-Host "Unable to find CUDA, if necessary please install it or define a CUDA_PATH env variable pointing to the install folder" -ForegroundColor Yellow

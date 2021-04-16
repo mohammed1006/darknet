@@ -252,7 +252,6 @@ if ($UseVCPKG -and -not $DoNotUpdateVCPKG) {
   & $GIT_EXE pull
   & $PWD/bootstrap-vcpkg${bootstrap_ext} -disableMetrics
   Pop-Location
-  exit
 }
 
 if (-Not $DoNotSetupVS) {

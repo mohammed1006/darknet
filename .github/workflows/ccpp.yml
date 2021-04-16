@@ -111,10 +111,10 @@ jobs:
         ./vcpkg/bootstrap-vcpkg.sh;
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
         sources add
-        -source "https://nuget.pkg.github.com/cenit/index.json"
+        -source "https://nuget.pkg.github.com/AlexeyAB/index.json"
         -storepasswordincleartext
         -name "vcpkgbinarycache"
-        -username "cenit"
+        -username "AlexeyAB"
         -password "${{ secrets.GITHUB_TOKEN }}"
 
     - name: 'Build'
@@ -271,10 +271,10 @@ jobs:
         ./vcpkg/bootstrap-vcpkg.sh;
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
         sources add
-        -source "https://nuget.pkg.github.com/cenit/index.json"
+        -source "https://nuget.pkg.github.com/AlexeyAB/index.json"
         -storepasswordincleartext
         -name "vcpkgbinarycache"
-        -username "cenit"
+        -username "AlexeyAB"
         -password "${{ secrets.GITHUB_TOKEN }}"
 
     - name: 'Build'
@@ -357,10 +357,10 @@ jobs:
         ./vcpkg/bootstrap-vcpkg.sh;
         $(./vcpkg/vcpkg fetch nuget | tail -n 1)
         sources add
-        -source "https://nuget.pkg.github.com/cenit/index.json"
+        -source "https://nuget.pkg.github.com/AlexeyAB/index.json"
         -storepasswordincleartext
         -name "vcpkgbinarycache"
-        -username "cenit"
+        -username "AlexeyAB"
         -password "${{ secrets.GITHUB_TOKEN }}"
 
     - name: 'Build'

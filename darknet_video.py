@@ -113,7 +113,7 @@ def video_capture(frame_queue, darknet_image_queue):
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frame_resized = cv2.resize(frame_rgb, (darknet_width, darknet_height),
                                    interpolation=cv2.INTER_LINEAR)
-        frame_queue.put(frame_resized)
+        frame_queue.put(frame)
         img_for_detect = darknet.make_image(darknet_width, darknet_height, 3)
         darknet.copy_image_from_bytes(img_for_detect, frame_resized.tobytes())
         darknet_image_queue.put(img_for_detect)
@@ -138,16 +138,20 @@ def drawing(frame_queue, detections_queue, fps_queue):
     random.seed(3)  # deterministic bbox colors
     video = set_saved_video(cap, args.out_filename, (darknet_width, darknet_height))
     while cap.isOpened():
-        frame_resized = frame_queue.get()
+        frame = frame_queue.get()
         detections = detections_queue.get()
         fps = fps_queue.get()
-        if frame_resized is not None:
-            image = darknet.draw_boxes(detections, frame_resized, class_colors)
+        detections_adjusted = []
+        if frame is not None:
+            for label, confidence, bbox in detections:
+                bbox_adjusted = convert2original(frame, bbox)
+                detections_adjusted.append((str(label), confidence, bbox_adjusted))
+            image = darknet.draw_boxes(detections, frame, class_colors)
+            if not args.dont_show:
+                cv2.imshow('Inference', image)
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             if args.out_filename is not None:
                 video.write(image)
-            if not args.dont_show:
-                cv2.imshow('Inference', image)
             if cv2.waitKey(fps) == 27:
                 break
     cap.release()

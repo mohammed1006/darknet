@@ -775,6 +775,37 @@ int check_prob(detection det, float thresh)
     return 0;
 }
 
+int check_classes_id(detection det1, detection det2, float thresh)
+{
+    if (det1.classes != det2.classes) {
+        printf(" Error: det1.classes != det2.classes \n");
+        getchar();
+    }
+
+    int det1_id = -1;
+    float det1_prob = 0;
+    int det2_id = -1;
+    float det2_prob = 0;
+
+    for (int i = 0; i < det1.classes; ++i) {
+        if (det1.prob[i] > thresh && det1.prob[i] > det1_prob) {
+            det1_prob = det1.prob[i];
+            det1_id = i;
+        }
+        if (det2.prob[i] > thresh && det2.prob[i] > det2_prob) {
+            det2_prob = det2.prob[i];
+            det2_id = i;
+        }
+    }
+
+    if (det1_id == det2_id && det2_id != -1) return 1;
+
+    //for (int i = 0; i < det1.classes; ++i) {
+    //    if (det1.prob[i] > thresh && det2.prob[i] > thresh) return 1;
+    //}
+    return 0;
+}
+
 int fill_remaining_id(detection *new_dets, int new_dets_num, int new_track_id, float thresh, int detection_count)
 {
     for (int i = 0; i < new_dets_num; ++i) {
@@ -851,7 +882,6 @@ void set_track_id(detection *new_dets, int new_dets_num, float thresh, float sim
     std::sort(sim_det.begin(), sim_det.end(), [](similarity_detections_t v1, similarity_detections_t v2) { return v1.sim > v2.sim; });
     //if(sim_det.size() > 0) printf(" sim_det_first = %f, sim_det_end = %f \n", sim_det.begin()->sim, sim_det.rbegin()->sim);
 
-
     std::vector<int> new_idx(new_dets_num, 1);
     std::vector<int> old_idx(old_dets.size(), 1);
     std::vector<int> track_idx(new_track_id, 1);
@@ -863,15 +893,16 @@ void set_track_id(detection *new_dets, int new_dets_num, float thresh, float sim
         const int track_id = old_dets[old_id].track_id;
         const int det_count = old_dets[old_id].sort_class;
         //printf(" ciou = %f \n", box_ciou(new_dets[new_id].bbox, old_dets[old_id].bbox));
-        if (check_prob(new_dets[new_id], thresh) && track_idx[track_id] && new_idx[new_id] && old_idx[old_id]) {
+        if (track_idx[track_id] && new_idx[new_id] && old_idx[old_id] && check_classes_id(new_dets[new_id], old_dets[old_id], thresh)) {
             float sim = sim_det[index].sim;
-            float ciou = box_ciou(new_dets[new_id].bbox, old_dets[old_id].bbox);
+            //float ciou = box_ciou(new_dets[new_id].bbox, old_dets[old_id].bbox);
+            float ciou = box_iou(new_dets[new_id].bbox, old_dets[old_id].bbox);
             sim = sim * (1 - track_ciou_norm) + ciou * track_ciou_norm;
-            if (sim_thresh < sim) {
+            if (sim_thresh < sim && new_dets[new_id].sim < sim) {
                 new_dets[new_id].sim = sim;
                 new_dets[new_id].track_id = track_id;
                 new_dets[new_id].sort_class = det_count + 1;
-                new_idx[new_id] = 0;
+                //new_idx[new_id] = 0;
                 old_idx[old_id] = 0;
                 if(track_id) track_idx[track_id] = 0;
             }

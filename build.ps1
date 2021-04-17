@@ -7,6 +7,7 @@ param (
   [switch]$EnableOPENCV_CUDA = $false,
   [switch]$UseVCPKG = $false,
   [switch]$DoNotUpdateVCPKG = $false,
+  [switch]$DoNotDeleteBuildFolder = $false,
   [switch]$DoNotSetupVS = $false,
   [switch]$DoNotUseNinja = $false,
   [switch]$ForceCPP = $false,
@@ -348,8 +349,14 @@ if ($EnableOPENCV_CUDA) {
   $additional_build_setup = $additional_build_setup + " -DENABLE_OPENCV_WITH_CUDA:BOOL=ON"
 }
 
-New-Item -Path ./build_release -ItemType directory -Force
-Set-Location build_release
+$build_folder = "./build_release"
+if(-Not $DoNotDeleteBuildFolder) {
+  Write-Host "Removing folder $build_folder" -ForegroundColor Yellow
+  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $build_folder
+}
+
+New-Item -Path $build_folder -ItemType directory -Force
+Set-Location $build_folder
 $cmake_args = "-G `"$generator`" ${additional_build_setup} -S .."
 Write-Host "CMake args: $cmake_args"
 Start-Process -NoNewWindow -Wait -FilePath $CMAKE_EXE -ArgumentList $cmake_args

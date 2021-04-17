@@ -1,6 +1,7 @@
 #!/usr/bin/env pwsh
 
 param (
+  [switch]$DisableInteractive = $false,
   [switch]$EnableCUDA = $false,
   [switch]$EnableCUDNN = $false,
   [switch]$EnableOPENCV = $false,
@@ -14,6 +15,34 @@ param (
   [switch]$ForceStaticLib = $false,
   [switch]$ForceGCC8 = $false
 )
+
+if (-Not $DisableInteractive -and -Not $UseVCPKG) {
+  $Result = Read-Host "Enable vcpkg to install darknet dependencies (yes/no)"
+  if ($Result -eq 'Yes' -or $Result -eq 'Y' -or $Result -eq 'yes' -or $Result -eq 'y') {
+    $UseVCPKG = $true
+  }
+}
+
+if (-Not $DisableInteractive -and -Not $EnableCUDA -and -Not $IsMacOS) {
+  $Result = Read-Host "Enable CUDA integration (yes/no)"
+  if ($Result -eq 'Yes' -or $Result -eq 'Y' -or $Result -eq 'yes' -or $Result -eq 'y') {
+    $EnableCUDA = $true
+  }
+}
+
+if ($EnableCUDA -and -Not $DisableInteractive -and -Not $EnableCUDNN) {
+  $Result = Read-Host "Enable CUDNN optional dependency (yes/no)"
+  if ($Result -eq 'Yes' -or $Result -eq 'Y' -or $Result -eq 'yes' -or $Result -eq 'y') {
+    $EnableCUDNN = $true
+  }
+}
+
+if (-Not $DisableInteractive -and -Not $EnableOPENCV) {
+  $Result = Read-Host "Enable OpenCV optional dependency (yes/no)"
+  if ($Result -eq 'Yes' -or $Result -eq 'Y' -or $Result -eq 'yes' -or $Result -eq 'y') {
+    $EnableOPENCV = $true
+  }
+}
 
 $number_of_build_workers = 8
 #$additional_build_setup = " -DCMAKE_CUDA_ARCHITECTURES=30"
@@ -46,7 +75,7 @@ if ($IsWindows -and -Not $env:VCPKG_DEFAULT_TRIPLET) {
 }
 
 if ($EnableCUDA) {
-  if($IsMacOS) {
+  if ($IsMacOS) {
     Write-Host "Cannot enable CUDA on macOS" -ForegroundColor Yellow
     $EnableCUDA = $false
   }
@@ -242,7 +271,7 @@ elseif ((Test-Path "${RUNVCPKG_VCPKG_ROOT_OUT}") -and $UseVCPKG) {
 }
 elseif ($UseVCPKG) {
   if (-Not (Test-Path "$PWD/vcpkg")) {
-      & $GIT_EXE clone https://github.com/microsoft/vcpkg
+    & $GIT_EXE clone https://github.com/microsoft/vcpkg
   }
   $vcpkg_path = "$PWD/vcpkg"
   $env:VCPKG_ROOT = "$PWD/vcpkg"
@@ -345,12 +374,12 @@ if (-Not($EnableOPENCV)) {
   $additional_build_setup = $additional_build_setup + " -DENABLE_OPENCV:BOOL=OFF"
 }
 
-if ($EnableOPENCV_CUDA) {
-  $additional_build_setup = $additional_build_setup + " -DENABLE_OPENCV_WITH_CUDA:BOOL=ON"
+if (-Not($EnableOPENCV_CUDA)) {
+  $additional_build_setup = $additional_build_setup + " -DVCPKG_BUILD_OPENCV_WITH_CUDA:BOOL=OFF"
 }
 
 $build_folder = "./build_release"
-if(-Not $DoNotDeleteBuildFolder) {
+if (-Not $DoNotDeleteBuildFolder) {
   Write-Host "Removing folder $build_folder" -ForegroundColor Yellow
   Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $build_folder
 }

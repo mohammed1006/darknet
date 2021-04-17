@@ -237,6 +237,7 @@ void backward_network_gpu(network net, network_state state)
 
         image attention_img = make_attention_image(img_size, original_delta_cpu, original_input_cpu, net.w, net.h, net.c);
         show_image(attention_img, "attention_img");
+        resize_window_cv("attention_img", 500, 500);
 
         free_image(attention_img);
 
@@ -299,7 +300,6 @@ void forward_backward_network_gpu(network net, float *x, float *y)
     state.input = *net.input_gpu;
     state.delta = 0;
     if (net.adversarial) {
-        state.train = 0;
         state.delta = cuda_make_array(NULL, x_size);
     }
     state.truth = *net.truth_gpu;
@@ -327,9 +327,11 @@ void forward_backward_network_gpu(network net, float *x, float *y)
                     cuda_convert_f32_to_f16(l.vo->weights_gpu, l.vo->nweights, l.vo->weights_gpu16);
                 }
                 cuda_convert_f32_to_f16(l.wf->weights_gpu, l.wf->nweights, l.wf->weights_gpu16);
-                cuda_convert_f32_to_f16(l.wi->weights_gpu, l.wi->nweights, l.wi->weights_gpu16);
-                cuda_convert_f32_to_f16(l.wg->weights_gpu, l.wg->nweights, l.wg->weights_gpu16);
-                cuda_convert_f32_to_f16(l.wo->weights_gpu, l.wo->nweights, l.wo->weights_gpu16);
+                if (!l.bottleneck) {
+                    cuda_convert_f32_to_f16(l.wi->weights_gpu, l.wi->nweights, l.wi->weights_gpu16);
+                    cuda_convert_f32_to_f16(l.wg->weights_gpu, l.wg->nweights, l.wg->weights_gpu16);
+                    cuda_convert_f32_to_f16(l.wo->weights_gpu, l.wo->nweights, l.wo->weights_gpu16);
+                }
                 cuda_convert_f32_to_f16(l.uf->weights_gpu, l.uf->nweights, l.uf->weights_gpu16);
                 cuda_convert_f32_to_f16(l.ui->weights_gpu, l.ui->nweights, l.ui->weights_gpu16);
                 cuda_convert_f32_to_f16(l.ug->weights_gpu, l.ug->nweights, l.ug->weights_gpu16);
@@ -346,6 +348,8 @@ void forward_backward_network_gpu(network net, float *x, float *y)
         cuda_free(state.delta);
         cuda_pull_array(*net.input_gpu, x, x_size);
     }
+    if(*(state.net.total_bbox) > 0)
+        fprintf(stderr, " total_bbox = %d, rewritten_bbox = %f %% \n", *(state.net.total_bbox), 100 * (float)*(state.net.rewritten_bbox) / *(state.net.total_bbox));
 }
 
 float train_network_datum_gpu(network net, float *x, float *y)
@@ -354,24 +358,40 @@ float train_network_datum_gpu(network net, float *x, float *y)
     if (net.adversarial_lr && rand_int(0, 1) == 1 && get_current_iteration(net) > net.burn_in) {
         net.adversarial = 1;
         float lr_old = net.learning_rate;
-        float scale = 1.0 - (get_current_iteration(net) / ((float)net.max_batches));
+        float scale = (get_current_iteration(net) / ((float)net.max_batches));
+        //scale = sin(scale * M_PI);
         net.learning_rate = net.adversarial_lr * scale;
         layer l = net.layers[net.n - 1];
         int y_size = get_network_output_size(net)*net.batch;
         if (net.layers[net.n - 1].truths) y_size = net.layers[net.n - 1].truths*net.batch;
         float *truth_cpu = (float *)xcalloc(y_size, sizeof(float));
 
-        printf("\n adversarial training, adversarial_lr = %f \n", net.adversarial_lr);
+        const int img_size = net.w*net.h*net.c;
+        float *old_input = (float *)xcalloc(img_size*net.batch, sizeof(float));
+        memcpy(old_input, x, img_size*net.batch * sizeof(float));
+
+        printf("\n adversarial training, adversarial_lr = %f \n", net.adversarial_lr * scale);
 
         forward_backward_network_gpu(net, x, truth_cpu);
+
+        int b;
+        for (b = 0; b < net.batch; ++b) {
+            if (b % 2 == 1 && net.contrastive) {
+                //printf(" b = %d old img, ", b);
+                memcpy(x + img_size*b, old_input + img_size*b, img_size * sizeof(float));
+            }
+        }
 
         image im;
         im.w = net.w;
         im.h = net.h;
         im.c = net.c;
         im.data = x;
-        //show_image(im, "adversarial data augmentation");
+        show_image(im, "adversarial data augmentation");
+        resize_window_cv("adversarial data augmentation", 500, 500);
+        wait_key_cv(1);
 
+        free(old_input);
         free(truth_cpu);
         net.learning_rate = lr_old;
         net.adversarial = 0;
@@ -644,7 +664,7 @@ float train_networks(network *nets, int n, data d, int interval)
 float *get_network_output_layer_gpu(network net, int i)
 {
     layer l = net.layers[i];
-    if(l.type != REGION) cuda_pull_array(l.output_gpu, l.output, l.outputs*l.batch);
+    if(l.type != REGION && l.type != YOLO && (*net.cuda_graph_ready) == 0) cuda_pull_array(l.output_gpu, l.output, l.outputs*l.batch);
     return l.output;
 }
 
@@ -666,12 +686,49 @@ float *network_predict_gpu(network net, float *input)
     //state.input = cuda_make_array(input, size);   // memory will be allocated in the parse_network_cfg_custom()
     state.input = net.input_state_gpu;
     memcpy(net.input_pinned_cpu, input, size * sizeof(float));
-    cuda_push_array(state.input, net.input_pinned_cpu, size);
     state.truth = 0;
     state.train = 0;
     state.delta = 0;
-    forward_network_gpu(net, state);
+
+    //cudaGraphExec_t instance = (cudaGraphExec_t)net.cuda_graph_exec;
+    static cudaGraphExec_t instance;
+
+    if ((*net.cuda_graph_ready) == 0) {
+        static cudaGraph_t graph;
+        if (net.use_cuda_graph == 1) {
+            int i;
+            for (i = 0; i < 16; ++i) switch_stream(i);
+
+            cudaStream_t stream0 = switch_stream(0);
+            CHECK_CUDA(cudaDeviceSynchronize());
+            printf("Try to capture graph... \n");
+            //cudaGraph_t graph = (cudaGraph_t)net.cuda_graph;
+            CHECK_CUDA(cudaStreamBeginCapture(stream0, cudaStreamCaptureModeGlobal));
+        }
+
+        cuda_push_array(state.input, net.input_pinned_cpu, size);
+        forward_network_gpu(net, state);
+
+        if (net.use_cuda_graph == 1) {
+            cudaStream_t stream0 = switch_stream(0);
+            CHECK_CUDA(cudaStreamEndCapture(stream0, &graph));
+            CHECK_CUDA(cudaGraphInstantiate(&instance, graph, NULL, NULL, 0));
+            (*net.cuda_graph_ready) = 1;
+            printf(" graph is captured... \n");
+            CHECK_CUDA(cudaDeviceSynchronize());
+        }
+        CHECK_CUDA(cudaStreamSynchronize(get_cuda_stream()));
+    }
+    else {
+        cudaStream_t stream0 = switch_stream(0);
+        //printf(" cudaGraphLaunch \n");
+        CHECK_CUDA( cudaGraphLaunch(instance, stream0) );
+        CHECK_CUDA( cudaStreamSynchronize(stream0) );
+        //printf(" ~cudaGraphLaunch \n");
+    }
+
     float *out = get_network_output_gpu(net);
+    reset_wait_stream_events();
     //cuda_free(state.input);   // will be freed in the free_network()
     return out;
 }

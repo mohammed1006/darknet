@@ -1,11 +1,12 @@
 from ctypes import *
-import math
 import random
 import os
 import cv2
-import numpy as np
 import time
 import darknet
+import argparse
+from threading import Thread, enumerate
+from queue import Queue
 
 def convertBack(x, y, w, h):
     xmin = int(round(x - (w / 2)))
@@ -126,7 +127,28 @@ def YOLO():
         cv2.waitKey(3)
     
     cap.release()
-    out.release()
+    video.release()
+    cv2.destroyAllWindows()
 
-if __name__ == "__main__":
-    YOLO()
+
+if __name__ == '__main__':
+    frame_queue = Queue()
+    darknet_image_queue = Queue(maxsize=1)
+    detections_queue = Queue(maxsize=1)
+    fps_queue = Queue(maxsize=1)
+
+    args = parser()
+    check_arguments_errors(args)
+    network, class_names, class_colors = darknet.load_network(
+            args.config_file,
+            args.data_file,
+            args.weights,
+            batch_size=1
+        )
+    width = darknet.network_width(network)
+    height = darknet.network_height(network)
+    input_path = str2int(args.input)
+    cap = cv2.VideoCapture(input_path)
+    Thread(target=video_capture, args=(frame_queue, darknet_image_queue)).start()
+    Thread(target=inference, args=(darknet_image_queue, detections_queue, fps_queue)).start()
+    Thread(target=drawing, args=(frame_queue, detections_queue, fps_queue)).start()

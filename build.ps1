@@ -8,6 +8,7 @@ param (
   [switch]$EnableOPENCV_CUDA = $false,
   [switch]$UseVCPKG = $false,
   [switch]$DoNotUpdateVCPKG = $false,
+  [switch]$DoNotUpdateDARKNET = $false,
   [switch]$DoNotDeleteBuildFolder = $false,
   [switch]$DoNotSetupVS = $false,
   [switch]$DoNotUseNinja = $false,
@@ -163,6 +164,10 @@ else {
   Write-Host "Using git from ${GIT_EXE}"
 }
 
+if ((Test-Path "$PSScriptRoot/.git") -and -not $DoNotUpdateDARKNET) {
+  & $GIT_EXE pull
+}
+
 $CMAKE_EXE = Get-Command cmake 2> $null | Select-Object -ExpandProperty Definition
 if (-Not $CMAKE_EXE) {
   throw "Could not find CMake, please install it"
@@ -283,7 +288,7 @@ else {
   $additional_build_setup = $additional_build_setup + " -DENABLE_VCPKG_INTEGRATION:BOOL=OFF"
 }
 
-if ($UseVCPKG -and -not $DoNotUpdateVCPKG) {
+if ($UseVCPKG -and (Test-Path "$vcpkg_path/.git") -and -not $DoNotUpdateVCPKG) {
   Push-Location $vcpkg_path
   & $GIT_EXE pull
   & $PWD/bootstrap-vcpkg${bootstrap_ext} -disableMetrics

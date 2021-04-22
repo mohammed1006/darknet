@@ -3,7 +3,6 @@ name: Darknet Pull Requests
 on: [pull_request]
 
 env:
-  #VCPKG_BINARY_SOURCES: 'clear;nuget,githubpackages,readwrite'
   VCPKG_BINARY_SOURCES: 'clear;nuget,vcpkgbinarycache,read'
 
 jobs:
@@ -110,12 +109,6 @@ jobs:
       run: >
         git clone https://github.com/microsoft/vcpkg ;
         ./vcpkg/bootstrap-vcpkg.sh ;
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
-        -Name "githubpackages"
-        -Source https://nuget.pkg.github.com/${{ github.repository_owner }} ;
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
-        setapikey ${{ secrets.GITHUB_TOKEN }}
-        -Source https://nuget.pkg.github.com/${{ github.repository_owner }} ;
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
         -Source http://93.49.111.10:5555/v3/index.json
@@ -273,12 +266,6 @@ jobs:
         git clone https://github.com/microsoft/vcpkg ;
         ./vcpkg/bootstrap-vcpkg.sh ;
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
-        -Name "githubpackages"
-        -Source https://nuget.pkg.github.com/${{ github.repository_owner }} ;
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
-        setapikey ${{ secrets.GITHUB_TOKEN }}
-        -Source https://nuget.pkg.github.com/${{ github.repository_owner }} ;
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
         -Source http://93.49.111.10:5555/v3/index.json
 
@@ -360,12 +347,6 @@ jobs:
       run: >
         git clone https://github.com/microsoft/vcpkg ;
         ./vcpkg/bootstrap-vcpkg.sh ;
-        $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
-        -Name "githubpackages"
-        -Source https://nuget.pkg.github.com/${{ github.repository_owner }} ;
-        $(./vcpkg/vcpkg fetch nuget | tail -n 1)
-        setapikey ${{ secrets.GITHUB_TOKEN }}
-        -Source https://nuget.pkg.github.com/${{ github.repository_owner }} ;
         $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
         -Source http://93.49.111.10:5555/v3/index.json

@@ -111,7 +111,13 @@ cv::Mat slMat2cvMat(sl::Mat &input) {
         ) {
         cv_type = CV_32FC4;
     } else cv_type = CV_8UC4; // sl::Mat used are either RGBA images or XYZ (4C) point clouds
-    return cv::Mat(input.getHeight(), input.getWidth(), cv_type, input.getPtr<sl::uchar1>(sl::MEM::CPU));
+    return cv::Mat(input.getHeight(), input.getWidth(), cv_type, input.getPtr<sl::uchar1>(
+#ifdef ZED_STEREO_2_COMPAT_MODE
+        sl::MEM::MEM_CPU
+#else
+        sl::MEM::CPU
+#endif
+        ));
 }
 
 cv::Mat zed_capture_rgb(sl::Camera &zed) {
@@ -392,7 +398,7 @@ int main(int argc, char *argv[])
                     bool exit_flag;
                     cv::Mat zed_cloud;
                     std::queue<cv::Mat> track_optflow_queue;
-                    detection_data_t() : exit_flag(false), new_detection(false) {}
+                    detection_data_t() : new_detection(false), exit_flag(false) {}
                 };
 
                 const bool sync = detection_sync; // sync data exchange

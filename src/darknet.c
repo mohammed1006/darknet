@@ -178,7 +178,7 @@ void partial(char *cfgfile, char *weightfile, char *outfile, int max)
     }
     *net.seen = 0;
     *net.cur_iteration = 0;
-    save_weights_upto(net, outfile, max);
+    save_weights_upto(net, outfile, max, 0);
 }
 
 #include "convolutional_layer.h"
@@ -433,6 +433,11 @@ int main(int argc, char **argv)
 {
 #ifdef _DEBUG
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    printf(" _DEBUG is used \n");
+#endif
+
+#ifdef DEBUG
+    printf(" DEBUG=1 \n");
 #endif
 
 	int i;

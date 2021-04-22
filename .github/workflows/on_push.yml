@@ -1,4 +1,4 @@
-name: Darknet CI
+name: Darknet Continuous Integration
 
 on: [push, workflow_dispatch]
 

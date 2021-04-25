@@ -14,7 +14,8 @@ param (
   [switch]$DoNotUseNinja = $false,
   [switch]$ForceCPP = $false,
   [switch]$ForceStaticLib = $false,
-  [switch]$ForceGCC8 = $false
+  [switch]$ForceGCC8 = $false,
+  [switch]$EnableCSharpWrapper = $false
 )
 
 if (-Not $DisableInteractive -and -Not $UseVCPKG) {
@@ -140,11 +141,19 @@ else {
   Write-Host "VisualStudio integration is enabled, please pass -DoNotSetupVS to the script to disable"
 }
 
+if ($EnableCSharpWrapper) {
+  Write-Host "Yolo C# wrapper integration is enabled. Will be built only on Windows with Visual Studio generator. Disabling Ninja anyway"
+  $DoNotUseNinja = $true
+}
+else {
+  Write-Host "Yolo C# wrapper integration is disabled, please pass -EnableCSharpWrapper to the script to enable"
+}
+
 if ($DoNotUseNinja) {
   Write-Host "Ninja is disabled"
 }
 else {
-  Write-Host "Ninja is enabled, please pass -DoNotUseNinja to the script to disable"
+  Write-Host "Ninja is enabled, please pass -DoNotUseNinja to the script to disable."
 }
 
 if ($ForceCPP) {
@@ -381,6 +390,10 @@ if (-Not($EnableOPENCV)) {
 
 if (-Not($EnableOPENCV_CUDA)) {
   $additional_build_setup = $additional_build_setup + " -DVCPKG_BUILD_OPENCV_WITH_CUDA:BOOL=OFF"
+}
+
+if ($EnableCSharpWrapper) {
+  $additional_build_setup = $additional_build_setup + " -DENABLE_CSHARP_WRAPPER:BOOL=ON"
 }
 
 $build_folder = "./build_release"

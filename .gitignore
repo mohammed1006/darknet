@@ -23,7 +23,6 @@ temp/
 build/darknet/*
 build_*/
 vcpkg_installed/
-!build/darknet/YoloWrapper.cs
 .fuse*
 *.weights
 build/*.cmake

@@ -277,7 +277,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -DisableInteractive -DoNotUpdateDARKNET
+      run: ./build.ps1 -UseVCPKG -DoNotUpdateVCPKG -DisableInteractive -DoNotUpdateDARKNET
 
     - uses: actions/upload-artifact@v2
       with:

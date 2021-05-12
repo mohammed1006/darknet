@@ -14,6 +14,7 @@ param (
   [switch]$DoNotUseNinja = $false,
   [switch]$ForceCPP = $false,
   [switch]$ForceStaticLib = $false,
+  [switch]$ForceSetupVS = $false,
   [switch]$ForceGCC8 = $false
 )
 
@@ -64,7 +65,7 @@ elseif ($IsWindows -or $IsWindowsPowerShell) {
 }
 Write-Host "Native shell script extension: ${bootstrap_ext}"
 
-if (-Not $IsWindows -and -not $IsWindowsPowerShell) {
+if (-Not $IsWindows -and -not $IsWindowsPowerShell -and -Not $ForceSetupVS) {
   $DoNotSetupVS = $true
 }
 
@@ -276,15 +277,22 @@ elseif ((Test-Path "${env:WORKSPACE}/vcpkg") -and $UseVCPKG) {
   Write-Host "Found vcpkg in WORKSPACE/vcpkg: $vcpkg_path"
   $additional_build_setup = $additional_build_setup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
 }
-elseif ((Test-Path "${RUNVCPKG_VCPKG_ROOT_OUT}") -and $UseVCPKG) {
-  $vcpkg_path = "${RUNVCPKG_VCPKG_ROOT_OUT}"
-  $env:VCPKG_ROOT = "${RUNVCPKG_VCPKG_ROOT_OUT}"
-  Write-Host "Found vcpkg in RUNVCPKG_VCPKG_ROOT_OUT: ${RUNVCPKG_VCPKG_ROOT_OUT}"
-  $additional_build_setup = $additional_build_setup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
+elseif (-not($null -eq ${RUNVCPKG_VCPKG_ROOT_OUT})) {
+  if((Test-Path "${RUNVCPKG_VCPKG_ROOT_OUT}") -and $UseVCPKG) {
+    $vcpkg_path = "${RUNVCPKG_VCPKG_ROOT_OUT}"
+    $env:VCPKG_ROOT = "${RUNVCPKG_VCPKG_ROOT_OUT}"
+    Write-Host "Found vcpkg in RUNVCPKG_VCPKG_ROOT_OUT: ${vcpkg_path}"
+    $additional_build_setup = $additional_build_setup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
+  }
 }
 elseif ($UseVCPKG) {
   if (-Not (Test-Path "$PWD/vcpkg")) {
-    & $GIT_EXE clone https://github.com/microsoft/vcpkg
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "clone https://github.com/microsoft/vcpkg"
+    $proc.WaitForExit()
+    $exitCode = $proc.ExitCode
+    if (-not $exitCode -eq 0) {
+      Throw "Cloning vcpkg sources failed! Exited with $exitCode."
+    }
   }
   $vcpkg_path = "$PWD/vcpkg"
   $env:VCPKG_ROOT = "$PWD/vcpkg"
@@ -298,8 +306,18 @@ else {
 
 if ($UseVCPKG -and (Test-Path "$vcpkg_path/.git") -and -not $DoNotUpdateVCPKG) {
   Push-Location $vcpkg_path
-  & $GIT_EXE pull
-  & $PWD/bootstrap-vcpkg${bootstrap_ext} -disableMetrics
+  $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "pull"
+  $proc.WaitForExit()
+  $exitCode = $proc.ExitCode
+  if (-not $exitCode -eq 0) {
+    Throw "Updating vcpkg sources failed! Exited with $exitCode."
+  }
+  $proc = Start-Process -NoNewWindow -PassThru -FilePath $PWD/bootstrap-vcpkg${bootstrap_ext} -ArgumentList "-disableMetrics"
+  $proc.WaitForExit()
+  $exitCode = $proc.ExitCode
+  if (-not $exitCode -eq 0) {
+    Throw "Bootstrapping vcpkg failed! Exited with $exitCode."
+  }
   Pop-Location
 }
 

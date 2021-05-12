@@ -174,7 +174,12 @@ else {
 }
 
 if ((Test-Path "$PSScriptRoot/.git") -and -not $DoNotUpdateDARKNET) {
-  & $GIT_EXE pull
+  $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "pull"
+  $proc.WaitForExit()
+  $exitCode = $proc.ExitCode
+  if (-not $exitCode -eq 0) {
+    Throw "Updating darknet sources failed! Exited with $exitCode."
+  }
 }
 
 $CMAKE_EXE = Get-Command cmake 2> $null | Select-Object -ExpandProperty Definition

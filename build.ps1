@@ -17,6 +17,14 @@ param (
   [switch]$ForceGCC8 = $false
 )
 
+if ($PSVersionTable.PSVersion.Major -eq 5) {
+  $IsWindowsPowerShell = $true
+}
+
+if ($PSVersionTable.PSVersion.Major -lt 5) {
+  throw "Your PowerShell version is too old, please update it"
+}
+
 if (-Not $DisableInteractive -and -Not $UseVCPKG) {
   $Result = Read-Host "Enable vcpkg to install darknet dependencies (yes/no)"
   if ($Result -eq 'Yes' -or $Result -eq 'Y' -or $Result -eq 'yes' -or $Result -eq 'y') {
@@ -51,12 +59,12 @@ $number_of_build_workers = 8
 if ($IsLinux -or $IsMacOS) {
   $bootstrap_ext = ".sh"
 }
-elseif ($IsWindows) {
+elseif ($IsWindows -or $IsWindowsPowerShell) {
   $bootstrap_ext = ".bat"
 }
 Write-Host "Native shell script extension: ${bootstrap_ext}"
 
-if (-Not $IsWindows) {
+if (-Not $IsWindows -and -not $IsWindowsPowerShell) {
   $DoNotSetupVS = $true
 }
 
@@ -71,7 +79,7 @@ if ($IsLinux -and $ForceGCC8) {
   $env:CXX = "g++-8"
 }
 
-if ($IsWindows -and -Not $env:VCPKG_DEFAULT_TRIPLET) {
+if (($IsWindows -or $IsWindowsPowerShell) -and -Not $env:VCPKG_DEFAULT_TRIPLET) {
   $env:VCPKG_DEFAULT_TRIPLET = "x64-windows"
 }
 

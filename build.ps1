@@ -18,12 +18,64 @@ param (
   [switch]$ForceGCC8 = $false
 )
 
+Function MyThrow ($Message) {
+  if ($DisableInteractive) {
+    Throw $Message
+  }
+  else {
+    # Check if running in PowerShell ISE
+    if ($psISE) {
+      # "ReadKey" not supported in PowerShell ISE.
+      # Show MessageBox UI
+      $Shell = New-Object -ComObject "WScript.Shell"
+      $Shell.Popup($Message, 0, "OK", 0)
+      return
+    }
+
+    $Ignore =
+    16, # Shift (left or right)
+    17, # Ctrl (left or right)
+    18, # Alt (left or right)
+    20, # Caps lock
+    91, # Windows key (left)
+    92, # Windows key (right)
+    93, # Menu key
+    144, # Num lock
+    145, # Scroll lock
+    166, # Back
+    167, # Forward
+    168, # Refresh
+    169, # Stop
+    170, # Search
+    171, # Favorites
+    172, # Start/Home
+    173, # Mute
+    174, # Volume Down
+    175, # Volume Up
+    176, # Next Track
+    177, # Previous Track
+    178, # Stop Media
+    179, # Play
+    180, # Mail
+    181, # Select Media
+    182, # Application 1
+    183  # Application 2
+
+    Write-Host $Message
+    Write-Host -NoNewline "Press any key to continue..."
+    while ($null -eq $KeyInfo.VirtualKeyCode -or $Ignore -contains $KeyInfo.VirtualKeyCode) {
+      $KeyInfo = $Host.UI.RawUI.ReadKey("NoEcho, IncludeKeyDown")
+    }
+    exit
+  }
+}
+
 if ($PSVersionTable.PSVersion.Major -eq 5) {
   $IsWindowsPowerShell = $true
 }
 
 if ($PSVersionTable.PSVersion.Major -lt 5) {
-  throw "Your PowerShell version is too old, please update it"
+  MyThrow("Your PowerShell version is too old, please update it.")
 }
 
 if (-Not $DisableInteractive -and -Not $UseVCPKG) {
@@ -167,7 +219,7 @@ Push-Location $PSScriptRoot
 
 $GIT_EXE = Get-Command git 2> $null | Select-Object -ExpandProperty Definition
 if (-Not $GIT_EXE) {
-  throw "Could not find git, please install it"
+  MyThrow("Could not find git, please install it")
 }
 else {
   Write-Host "Using git from ${GIT_EXE}"
@@ -178,13 +230,13 @@ if ((Test-Path "$PSScriptRoot/.git") -and -not $DoNotUpdateDARKNET) {
   $proc.WaitForExit()
   $exitCode = $proc.ExitCode
   if (-not $exitCode -eq 0) {
-    Throw "Updating darknet sources failed! Exited with $exitCode."
+    MyThrow("Updating darknet sources failed! Exited with $exitCode.")
   }
 }
 
 $CMAKE_EXE = Get-Command cmake 2> $null | Select-Object -ExpandProperty Definition
 if (-Not $CMAKE_EXE) {
-  throw "Could not find CMake, please install it"
+  MyThrow("Could not find CMake, please install it")
 }
 else {
   Write-Host "Using CMake from ${CMAKE_EXE}"
@@ -209,7 +261,7 @@ function getProgramFiles32bit() {
   }
 
   if ($null -eq $out) {
-    throw "Could not find [Program Files 32-bit]"
+    MyThrow("Could not find [Program Files 32-bit]")
   }
 
   return $out
@@ -233,11 +285,11 @@ function getLatestVisualStudioWithDesktopWorkloadPath() {
       }
     }
     if (!$installationPath) {
-      Throw "Could not locate any installation of Visual Studio"
+      MyThrow("Could not locate any installation of Visual Studio")
     }
   }
   else {
-    Throw "Could not locate vswhere at $vswhereExe"
+    MyThrow("Could not locate vswhere at $vswhereExe")
   }
   return $installationPath
 }
@@ -261,11 +313,11 @@ function getLatestVisualStudioWithDesktopWorkloadVersion() {
       }
     }
     if (!$installationVersion) {
-      Throw "Could not locate any installation of Visual Studio"
+      MyThrow("Could not locate any installation of Visual Studio")
     }
   }
   else {
-    Throw "Could not locate vswhere at $vswhereExe"
+    MyThrow("Could not locate vswhere at $vswhereExe")
   }
   return $installationVersion
 }
@@ -296,7 +348,7 @@ elseif ($UseVCPKG) {
     $proc.WaitForExit()
     $exitCode = $proc.ExitCode
     if (-not $exitCode -eq 0) {
-      Throw "Cloning vcpkg sources failed! Exited with $exitCode."
+      MyThrow("Cloning vcpkg sources failed! Exited with $exitCode.")
     }
   }
   $vcpkg_path = "$PWD/vcpkg"
@@ -315,13 +367,13 @@ if ($UseVCPKG -and (Test-Path "$vcpkg_path/.git") -and -not $DoNotUpdateVCPKG) {
   $proc.WaitForExit()
   $exitCode = $proc.ExitCode
   if (-not $exitCode -eq 0) {
-    Throw "Updating vcpkg sources failed! Exited with $exitCode."
+    MyThrow("Updating vcpkg sources failed! Exited with $exitCode.")
   }
   $proc = Start-Process -NoNewWindow -PassThru -FilePath $PWD/bootstrap-vcpkg${bootstrap_ext} -ArgumentList "-disableMetrics"
   $proc.WaitForExit()
   $exitCode = $proc.ExitCode
   if (-not $exitCode -eq 0) {
-    Throw "Bootstrapping vcpkg failed! Exited with $exitCode."
+    MyThrow("Bootstrapping vcpkg failed! Exited with $exitCode.")
   }
   Pop-Location
 }
@@ -359,7 +411,7 @@ if (-Not $DoNotSetupVS) {
       $additional_build_setup = $additional_build_setup + " -T `"host=x64`" -A `"x64`""
     }
     else {
-      throw "Unknown Visual Studio version, unsupported configuration"
+      MyThrow("Unknown Visual Studio version, unsupported configuration")
     }
   }
   if (-Not $UseVCPKG) {
@@ -428,13 +480,13 @@ $proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList 
 $proc.WaitForExit()
 $exitCode = $proc.ExitCode
 if (-not $exitCode -eq 0) {
-  Throw "Config failed! Exited with $exitCode."
+  MyThrow("Config failed! Exited with $exitCode.")
 }
 $proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . ${selectConfig} --parallel ${number_of_build_workers} --target install"
 $proc.WaitForExit()
 $exitCode = $proc.ExitCode
 if (-not $exitCode -eq 0) {
-  Throw "Config failed! Exited with $exitCode."
+  MyThrow("Config failed! Exited with $exitCode.")
 }
 Remove-Item DarknetConfig.cmake
 Remove-Item DarknetConfigVersion.cmake

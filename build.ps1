@@ -378,6 +378,18 @@ if ($UseVCPKG -and (Test-Path "$vcpkg_path/.git") -and -not $DoNotUpdateVCPKG) {
   Pop-Location
 }
 
+if ($UseVCPKG -and ($vcpkg_path.length -gt 40) -and ($IsWindows -or $IsWindowsPowerShell)) {
+  Write-Host "vcpkg path is very long and might fail. Please move it or" -ForegroundColor Yellow
+  Write-Host "the entire darknet folder to a shorter path, like C:\darknet" -ForegroundColor Yellow
+  Write-Host "You can use the subst command to ease the process if necessary" -ForegroundColor Yellow
+  if (-Not $DisableInteractive) {
+    $Result = Read-Host "Do you still want to continue? (yes/no)"
+    if ($Result -eq 'No' -or $Result -eq 'N' -or $Result -eq 'no' -or $Result -eq 'n') {
+      MyThrow("Build aborted")
+    }
+  }
+}
+
 if (-Not $DoNotSetupVS) {
   if ($null -eq (Get-Command "cl.exe" -ErrorAction SilentlyContinue)) {
     $vsfound = getLatestVisualStudioWithDesktopWorkloadPath

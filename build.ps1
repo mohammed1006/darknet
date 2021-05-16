@@ -74,7 +74,7 @@ Function MyThrow ($Message) {
 }
 
 Write-Host "Darknet build script version ${build_ps1_version}"
-Write-Host -NoNewLine "PowerShell version "
+Write-Host -NoNewLine "PowerShell version:"
 $PSVersionTable.PSVersion
 
 if ($PSVersionTable.PSVersion.Major -eq 5) {
@@ -122,7 +122,9 @@ if ($IsLinux -or $IsMacOS) {
 elseif ($IsWindows -or $IsWindowsPowerShell) {
   $bootstrap_ext = ".bat"
 }
-Write-Host "Native shell script extension: ${bootstrap_ext}"
+if ($UseVCPKG) {
+  Write-Host "vcpkg bootstrap script: bootstrap-vcpkg${bootstrap_ext}"
+}
 
 if ((-Not $IsWindows) -and (-Not $IsWindowsPowerShell) -and (-Not $ForceSetupVS)) {
   $DoNotSetupVS = $true
@@ -270,6 +272,7 @@ if (-Not $DoNotUseNinja) {
   }
   else {
     Write-Host "Using Ninja from ${NINJA_EXE}"
+    Write-Host -NoNewLine "Ninja version "
     $proc = Start-Process -NoNewWindow -PassThru -FilePath ${NINJA_EXE} -ArgumentList "--version"
     $proc.WaitForExit()
     $exitCode = $proc.ExitCode
@@ -531,12 +534,13 @@ $exitCode = $proc.ExitCode
 if (-Not ($exitCode -eq 0)) {
   MyThrow("Config failed! Exited with error code $exitCode.")
 }
-Remove-Item DarknetConfig.cmake
-Remove-Item DarknetConfigVersion.cmake
+Remove-Item -Force -ErrorAction SilentlyContinue DarknetConfig.cmake
+Remove-Item -Force -ErrorAction SilentlyContinue DarknetConfigVersion.cmake
 $dllfiles = Get-ChildItem ./${dllfolder}/*.dll
 if ($dllfiles) {
   Copy-Item $dllfiles ..
 }
 Set-Location ..
 Copy-Item cmake/Modules/*.cmake share/darknet/
+Write-Host "Build complete!" -ForegroundColor Green
 Pop-Location

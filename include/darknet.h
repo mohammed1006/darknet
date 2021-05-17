@@ -192,7 +192,8 @@ typedef enum {
     L2NORM,
     EMPTY,
     BLANK,
-    CONTRASTIVE
+    CONTRASTIVE,
+    IMPLICIT
 } LAYER_TYPE;
 
 // layer.h
@@ -389,6 +390,8 @@ struct layer {
     float * rand;
     float * cost;
     int *labels;
+    int *class_ids;
+    int contrastive_neg_max;
     float *cos_sim;
     float *exp_cos_sim;
     float *p_constrastive;
@@ -412,11 +415,17 @@ struct layer {
     float *scales;
     float *scale_updates;
 
+    float *weights_ema;
+    float *biases_ema;
+    float *scales_ema;
+
     float *weights;
     float *weight_updates;
 
     float scale_x_y;
     int objectness_smooth;
+    int new_coords;
+    int show_details;
     float max_delta;
     float uc_normalizer;
     float iou_normalizer;
@@ -548,6 +557,9 @@ struct layer {
 
 //#ifdef GPU
     int *indexes_gpu;
+
+    int stream;
+    int wait_stream_id;
 
     float *z_gpu;
     float *r_gpu;
@@ -693,6 +705,15 @@ typedef struct network {
     int n;
     int batch;
     uint64_t *seen;
+    float *badlabels_reject_threshold;
+    float *delta_rolling_max;
+    float *delta_rolling_avg;
+    float *delta_rolling_std;
+    int weights_reject_freq;
+    int equidistant_point;
+    float badlabels_rejection_percentage;
+    float num_sigmas_reject_badlabels;
+    float ema_alpha;
     int *cur_iteration;
     float loss_scale;
     int *t;
@@ -756,6 +777,7 @@ typedef struct network {
     int mosaic_bound;
     int contrastive;
     int contrastive_jit_flip;
+    int contrastive_color;
     int unsupervised;
     float angle;
     float aspect;
@@ -799,6 +821,11 @@ typedef struct network {
     size_t *max_input16_size;
     size_t *max_output16_size;
     int wait_stream;
+    
+    void *cuda_graph;
+    void *cuda_graph_exec;
+    int use_cuda_graph;
+    int *cuda_graph_ready;
 
     float *global_delta_gpu;
     float *state_delta_gpu;
@@ -943,6 +970,7 @@ typedef struct load_args {
     int dontuse_opencv;
     int contrastive;
     int contrastive_jit_flip;
+    int contrastive_color;
     float jitter;
     float resize;
     int flip;

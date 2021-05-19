@@ -478,7 +478,7 @@ if ($UseVCPKG -and $ForceVCPKGCacheRemoval) {
     MyThrow("Unknown OS, unsupported")
   }
   Write-Host "Removing local vcpkg binary cache from $vcpkgbinarycachepath" -ForegroundColor Yellow
-  #Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $vcpkgbinarycachepath
+  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $vcpkgbinarycachepath
 }
 
 if (-Not $DoNotSetupVS) {

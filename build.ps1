@@ -482,7 +482,8 @@ if ($UseVCPKG -and $ForceVCPKGCacheRemoval) {
 }
 
 if (-Not $DoNotSetupVS) {
-  if ($null -eq (Get-Command "cl.exe" -ErrorAction SilentlyContinue)) {
+  $CL_EXE = Get-Command "cl.exe" 2> $null | Select-Object -ExpandProperty Definition
+  if ((-Not $CL_EXE) -or ($CL_EXE -match "HostX86\\x86") -or ($CL_EXE -match "HostX64\\x86")) {
     $vsfound = getLatestVisualStudioWithDesktopWorkloadPath
     Write-Host "Found VS in ${vsfound}"
     Push-Location "${vsfound}\Common7\Tools"

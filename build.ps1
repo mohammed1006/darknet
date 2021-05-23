@@ -22,7 +22,7 @@ param (
   [string]$AdditionalBuildSetup = ""  # "-DCMAKE_CUDA_ARCHITECTURES=30"
 )
 
-$build_ps1_version = "0.9.2"
+$build_ps1_version = "0.9.3"
 
 Function MyThrow ($Message) {
   if ($DisableInteractive) {

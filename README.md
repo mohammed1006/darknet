@@ -393,10 +393,10 @@ In Windows:
 
 This is the recommended approach to build Darknet on Windows.
 
-1. Open Powershell as Administrator (Start -> All programs -> right click on Windows Powershell and choose "Run as administrator") and type this command:
+1. Open Powershell (Start -> All programs -> right click on Windows Powershell) and type this command:
 
 ```PowerShell
-PS />              Set-ExecutionPolicy unrestricted
+PS />               Set-ExecutionPolicy unrestricted -Scope CurrentUser
 ```
 
 The output will be

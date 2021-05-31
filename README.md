@@ -393,31 +393,14 @@ In Windows:
 
 This is the recommended approach to build Darknet on Windows.
 
-1. Open Powershell (Start -> All programs -> right click on Windows Powershell) and type this command:
+1. Install Visual Studio 2017 or 2019. In case you need to download it, please go here: [Visual Studio Community](http://visualstudio.com). Remember to install English language pack, this is mandatory for vcpkg!
+
+2. Install CUDA enabling VS Integration during installation.
+
+3. Open Powershell (Start -> All programs -> Windows Powershell) and type these commands:
 
 ```PowerShell
-PS />               Set-ExecutionPolicy unrestricted -Scope CurrentUser
-```
-
-The output will be
-
-```PowerShell
-Execution Policy Change
-The execution policy helps protect you from scripts that you do not trust. Changing the execution policy might expose
-you to the security risks described in the about_Execution_Policies help topic at
-https:/go.microsoft.com/fwlink/?LinkID=135170. Do you want to change the execution policy?
-[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "N"):
-```
-
-Press `A` to select `Yes to All` and then press Enter
-
-2. Install Visual Studio 2017 or 2019. In case you need to download it, please go here: [Visual Studio Community](http://visualstudio.com). Remember to install English language pack, this is mandatory for vcpkg!
-
-3. Install CUDA enabling VS Integration during installation.
-
-4. Open Powershell (Start -> All programs -> Windows Powershell) and type these commands:
-
-```PowerShell
+PS Code/>              Set-ExecutionPolicy unrestricted -Scope CurrentUser -Force
 PS Code/>              git clone https://github.com/AlexeyAB/darknet
 PS Code/>              cd darknet
 PS Code/darknet>       .\build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN

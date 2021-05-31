@@ -4,7 +4,6 @@ $install_cuda = $false
 
 if ($null -eq (Get-Command "choco.exe" -ErrorAction SilentlyContinue)) {
   # Download and install Chocolatey
-  Set-ExecutionPolicy unrestricted -Scope CurrentUser
   Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
   Throw "Please close and re-open powershell and then re-run setup.ps1 script"
 }

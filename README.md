@@ -329,9 +329,9 @@ To update CMake on Ubuntu, it's better to follow guide here: https://apt.kitware
 Open a shell and type these commands
 
 ```PowerShell
-PS Code/>              git clone https://github.com/AlexeyAB/darknet
-PS Code/>              cd darknet
-PS Code/darknet>       ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN
+git clone https://github.com/AlexeyAB/darknet
+cd darknet
+./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN
 ```
 
 (add option `-EnableOPENCV_CUDA` if you want to build OpenCV with CUDA support - very slow to build!)
@@ -342,9 +342,9 @@ If you open the `build.ps1` script at the beginning you will find all available 
 Open a shell and type these commands
 
 ```PowerShell
-PS Code/>              git clone https://github.com/AlexeyAB/darknet
-PS Code/>              cd darknet
-PS Code/darknet>       ./build.ps1 -EnableOPENCV -EnableCUDA -EnableCUDNN
+git clone https://github.com/AlexeyAB/darknet
+cd darknet
+./build.ps1 -EnableOPENCV -EnableCUDA -EnableCUDNN
 ```
 
 (remove options like `-EnableCUDA` or `-EnableCUDNN` if you are not interested into).
@@ -400,10 +400,10 @@ This is the recommended approach to build Darknet on Windows.
 3. Open Powershell (Start -> All programs -> Windows Powershell) and type these commands:
 
 ```PowerShell
-PS Code/>              Set-ExecutionPolicy unrestricted -Scope CurrentUser -Force
-PS Code/>              git clone https://github.com/AlexeyAB/darknet
-PS Code/>              cd darknet
-PS Code/darknet>       .\build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN
+Set-ExecutionPolicy unrestricted -Scope CurrentUser -Force
+git clone https://github.com/AlexeyAB/darknet
+cd darknet
+.\build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN
 ```
 
 (add option `-EnableOPENCV_CUDA` if you want to build OpenCV with CUDA support - very slow to build! - or remove options like `-EnableCUDA` or `-EnableCUDNN` if you are not interested in them). If you open the `build.ps1` script at the beginning you will find all available switches.

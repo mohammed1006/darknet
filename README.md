@@ -53,7 +53,6 @@ About Darknet framework: http://pjreddie.com/darknet/
       - [How to use on the command line](#how-to-use-on-the-command-line)
         - [For using network video-camera mjpeg-stream with any Android smartphone](#for-using-network-video-camera-mjpeg-stream-with-any-android-smartphone)
     - [How to compile on Linux/macOS (using `CMake`)](#how-to-compile-on-linuxmacos-using-cmake)
-    - [Using only cmake](#using-only-cmake)
     - [Using also PowerShell](#using-also-powershell)
     - [How to compile on Linux (using `make`)](#how-to-compile-on-linux-using-make)
     - [How to compile on Windows (using `CMake`)](#how-to-compile-on-windows-using-cmake)
@@ -328,7 +327,7 @@ cd darknet
 mkdir build_release
 cd build_release
 cmake ..
-cmake --build . --parallel 8
+cmake --build . --target install --parallel 8
 ```
 
 ### Using also PowerShell

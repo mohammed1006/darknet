@@ -320,9 +320,7 @@ On Linux find executable file `./darknet` in the root directory, while on Window
 
 The `CMakeLists.txt` will attempt to find installed optional dependencies like CUDA, cudnn, ZED and build against those. It will also create a shared object library file to use `darknet` for code development.
 
-To update CMake on Ubuntu, it's better to follow guide here: https://apt.kitware.com/
-
-### Using only cmake
+To update CMake on Ubuntu, it's better to follow guide here: https://apt.kitware.com/ or https://cmake.org/download/
 
 ```bash
 git clone https://github.com/AlexeyAB/darknet
@@ -335,7 +333,9 @@ cmake --build . --parallel 8
 
 ### Using also PowerShell
 
-If you have PowerShell installed on your linux or macOS system, you can use the `build.ps1` script to ease the setup.
+Install: `Cmake`, `CUDA`, `cuDNN` [How to install dependencies](#requirements)
+
+Install powershell for your OS (Linux or MacOS) ([guide here](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell)).
 
 Open PowerShell type these commands
 

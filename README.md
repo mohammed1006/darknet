@@ -53,8 +53,8 @@ About Darknet framework: http://pjreddie.com/darknet/
       - [How to use on the command line](#how-to-use-on-the-command-line)
         - [For using network video-camera mjpeg-stream with any Android smartphone](#for-using-network-video-camera-mjpeg-stream-with-any-android-smartphone)
     - [How to compile on Linux/macOS (using `CMake`)](#how-to-compile-on-linuxmacos-using-cmake)
-    - [Using `vcpkg`](#using-vcpkg)
-    - [Using libraries manually provided](#using-libraries-manually-provided)
+    - [Using only cmake](#using-only-cmake)
+    - [Using also PowerShell](#using-also-powershell)
     - [How to compile on Linux (using `make`)](#how-to-compile-on-linux-using-make)
     - [How to compile on Windows (using `CMake`)](#how-to-compile-on-windows-using-cmake)
     - [How to compile on Windows (using `vcpkg`)](#how-to-compile-on-windows-using-vcpkg)
@@ -320,13 +320,24 @@ On Linux find executable file `./darknet` in the root directory, while on Window
 
 The `CMakeLists.txt` will attempt to find installed optional dependencies like CUDA, cudnn, ZED and build against those. It will also create a shared object library file to use `darknet` for code development.
 
-Install powershell if you do not already have it ([guide here](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell)).
-
 To update CMake on Ubuntu, it's better to follow guide here: https://apt.kitware.com/
 
-### Using `vcpkg`
+### Using only cmake
 
-Open a shell and type these commands
+```bash
+git clone https://github.com/AlexeyAB/darknet
+cd darknet
+mkdir build_release
+cd build_release
+cmake ..
+cmake --build . --parallel 8
+```
+
+### Using also PowerShell
+
+If you have PowerShell installed on your linux or macOS system, you can use the `build.ps1` script to ease the setup.
+
+Open PowerShell type these commands
 
 ```PowerShell
 git clone https://github.com/AlexeyAB/darknet
@@ -334,20 +345,10 @@ cd darknet
 ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN
 ```
 
-(add option `-EnableOPENCV_CUDA` if you want to build OpenCV with CUDA support - very slow to build!)
-If you open the `build.ps1` script at the beginning you will find all available switches.
+- remove options like `-EnableCUDA` or `-EnableCUDNN` if you are not interested into
+- remove option `-UseVCPKG` if you plan to manually provide OpenCV library to darknet or if you do not want to enable OpenCV integration
+- add option `-EnableOPENCV_CUDA` if you want to build OpenCV with CUDA support - very slow to build! (requires `-UseVCPKG`)
 
-### Using libraries manually provided
-
-Open a shell and type these commands
-
-```PowerShell
-git clone https://github.com/AlexeyAB/darknet
-cd darknet
-./build.ps1 -EnableOPENCV -EnableCUDA -EnableCUDNN
-```
-
-(remove options like `-EnableCUDA` or `-EnableCUDNN` if you are not interested into).
 If you open the `build.ps1` script at the beginning you will find all available switches.
 
 ### How to compile on Linux (using `make`)

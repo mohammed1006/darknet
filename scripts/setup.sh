@@ -6,7 +6,10 @@ install_cuda=true
 
 ###########################
 
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+cd $script_dir/..
 temp_folder="./temp"
+cuda_is_available=false
 mkdir -p $temp_folder
 cd $temp_folder
 
@@ -15,6 +18,7 @@ sudo apt-get install cmake git ninja-build build-essential g++
 if [ "$install_cuda" = true ] ; then
   if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Unable to provide CUDA on macOS"
+    cuda_is_available=false
   else
     # Download and install CUDA
     if [[ $(cut -f2 <<< $(lsb_release -r)) == "18.04" ]]; then
@@ -34,7 +38,7 @@ if [ "$install_cuda" = true ] ; then
       export CUDACXX=/usr/local/cuda/bin/nvcc
       export CUDA_PATH=/usr/local/cuda
       export CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda
-      features="full"
+      cuda_is_available=true
     elif [[ $(cut -f2 <<< $(lsb_release -r)) == "20.04" ]]; then
       sudo apt update
       sudo apt-get dist-upgrade -y
@@ -52,34 +56,25 @@ if [ "$install_cuda" = true ] ; then
       export CUDACXX=/usr/local/cuda/bin/nvcc
       export CUDA_PATH=/usr/local/cuda
       export CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda
-      features="full"
+      cuda_is_available=true
     else
       echo "Unable to auto-install CUDA on this Linux OS"
-      features="opencv-base"
+      cuda_is_available=false
     fi
   fi
 else
   if [[ -v CUDA_PATH ]]; then
-    features="full"
+    cuda_is_available=true
   else
-    features="opencv-base"
+    cuda_is_available=false
   fi
 fi
 
 cd ..
-rm -rf $temp_folder
+rm -rf "$temp_folder"
 
-if [[ ! -v VCPKG_ROOT ]]; then
-  git clone https://github.com/microsoft/vcpkg
-  cd vcpkg
-  ./bootstrap-vcpkg.sh -disableMetrics
-  export VCPKG_ROOT=$(pwd)
-fi
-
-$VCPKG_ROOT/vcpkg install darknet[${features}]
-
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  echo "Darknet installed in $VCPKG_ROOT/installed/x64-osx/tools/darknet"
+if [ "$cuda_is_available" = true ] ; then
+  ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableOPENCV_CUDA
 else
-  echo "Darknet installed in $VCPKG_ROOT/installed/x64-linux/tools/darknet"
+  ./build.ps1 -UseVCPKG -EnableOPENCV
 fi

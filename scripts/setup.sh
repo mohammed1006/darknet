@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 install_tools=false
+bypass_driver_installation=false
 
 POSITIONAL=()
 while [[ $# -gt 0 ]]
@@ -10,6 +11,10 @@ key="$1"
 case $key in
     -InstallCUDA|--InstallCUDA)
     install_tools=true
+    shift
+    ;;
+    -BypassDRIVER|--BypassDRIVER)
+    bypass_driver_installation=true
     shift
     ;;
     *)    # unknown option
@@ -52,6 +57,11 @@ if [ "$install_tools" = true ] ; then
       sudo apt-get install -y powershell
       sudo rm -rf /usr/local/cuda
       sudo ln -s /usr/local/cuda-10.2 /usr/local/cuda
+      if [ "$bypass_driver_installation" = true ] ; then
+        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-10.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
+      fi
       export PATH=/usr/local/cuda/bin:$PATH
       export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
       export CUDACXX=/usr/local/cuda/bin/nvcc
@@ -79,6 +89,11 @@ if [ "$install_tools" = true ] ; then
       sudo apt-get install -y powershell
       sudo rm -rf /usr/local/cuda
       sudo ln -s /usr/local/cuda-11.2 /usr/local/cuda
+      if [ "$bypass_driver_installation" = true ] ; then
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
+      fi
       export PATH=/usr/local/cuda/bin:$PATH
       export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
       export CUDACXX=/usr/local/cuda/bin/nvcc

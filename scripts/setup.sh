@@ -39,6 +39,7 @@ if [ "$install_tools" = true ] ; then
       sudo dpkg -i cuda-repo-ubuntu1804_10.2.89-1_amd64.deb
       wget http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb
       sudo dpkg -i nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb
+      wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
       sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
       wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb
       sudo dpkg -i packages-microsoft-prod.deb
@@ -63,6 +64,7 @@ if [ "$install_tools" = true ] ; then
       sudo apt-get install apt-transport-https ca-certificates gnupg software-properties-common wget
       sudo wget -O /etc/apt/preferences.d/cuda-repository-pin-600 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
       sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub
+      wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
       sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ focal main'
       sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
       sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64/ /"
@@ -93,8 +95,8 @@ cd ..
 rm -rf "$temp_folder"
 
 if [[ -v CUDA_PATH ]]; then
-  ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA
-  #./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableOPENCV_CUDA
+  ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -DisableInteractive -DoNotUpdateDARKNET
+  #./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableOPENCV_CUDA -DisableInteractive -DoNotUpdateDARKNET
 else
-  ./build.ps1 -UseVCPKG -EnableOPENCV
+  ./build.ps1 -UseVCPKG -EnableOPENCV -DisableInteractive -DoNotUpdateDARKNET
 fi

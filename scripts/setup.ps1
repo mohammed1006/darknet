@@ -28,9 +28,9 @@ else {
 }
 
 if ($CUDAisAvailable) {
-  & $PSScriptRoot/../build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA
-  #& $PSScriptRoot/../build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableOPENCV_CUDA
+  & $PSScriptRoot/../build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -DisableInteractive -DoNotUpdateDARKNET
+  #& $PSScriptRoot/../build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableOPENCV_CUDA  -DisableInteractive -DoNotUpdateDARKNET
 }
 else {
-  & $PSScriptRoot/../build.ps1 -UseVCPKG -EnableOPENCV
+  & $PSScriptRoot/../build.ps1 -UseVCPKG -EnableOPENCV -DisableInteractive -DoNotUpdateDARKNET
 }

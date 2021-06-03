@@ -255,6 +255,15 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: 'Setup vcpkg and NuGet artifacts backend'
+      shell: bash
+      run: >
+        git clone https://github.com/microsoft/vcpkg ;
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        -Name "vcpkgbinarycache"
+        -Source http://93.49.111.10:5555/v3/index.json
+
     - name: 'Setup'
       shell: bash
       run: ./scripts/setup.sh -InstallCUDA
@@ -424,6 +433,15 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
+
+    - name: 'Setup vcpkg and NuGet artifacts backend'
+      shell: bash
+      run: >
+        git clone https://github.com/microsoft/vcpkg ;
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        -Name "vcpkgbinarycache"
+        -Source http://93.49.111.10:5555/v3/index.json
 
     - name: 'Setup'
       shell: pwsh

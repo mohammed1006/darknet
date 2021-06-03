@@ -250,6 +250,16 @@ jobs:
       run: ./build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateDARKNET
 
 
+  ubuntu-setup-sh:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: 'Setup'
+      shell: bash
+      run: ./scripts/setup.sh -InstallCUDA
+
+
   osx-vcpkg:
     runs-on: macos-latest
     steps:
@@ -408,6 +418,16 @@ jobs:
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
+
+
+  win-setup-ps1:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: 'Setup'
+      shell: pwsh
+      run: ./scripts/setup.ps1 -InstallCUDA
 
 
   win-intlibs-cpp:

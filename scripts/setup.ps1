@@ -28,7 +28,8 @@ else {
 }
 
 if ($CUDAisAvailable) {
-  & $PSScriptRoot/../build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableOPENCV_CUDA
+  & $PSScriptRoot/../build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA
+  #& $PSScriptRoot/../build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableOPENCV_CUDA
 }
 else {
   & $PSScriptRoot/../build.ps1 -UseVCPKG -EnableOPENCV

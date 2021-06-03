@@ -93,7 +93,8 @@ cd ..
 rm -rf "$temp_folder"
 
 if [[ -v CUDA_PATH ]]; then
-  ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableOPENCV_CUDA
+  ./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA
+  #./build.ps1 -UseVCPKG -EnableOPENCV -EnableCUDA -EnableOPENCV_CUDA
 else
   ./build.ps1 -UseVCPKG -EnableOPENCV
 fi

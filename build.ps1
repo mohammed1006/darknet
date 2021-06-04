@@ -18,6 +18,7 @@ param (
   [switch]$ForceVCPKGCacheRemoval = $false,
   [switch]$ForceSetupVS = $false,
   [Int32]$ForceGCCVersion = 0,
+  [Int32]$ForceOpenCVVersion = 0,
   [Int32]$NumberOfBuildWorkers = 8,
   [string]$AdditionalBuildSetup = ""  # "-DCMAKE_CUDA_ARCHITECTURES=30"
 )
@@ -471,6 +472,16 @@ if ($UseVCPKG -and ($vcpkg_path.length -gt 40) -and ($IsWindows -or $IsWindowsPo
 
 if ($ForceVCPKGCacheRemoval -and (-Not $UseVCPKG)) {
   Write-Host "VCPKG is not enabled, so local vcpkg binary cache will not be deleted even if requested" -ForegroundColor Yellow
+}
+
+if (($ForceOpenCVVersion -eq 2) -and $UseVCPKG) {
+  Write-Host "You requested OpenCV version 2, so vcpkg will install that version" -ForegroundColor Yellow
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DVCPKG_USE_OPENCV4=OFF -DVCPKG_USE_OPENCV2=ON"
+}
+
+if (($ForceOpenCVVersion -eq 3) -and $UseVCPKG) {
+  Write-Host "You requested OpenCV version 3, so vcpkg will install that version" -ForegroundColor Yellow
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DVCPKG_USE_OPENCV4=OFF -DVCPKG_USE_OPENCV3=ON"
 }
 
 if ($UseVCPKG -and $ForceVCPKGCacheRemoval) {

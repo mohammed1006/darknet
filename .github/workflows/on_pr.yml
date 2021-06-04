@@ -125,6 +125,15 @@ jobs:
 
     - uses: lukka/get-cmake@latest
 
+    - name: 'Install CUDA'
+      run: ./scripts/deploy-cuda.sh
+
+    - name: 'Create softlinks for CUDA'
+      run: |
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
+
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
       run: >
@@ -155,6 +164,15 @@ jobs:
       run: sudo apt install yasm nasm
 
     - uses: lukka/get-cmake@latest
+
+    - name: 'Install CUDA'
+      run: ./scripts/deploy-cuda.sh
+
+    - name: 'Create softlinks for CUDA'
+      run: |
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
 
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash

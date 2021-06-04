@@ -19,6 +19,12 @@ jobs:
     - name: 'Install CUDA'
       run: ./scripts/deploy-cuda.sh
 
+    - name: 'Create softlinks for CUDA'
+      run: |
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
+
     - name: 'LIBSO=1 GPU=0 CUDNN=0 OPENCV=0'
       run: |
         make LIBSO=1 GPU=0 CUDNN=0 OPENCV=0 -j 8
@@ -69,6 +75,12 @@ jobs:
 
     - name: 'Install CUDA'
       run: ./scripts/deploy-cuda.sh
+
+    - name: 'Create softlinks for CUDA'
+      run: |
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
 
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
@@ -220,6 +232,12 @@ jobs:
 
     - name: 'Install CUDA'
       run: ./scripts/deploy-cuda.sh
+
+    - name: 'Create softlinks for CUDA'
+      run: |
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
 
     - name: 'Build'
       shell: pwsh

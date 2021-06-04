@@ -118,11 +118,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Update apt
-      run: sudo apt update
-    - name: Install dependencies
-      run: sudo apt install yasm nasm
-
     - uses: lukka/get-cmake@latest
 
     - name: 'Install CUDA'
@@ -157,11 +152,6 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
-
-    - name: Update apt
-      run: sudo apt update
-    - name: Install dependencies
-      run: sudo apt install yasm nasm
 
     - uses: lukka/get-cmake@latest
 

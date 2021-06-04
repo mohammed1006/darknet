@@ -39,7 +39,7 @@ if [ "$install_tools" = true ] ; then
   else
     if [[ $(cut -f2 <<< $(lsb_release -r)) == "18.04" ]]; then
       sudo apt-get update
-      sudo apt-get install git ninja-build build-essential g++
+      sudo apt-get install git ninja-build build-essential g++ nasm yasm
       sudo apt-get install apt-transport-https ca-certificates gnupg software-properties-common wget
       wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
       sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
@@ -63,7 +63,7 @@ if [ "$install_tools" = true ] ; then
       cuda_is_available=true
     elif [[ $(cut -f2 <<< $(lsb_release -r)) == "20.04" ]]; then
       sudo apt-get update
-      sudo apt-get install git ninja-build build-essential g++
+      sudo apt-get install git ninja-build build-essential g++ nasm yasm
       sudo apt-get install apt-transport-https ca-certificates gnupg software-properties-common wget
       wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
       sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ focal main'

@@ -13,6 +13,8 @@ temp/
 *.out
 *.csv
 *.png
+*/vcpkg-manifest-install.log
+build.log
 
 # OS Generated #
 .DS_Store*

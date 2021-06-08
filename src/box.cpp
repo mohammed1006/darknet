@@ -4,7 +4,6 @@
 #include <math.h>
 #include <stdlib.h>
 #include <vector>
-#include <array>  
 
 #ifndef M_PI
 #define M_PI 3.141592
@@ -749,7 +748,6 @@ void do_nms_sort_v2(box *boxes, float **probs, int total, int classes, float thr
             if(probs[s[i].index][k] == 0) continue;
             box a = boxes[s[i].index];
             for(j = i+1; j < total; ++j){
-	      //printf("  k = %d, \t i = %d \n", k, i);
                 box b = boxes[s[j].index];
                 if (box_iou(a, b) > thresh){
                     probs[s[j].index][k] = 0;
@@ -833,7 +831,7 @@ void do_nms_sort(detection *dets, int total, int classes, float thresh)
         }
         qsort(dets, total, sizeof(detection), nms_comparator_v3);
         for (i = 0; i < total; ++i) {
-   	    printf("  k = %d, \t i = %d \n", k, i);
+	    //printf("  k = %d, \t i = %d \n", k, i);
             if (dets[i].prob[k] == 0) continue;
             box a = dets[i].bbox;
             for (j = i + 1; j < total; ++j) {
@@ -889,8 +887,7 @@ void diounms_sort(detection *dets, int total, int classes, float thresh, NMS_KIN
         }
         qsort(dets, total, sizeof(detection), nms_comparator_v3);
         for (i = 0; i < total; ++i) {
-	  
-            if (dets[i].prob[k] == 0) continue;
+	  if (dets[i].prob[k] == 0) continue;
             box a = dets[i].bbox;
             for (j = i + 1; j < total; ++j) {
                 box b = dets[j].bbox;

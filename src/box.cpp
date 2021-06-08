@@ -931,35 +931,28 @@ void diounms_sort(detection *dets, int total, int classes, float thresh, NMS_KIN
     //Remove duplicate objects with different classes
     std::vector<std::vector<int>> valid_dets;
     for (i = 0; i < total; ++i) {
-      for (k = 0; k < classes; ++k) {
-    	if(dets[i].prob[k] != 0) valid_dets.push_back({i,k});
-      }
+        for (k = 0; k < classes; ++k) {
+            if(dets[i].prob[k] != 0) valid_dets.push_back({i,k});
+        }
     }
 
     for(int m = 0; m < valid_dets.size(); ++m){
-      int i = valid_dets[m][0];
-      int i_k = valid_dets[m][1];
-      box a = dets[i].bbox;
-      for(int n = m+1; n < valid_dets.size(); ++n){
-    	int j = valid_dets[n][0];
-    	int j_k = valid_dets[n][1];
-    	box b = dets[j].bbox;
-    	if (box_iou(a, b) > thresh){
-    	  if (dets[i].prob[i_k] > dets[j].prob[j_k]){
-    	    dets[j].prob[j_k] = 0;
-    	  } else {
-    	    dets[i].prob[i_k] = 0;
-    	  }
-    	}
-      }
+        int i = valid_dets[m][0];
+        int i_k = valid_dets[m][1];
+        box a = dets[i].bbox;
+        for(int n = m+1; n < valid_dets.size(); ++n){
+    	    int j = valid_dets[n][0];
+    	    int j_k = valid_dets[n][1];
+    	    box b = dets[j].bbox;
+    	    if (box_iou(a, b) > thresh){
+    	        if (dets[i].prob[i_k] > dets[j].prob[j_k]){
+    	            dets[j].prob[j_k] = 0;
+           	} else {
+    	            dets[i].prob[i_k] = 0;
+    	        }
+    	    }
+        }
     }
-    
-    // for (i = 0; i < total; ++i){
-    //   if(valid_dets[i] != 0) printf("i:%d \t %d\n",i, valid_dets[i]);
-    // }
-
-
-    
 }
 
 box encode_box(box b, box anchor)

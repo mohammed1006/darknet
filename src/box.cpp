@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <vector>
+#include <array>  
 
 #ifndef M_PI
 #define M_PI 3.141592
@@ -747,6 +749,7 @@ void do_nms_sort_v2(box *boxes, float **probs, int total, int classes, float thr
             if(probs[s[i].index][k] == 0) continue;
             box a = boxes[s[i].index];
             for(j = i+1; j < total; ++j){
+	      //printf("  k = %d, \t i = %d \n", k, i);
                 box b = boxes[s[j].index];
                 if (box_iou(a, b) > thresh){
                     probs[s[j].index][k] = 0;
@@ -830,7 +833,7 @@ void do_nms_sort(detection *dets, int total, int classes, float thresh)
         }
         qsort(dets, total, sizeof(detection), nms_comparator_v3);
         for (i = 0; i < total; ++i) {
-            //printf("  k = %d, \t i = %d \n", k, i);
+   	    printf("  k = %d, \t i = %d \n", k, i);
             if (dets[i].prob[k] == 0) continue;
             box a = dets[i].bbox;
             for (j = i + 1; j < total; ++j) {
@@ -885,8 +888,8 @@ void diounms_sort(detection *dets, int total, int classes, float thresh, NMS_KIN
             dets[i].sort_class = k;
         }
         qsort(dets, total, sizeof(detection), nms_comparator_v3);
-        for (i = 0; i < total; ++i)
-        {
+        for (i = 0; i < total; ++i) {
+	  
             if (dets[i].prob[k] == 0) continue;
             box a = dets[i].bbox;
             for (j = i + 1; j < total; ++j) {
@@ -927,6 +930,39 @@ void diounms_sort(detection *dets, int total, int classes, float thresh, NMS_KIN
             //    dets[i].prob[k] = 0;
         }
     }
+
+    //Remove duplicate objects with different classes
+    std::vector<std::vector<int>> valid_dets;
+    for (i = 0; i < total; ++i) {
+      for (k = 0; k < classes; ++k) {
+    	if(dets[i].prob[k] != 0) valid_dets.push_back({i,k});
+      }
+    }
+
+    for(int m = 0; m < valid_dets.size(); ++m){
+      int i = valid_dets[m][0];
+      int i_k = valid_dets[m][1];
+      box a = dets[i].bbox;
+      for(int n = m+1; n < valid_dets.size(); ++n){
+    	int j = valid_dets[n][0];
+    	int j_k = valid_dets[n][1];
+    	box b = dets[j].bbox;
+    	if (box_iou(a, b) > thresh){
+    	  if (dets[i].prob[i_k] > dets[j].prob[j_k]){
+    	    dets[j].prob[j_k] = 0;
+    	  } else {
+    	    dets[i].prob[i_k] = 0;
+    	  }
+    	}
+      }
+    }
+    
+    // for (i = 0; i < total; ++i){
+    //   if(valid_dets[i] != 0) printf("i:%d \t %d\n",i, valid_dets[i]);
+    // }
+
+
+    
 }
 
 box encode_box(box b, box anchor)

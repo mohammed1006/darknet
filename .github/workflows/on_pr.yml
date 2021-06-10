@@ -507,6 +507,18 @@ jobs:
       run: ./build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateDARKNET
 
 
+  win-csharp:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: lukka/get-cmake@latest
+
+    - name: 'Build'
+      shell: pwsh
+      run: ./build.ps1 -EnableCSharpWrapper -DisableInteractive -DoNotUpdateDARKNET
+
+
   win-intlibs-cuda:
     runs-on: windows-latest
     steps:

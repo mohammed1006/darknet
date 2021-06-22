@@ -21,6 +21,7 @@ param (
   [switch]$ForceVCPKGCacheRemoval = $false,
   [switch]$ForceSetupVS = $false,
   [switch]$EnableCSharpWrapper = $false,
+  [switch]$DownloadWeights = $false,
   [Int32]$ForceGCCVersion = 0,
   [Int32]$ForceOpenCVVersion = 0,
   [Int32]$NumberOfBuildWorkers = 8,
@@ -729,6 +730,12 @@ else {
 }
 
 Write-Host "Build complete!" -ForegroundColor Green
+
+if ($DownloadWeights) {
+  Write-Host "Downloading weights..." -ForegroundColor Yellow
+  & $PSScriptRoot/scripts/download_weights.ps1
+  Write-Host "Weights downloaded" -ForegroundColor Green
+}
 
 if ($vcpkg_root_set_by_this_script) {
   $env:VCPKG_ROOT = $null

@@ -666,7 +666,7 @@ if ($InstallDARKNETthroughVCPKG) {
     Write-Host "vcpkg install darknet[${features}] $headMode --recurse"
     Push-Location ${env:VCPKG_ROOT}
     if ($ForceVCPKGDarknetHEAD) {
-      $proc = Start-Process -NoNewWindow -PassThru -FilePath "${env:VCPKG_ROOT}/vcpkg${exe_ext}" -ArgumentList " remove darknet --recurse "
+      $proc = Start-Process -NoNewWindow -PassThru -FilePath "${env:VCPKG_ROOT}/vcpkg${exe_ext}" -ArgumentList " --feature-flags=-manifests remove darknet --recurse "
       $handle = $proc.Handle
       $proc.WaitForExit()
       $exitCode = $proc.ExitCode
@@ -674,14 +674,14 @@ if ($InstallDARKNETthroughVCPKG) {
         MyThrow("Removing darknet through vcpkg failed! Exited with error code $exitCode.")
       }
     }
-    $proc = Start-Process -NoNewWindow -PassThru -FilePath "${env:VCPKG_ROOT}/vcpkg${exe_ext}" -ArgumentList " upgrade --no-dry-run "
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath "${env:VCPKG_ROOT}/vcpkg${exe_ext}" -ArgumentList " --feature-flags=-manifests upgrade --no-dry-run "
     $handle = $proc.Handle
     $proc.WaitForExit()
     $exitCode = $proc.ExitCode
     if (-Not ($exitCode -eq 0)) {
       MyThrow("Upgrading vcpkg installed ports failed! Exited with error code $exitCode.")
     }
-    $proc = Start-Process -NoNewWindow -PassThru -FilePath "${env:VCPKG_ROOT}/vcpkg${exe_ext}" -ArgumentList " install darknet[${features}] $headMode --recurse "
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath "${env:VCPKG_ROOT}/vcpkg${exe_ext}" -ArgumentList " --feature-flags=-manifests install darknet[${features}] $headMode --recurse "  # "-manifest"  disables the manifest feature, so that if vcpkg is a subfolder of darknet, the vcpkg.json inside darknet folder does not trigger errors due to automatic manifest mode
     $handle = $proc.Handle
     $proc.WaitForExit()
     $exitCode = $proc.ExitCode

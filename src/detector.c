@@ -1834,11 +1834,11 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
 
         net.num_boxes = l.max_boxes;
         int num_truth = l.truths;
-        float *truth_cpu = (float *)xcalloc(num_truth, sizeof(float));
+        float *truth_cpu = (float *)xcalloc(num_truth, sizeof(float), __FILE__, __LINE__);
 
-        int *it_num_set = (int *)xcalloc(1, sizeof(int));
-        float *lr_set = (float *)xcalloc(1, sizeof(float));
-        int *boxonly = (int *)xcalloc(1, sizeof(int));
+        int *it_num_set = (int *)xcalloc(1, sizeof(int), __FILE__, __LINE__);
+        float *lr_set = (float *)xcalloc(1, sizeof(float), __FILE__, __LINE__);
+        int *boxonly = (int *)xcalloc(1, sizeof(int), __FILE__, __LINE__);
 
         cv_draw_object(sized, truth_cpu, net.num_boxes, num_truth, it_num_set, lr_set, boxonly, l.classes, names);
 

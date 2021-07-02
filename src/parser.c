@@ -1762,7 +1762,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
         if (cudaSuccess == cudaHostAlloc(&net.input_pinned_cpu, size * sizeof(float), cudaHostRegisterMapped)) net.input_pinned_cpu_flag = 1;
         else {
             cudaGetLastError(); // reset CUDA-error
-            net.input_pinned_cpu = (float*)xcalloc(size, sizeof(float));
+            net.input_pinned_cpu = (float*)xcalloc(size, sizeof(float), __FILE__, __LINE__);
         }
 
         // pre-allocate memory for inference on Tensor Cores (fp16)
@@ -1779,7 +1779,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
             net.workspace = cuda_make_array(0, workspace_size / sizeof(float) + 1);
         }
         else {
-            net.workspace = (float*)xcalloc(1, workspace_size);
+            net.workspace = (float*)xcalloc(1, workspace_size, __FILE__, __LINE__);
         }
     }
 #else

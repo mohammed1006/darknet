@@ -2356,7 +2356,7 @@ void float_to_bit(float *src, unsigned char *dst, size_t size)
     memset(dst, 0, dst_size);
 
     size_t i;
-    char* byte_arr = (char*)xcalloc(size, sizeof(char));
+    char* byte_arr = (char*)xcalloc(size, sizeof(char), __FILE__, __LINE__);
     for (i = 0; i < size; ++i) {
         if (src[i] > 0) byte_arr[i] = 1;
     }

@@ -590,14 +590,14 @@ void forward_contrastive_layer_gpu(contrastive_layer l, network_state state)
     simple_copy_ongpu(l.batch*l.inputs, state.input, l.output_gpu);
     if (!state.train) return;
 
-    float *in_cpu = (float *)xcalloc(l.batch*l.inputs, sizeof(float));
+    float *in_cpu = (float *)xcalloc(l.batch*l.inputs, sizeof(float), __FILE__, __LINE__);
     cuda_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
     memcpy(in_cpu, l.output, l.batch*l.outputs * sizeof(float));
     float *truth_cpu = 0;
     if (state.truth) {
         int num_truth = l.batch*l.classes;
         if (l.detection) num_truth = l.batch*l.truths;
-        truth_cpu = (float *)xcalloc(num_truth, sizeof(float));
+        truth_cpu = (float *)xcalloc(num_truth, sizeof(float), __FILE__, __LINE__);
         cuda_pull_array(state.truth, truth_cpu, num_truth);
     }
     network_state cpu_state = state;

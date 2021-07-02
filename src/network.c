@@ -525,7 +525,7 @@ int recalculate_workspace_size(network *net)
     }
     else {
         free(net->workspace);
-        net->workspace = (float*)xcalloc(1, workspace_size);
+        net->workspace = (float*)xcalloc(1, workspace_size, __FILE__, __LINE__);
     }
 #else
     free(net->workspace);
@@ -661,15 +661,15 @@ int resize_network(network *net, int w, int h)
             net->input_pinned_cpu_flag = 1;
         else {
             cudaGetLastError(); // reset CUDA-error
-            net->input_pinned_cpu = (float*)xcalloc(size, sizeof(float));
+            net->input_pinned_cpu = (float*)xcalloc(size, sizeof(float), __FILE__, __LINE__);
             net->input_pinned_cpu_flag = 0;
         }
         printf(" CUDA allocate done! \n");
     }else {
         free(net->workspace);
-        net->workspace = (float*)xcalloc(1, workspace_size);
+        net->workspace = (float*)xcalloc(1, workspace_size, __FILE__, __LINE__);
         if(!net->input_pinned_cpu_flag)
-            net->input_pinned_cpu = (float*)xrealloc(net->input_pinned_cpu, size * sizeof(float));
+            net->input_pinned_cpu = (float*)xrealloc(net->input_pinned_cpu, size * sizeof(float), __FILE__, __LINE__);
     }
 #else
     free(net->workspace);

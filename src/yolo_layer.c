@@ -68,14 +68,14 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
     if (cudaSuccess == cudaHostAlloc(&l.output, batch*l.outputs*sizeof(float), cudaHostRegisterMapped)) l.output_pinned = 1;
     else {
         cudaGetLastError(); // reset CUDA-error
-        l.output = (float*)xcalloc(batch * l.outputs, sizeof(float));
+        l.output = (float*)xcalloc(batch * l.outputs, sizeof(float), __FILE__, __LINE__);
     }
 
     free(l.delta);
     if (cudaSuccess == cudaHostAlloc(&l.delta, batch*l.outputs*sizeof(float), cudaHostRegisterMapped)) l.delta_pinned = 1;
     else {
         cudaGetLastError(); // reset CUDA-error
-        l.delta = (float*)xcalloc(batch * l.outputs, sizeof(float));
+        l.delta = (float*)xcalloc(batch * l.outputs, sizeof(float), __FILE__, __LINE__);
     }
 #endif
 
@@ -105,7 +105,7 @@ void resize_yolo_layer(layer *l, int w, int h)
         CHECK_CUDA(cudaFreeHost(l->output));
         if (cudaSuccess != cudaHostAlloc(&l->output, l->batch*l->outputs * sizeof(float), cudaHostRegisterMapped)) {
             cudaGetLastError(); // reset CUDA-error
-            l->output = (float*)xcalloc(l->batch * l->outputs, sizeof(float));
+            l->output = (float*)xcalloc(l->batch * l->outputs, sizeof(float), __FILE__, __LINE__);
             l->output_pinned = 0;
         }
     }
@@ -114,7 +114,7 @@ void resize_yolo_layer(layer *l, int w, int h)
         CHECK_CUDA(cudaFreeHost(l->delta));
         if (cudaSuccess != cudaHostAlloc(&l->delta, l->batch*l->outputs * sizeof(float), cudaHostRegisterMapped)) {
             cudaGetLastError(); // reset CUDA-error
-            l->delta = (float*)xcalloc(l->batch * l->outputs, sizeof(float));
+            l->delta = (float*)xcalloc(l->batch * l->outputs, sizeof(float), __FILE__, __LINE__);
             l->delta_pinned = 0;
         }
     }
@@ -1200,13 +1200,13 @@ void forward_yolo_layer_gpu(const layer l, network_state state)
         return;
     }
 
-    float *in_cpu = (float *)xcalloc(l.batch*l.inputs, sizeof(float));
+    float *in_cpu = (float *)xcalloc(l.batch*l.inputs, sizeof(float), __FILE__, __LINE__);
     cuda_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
     memcpy(in_cpu, l.output, l.batch*l.outputs*sizeof(float));
     float *truth_cpu = 0;
     if (state.truth) {
         int num_truth = l.batch*l.truths;
-        truth_cpu = (float *)xcalloc(num_truth, sizeof(float));
+        truth_cpu = (float *)xcalloc(num_truth, sizeof(float), __FILE__, __LINE__);
         cuda_pull_array(state.truth, truth_cpu, num_truth);
     }
     network_state cpu_state = state;

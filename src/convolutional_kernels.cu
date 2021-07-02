@@ -212,7 +212,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 //printf("\n\n l.index = %d, l.w = %d, l.c = %d, l.n = %d, l.stride = %d, l.pad = %d - new XNOR \n", l.index, l.w, l.c, l.n, l.stride, l.pad);
                 //printf("l.align_workspace_size = %d, (l.c * l.w * l.h)  = %d \n", l.align_workspace_size, (l.c * l.w * l.h));
 
-                //float *intput_cpu = (float *)calloc(l.inputs, sizeof(float));
+                //float *intput_cpu = (float *)xcalloc(l.inputs, sizeof(float), __FILE__, __LINE__);
                 // state.input
                 //cudaMemcpy(intput_cpu, state.input, l.inputs * sizeof(float), cudaMemcpyDefault);
 
@@ -223,8 +223,8 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
 
                 const int new_c = l.c / 32;
 
-                //float *re_packed_input = (float *)calloc(l.c * l.w * l.h, sizeof(float));
-                //uint32_t *bin_re_packed_input = (uint32_t *)calloc(new_c * l.w * l.h + 1, sizeof(uint32_t));
+                //float *re_packed_input = (float *)xcalloc(l.c * l.w * l.h, sizeof(float), __FILE__, __LINE__);
+                //uint32_t *bin_re_packed_input = (uint32_t *)xcalloc(new_c * l.w * l.h + 1, sizeof(uint32_t), __FILE__, __LINE__);
 
                 // float32x4 by channel (as in cuDNN)
                 //repack_input(intput_cpu, re_packed_input, l.w, l.h, l.c);
@@ -255,7 +255,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 // // then exit from if()
 
                 //float *b = state.workspace;
-                //float *b = (float *)calloc(100 * 1024 * 1024, sizeof(float));
+                //float *b = (float *)xcalloc(100 * 1024 * 1024, sizeof(float), __FILE__, __LINE__);
                 //float *c = l.output;
                 //memset(c, 0, l.outputs * sizeof(float));
 
@@ -286,7 +286,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
                 //size_t t_intput_size = new_ldb * l.bit_align;// n;
                 //size_t t_bit_input_size = t_intput_size / 8;// +1;
 
-                //char *t_bit_input = (char *)calloc(t_bit_input_size, sizeof(char));
+                //char *t_bit_input = (char *)xcalloc(t_bit_input_size, sizeof(char), __FILE__, __LINE__);
                 //transpose_uint32((uint32_t *)b, (uint32_t *)t_bit_input, new_k, n, n, new_ldb);
                 //cudaMemcpy(l.transposed_align_workspace_gpu, t_bit_input, t_bit_input_size * sizeof(char), cudaMemcpyDefault);
 
@@ -1076,8 +1076,8 @@ void assisted_excitation_forward_gpu(convolutional_layer l, network_state state)
 
     //const int size = l.outputs * l.batch;
 
-    float *a_avg = (float *)calloc(l.out_w * l.out_h * l.batch, sizeof(float));
-    float *gt = (float *)calloc(l.out_w * l.out_h * l.batch, sizeof(float));
+    float *a_avg = (float *)xcalloc(l.out_w * l.out_h * l.batch, sizeof(float), __FILE__, __LINE__);
+    float *gt = (float *)xcalloc(l.out_w * l.out_h * l.batch, sizeof(float), __FILE__, __LINE__);
 
     int b;
     int w, h;
@@ -1086,7 +1086,7 @@ void assisted_excitation_forward_gpu(convolutional_layer l, network_state state)
     l.truths = l.max_boxes*(4 + 1);
 
     int num_truth = l.batch*l.truths;
-    float *truth_cpu = (float *)calloc(num_truth, sizeof(float));
+    float *truth_cpu = (float *)xcalloc(num_truth, sizeof(float), __FILE__, __LINE__);
     cuda_pull_array(state.truth, truth_cpu, num_truth);
     //cudaStreamSynchronize(get_cuda_stream());
     //CHECK_CUDA(cudaPeekAtLastError());

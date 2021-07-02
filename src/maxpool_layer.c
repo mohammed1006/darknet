@@ -160,7 +160,7 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
 
     if (l.antialiasing) {
         printf("AA:  ");
-        l.input_layer = (layer*)calloc(1, sizeof(layer));
+        l.input_layer = (layer*)xcalloc(1, sizeof(layer), __FILE__, __LINE__);
         int blur_size = 3;
         int blur_pad = blur_size / 2;
         if (l.antialiasing == 2) {

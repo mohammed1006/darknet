@@ -1071,8 +1071,8 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
     int *cut_x = NULL, *cut_y = NULL;
     if (use_mixup == 3) {
-        cut_x = (int*)calloc(n, sizeof(int));
-        cut_y = (int*)calloc(n, sizeof(int));
+        cut_x = (int*)xcalloc(n, sizeof(int), __FILE__, __LINE__);
+        cut_y = (int*)xcalloc(n, sizeof(int), __FILE__, __LINE__);
         const float min_offset = 0.2; // 20%
         for (i = 0; i < n; ++i) {
             cut_x[i] = rand_int(w*min_offset, w*(1 - min_offset));

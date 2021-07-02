@@ -662,7 +662,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     }
 
 #ifndef GPU
-    if (l.activation == SWISH || l.activation == MISH || l.activation == HARD_MISH) l.activation_input = (float*)calloc(total_batch*l.outputs, sizeof(float));
+    if (l.activation == SWISH || l.activation == MISH || l.activation == HARD_MISH) l.activation_input = (float*)xcalloc(total_batch*l.outputs, sizeof(float), __FILE__, __LINE__);
 #endif  // not GPU
 
     if(adam){
@@ -806,7 +806,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
 
     if (l.antialiasing) {
         printf("AA:  ");
-        l.input_layer = (layer*)calloc(1, sizeof(layer));
+        l.input_layer = (layer*)xcalloc(1, sizeof(layer), __FILE__, __LINE__);
         int blur_size = 3;
         int blur_pad = blur_size / 2;
         if (l.antialiasing == 2) {
@@ -921,7 +921,7 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
         //l->binary_input = realloc(l->inputs*l->batch, sizeof(float));
     }
 
-    if (l->activation == SWISH || l->activation == MISH || l->activation == HARD_MISH) l->activation_input = (float*)realloc(l->activation_input, total_batch*l->outputs * sizeof(float));
+    if (l->activation == SWISH || l->activation == MISH || l->activation == HARD_MISH) l->activation_input = (float*)xrealloc(l->activation_input, total_batch*l->outputs * sizeof(float), __FILE__, __LINE__);
 #ifdef GPU
     if (old_w < w || old_h < h || l->dynamic_minibatch) {
         if (l->train) {

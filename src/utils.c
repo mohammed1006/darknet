@@ -205,7 +205,7 @@ void pm(int M, int N, float *A)
 
 void find_replace(const char* str, char* orig, char* rep, char* output)
 {
-    char* buffer = (char*)calloc(8192, sizeof(char));
+    char* buffer = (char*)xcalloc(8192, sizeof(char), __FILE__, __LINE__);
     char *p;
 
     sprintf(buffer, "%s", str);
@@ -241,7 +241,7 @@ void trim(char *str)
 
 void find_replace_extension(char *str, char *orig, char *rep, char *output)
 {
-    char* buffer = (char*)calloc(8192, sizeof(char));
+    char* buffer = (char*)xcalloc(8192, sizeof(char), __FILE__, __LINE__);
 
     sprintf(buffer, "%s", str);
     char *p = strstr(buffer, orig);

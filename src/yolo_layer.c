@@ -711,7 +711,7 @@ void forward_yolo_layer(const layer l, network_state state)
 
 
     int num_threads = l.batch;
-    pthread_t* threads = (pthread_t*)calloc(num_threads, sizeof(pthread_t));
+    pthread_t* threads = (pthread_t*)xcalloc(num_threads, sizeof(pthread_t), __FILE__, __LINE__);
 
     struct train_yolo_args* yolo_args = (train_yolo_args*)xcalloc(l.batch, sizeof(struct train_yolo_args), __FILE__, __LINE__);
 
@@ -871,7 +871,7 @@ void forward_yolo_layer(const layer l, network_state state)
         // show detailed output
 
         int stride = l.w*l.h;
-        float* no_iou_loss_delta = (float *)calloc(l.batch * l.outputs, sizeof(float));
+        float* no_iou_loss_delta = (float *)xcalloc(l.batch * l.outputs, sizeof(float), __FILE__, __LINE__);
         memcpy(no_iou_loss_delta, l.delta, l.batch * l.outputs * sizeof(float));
 
 

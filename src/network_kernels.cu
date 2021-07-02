@@ -64,8 +64,8 @@ void forward_network_gpu(network net, network_state state)
     double start_time, end_time;
     if (net.benchmark_layers) {
         if (!avg_time_per_layer) {
-            avg_time_per_layer = (time_benchmark_layers *)calloc(net.n, sizeof(time_benchmark_layers));
-            sorted_avg_time_per_layer = (time_benchmark_layers *)calloc(net.n, sizeof(time_benchmark_layers));
+            avg_time_per_layer = (time_benchmark_layers *)xcalloc(net.n, sizeof(time_benchmark_layers), __FILE__, __LINE__);
+            sorted_avg_time_per_layer = (time_benchmark_layers *)xcalloc(net.n, sizeof(time_benchmark_layers), __FILE__, __LINE__);
         }
         cudaDeviceSynchronize();
     }
@@ -156,8 +156,8 @@ void backward_network_gpu(network net, network_state state)
     double start_time, end_time;
     if (net.benchmark_layers) {
         if (!avg_time_per_layer) {
-            avg_time_per_layer = (time_benchmark_layers *)calloc(net.n, sizeof(time_benchmark_layers));
-            sorted_avg_time_per_layer = (time_benchmark_layers *)calloc(net.n, sizeof(time_benchmark_layers));
+            avg_time_per_layer = (time_benchmark_layers *)xcalloc(net.n, sizeof(time_benchmark_layers), __FILE__, __LINE__);
+            sorted_avg_time_per_layer = (time_benchmark_layers *)xcalloc(net.n, sizeof(time_benchmark_layers), __FILE__, __LINE__);
         }
         cudaDeviceSynchronize();
     }
@@ -438,7 +438,7 @@ void *train_thread(void *ptr)
 pthread_t train_network_in_thread(network net, data d, float *err)
 {
     pthread_t thread;
-    train_args *ptr = (train_args *)calloc(1, sizeof(train_args));
+    train_args *ptr = (train_args *)xcalloc(1, sizeof(train_args), __FILE__, __LINE__);
     ptr->net = net;
     ptr->d = d;
     ptr->err = err;
@@ -612,7 +612,7 @@ void *sync_layer_thread(void *ptr)
 pthread_t sync_layer_in_thread(network *nets, int n, int j)
 {
     pthread_t thread;
-    sync_args *ptr = (sync_args *)calloc(1, sizeof(sync_args));
+    sync_args *ptr = (sync_args *)xcalloc(1, sizeof(sync_args), __FILE__, __LINE__);
     ptr->nets = nets;
     ptr->n = n;
     ptr->j = j;

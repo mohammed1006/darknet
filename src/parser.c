@@ -435,7 +435,7 @@ float *get_classes_multipliers(char *cpc, const int classes, const float max_del
             if (counters_per_class[i] < 1) counters_per_class[i] = 1;
             if (max_counter < counters_per_class[i]) max_counter = counters_per_class[i];
         }
-        classes_multipliers = (float *)calloc(classes_counters, sizeof(float));
+        classes_multipliers = (float *)xcalloc(classes_counters, sizeof(float), __FILE__, __LINE__);
         for (i = 0; i < classes_counters; ++i) {
             classes_multipliers[i] = max_counter / counters_per_class[i];
             if(classes_multipliers[i] > max_delta) classes_multipliers[i] = max_delta;
@@ -569,7 +569,7 @@ int *parse_gaussian_yolo_mask(char *a, int *num) // Gaussian_YOLOv3
             if (a[i] == '#') break;
             if (a[i] == ',') ++n;
         }
-        mask = (int *)calloc(n, sizeof(int));
+        mask = (int *)xcalloc(n, sizeof(int), __FILE__, __LINE__);
         for (i = 0; i < n; ++i) {
             int val = atoi(a);
             mask[i] = val;
@@ -959,12 +959,12 @@ layer parse_shortcut(list *options, size_params params, network net)
         if (l[i] == ',') ++n;
     }
 
-    int* layers = (int*)calloc(n, sizeof(int));
-    int* sizes = (int*)calloc(n, sizeof(int));
-    float **layers_output = (float **)calloc(n, sizeof(float *));
-    float **layers_delta = (float **)calloc(n, sizeof(float *));
-    float **layers_output_gpu = (float **)calloc(n, sizeof(float *));
-    float **layers_delta_gpu = (float **)calloc(n, sizeof(float *));
+    int* layers = (int*)xcalloc(n, sizeof(int), __FILE__, __LINE__);
+    int* sizes = (int*)xcalloc(n, sizeof(int), __FILE__, __LINE__);
+    float **layers_output = (float **)xcalloc(n, sizeof(float *), __FILE__, __LINE__);
+    float **layers_delta = (float **)xcalloc(n, sizeof(float *), __FILE__, __LINE__);
+    float **layers_output_gpu = (float **)xcalloc(n, sizeof(float *), __FILE__, __LINE__);
+    float **layers_delta_gpu = (float **)xcalloc(n, sizeof(float *), __FILE__, __LINE__);
 
     for (i = 0; i < n; ++i) {
         int index = atoi(l);

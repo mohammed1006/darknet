@@ -857,9 +857,9 @@ detection *make_network_boxes_batch(network *net, float thresh, int *num, int ba
     int nboxes = num_detections_batch(net, thresh, batch);
     assert(num != NULL);
     *num = nboxes;
-    detection* dets = (detection*)calloc(nboxes, sizeof(detection));
+    detection* dets = (detection*)xcalloc(nboxes, sizeof(detection), __FILE__, __LINE__);
     for (i = 0; i < nboxes; ++i) {
-        dets[i].prob = (float*)calloc(l.classes, sizeof(float));
+        dets[i].prob = (float*)xcalloc(l.classes, sizeof(float), __FILE__, __LINE__);
         // tx,ty,tw,th uncertainty
         if (l.type == GAUSSIAN_YOLO) dets[i].uc = (float*)xcalloc(4, sizeof(float), __FILE__, __LINE__); // Gaussian_YOLOv3
         else dets[i].uc = NULL;
@@ -995,7 +995,7 @@ char *detection_to_json(detection *dets, int nboxes, int classes, char **names, 
 {
     const float thresh = 0.005; // function get_network_boxes() has already filtred dets by actual threshold
 
-    char *send_buf = (char *)calloc(1024, sizeof(char));
+    char *send_buf = (char *)xcalloc(1024, sizeof(char), __FILE__, __LINE__);
     if (!send_buf) return 0;
     if (filename) {
         sprintf(send_buf, "{\n \"frame_id\":%lld, \n \"filename\":\"%s\", \n \"objects\": [ \n", frame_id, filename);
@@ -1013,7 +1013,7 @@ char *detection_to_json(detection *dets, int nboxes, int classes, char **names, 
             {
                 if (class_id != -1) strcat(send_buf, ", \n");
                 class_id = j;
-                char *buf = (char *)calloc(2048, sizeof(char));
+                char *buf = (char *)xcalloc(2048, sizeof(char), __FILE__, __LINE__);
                 if (!buf) return 0;
                 //sprintf(buf, "{\"image_id\":%d, \"category_id\":%d, \"bbox\":[%f, %f, %f, %f], \"score\":%f}",
                 //    image_id, j, dets[i].bbox.x, dets[i].bbox.y, dets[i].bbox.w, dets[i].bbox.h, dets[i].prob[j]);
@@ -1024,7 +1024,7 @@ char *detection_to_json(detection *dets, int nboxes, int classes, char **names, 
                 int send_buf_len = strlen(send_buf);
                 int buf_len = strlen(buf);
                 int total_len = send_buf_len + buf_len + 100;
-                send_buf = (char *)realloc(send_buf, total_len * sizeof(char));
+                send_buf = (char *)xrealloc(send_buf, total_len * sizeof(char), __FILE__, __LINE__);
                 if (!send_buf) {
                     if (buf) free(buf);
                     return 0;// exit(-1);
@@ -1060,7 +1060,7 @@ float *network_predict_image(network *net, image im)
 det_num_pair* network_predict_batch(network *net, image im, int batch_size, int w, int h, float thresh, float hier, int *map, int relative, int letter)
 {
     network_predict(*net, im.data);
-    det_num_pair *pdets = (struct det_num_pair *)calloc(batch_size, sizeof(det_num_pair));
+    det_num_pair *pdets = (struct det_num_pair *)xcalloc(batch_size, sizeof(det_num_pair), __FILE__, __LINE__);
     int num;
     int batch;
     for(batch=0; batch < batch_size; batch++){

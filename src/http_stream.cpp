@@ -46,7 +46,7 @@ struct _INIT_W32DATA
 // the connection can be closed fully, with no risk of reset.
 static int close_socket(SOCKET s) {
     int close_output = ::shutdown(s, 1); // 0 close input, 1 close output, 2 close both
-    char *buf = (char *)calloc(1024, sizeof(char));
+    char *buf = (char *)xcalloc(1024, sizeof(char), __FILE__, __LINE__);
     ::recv(s, buf, 1024, 0);
     free(buf);
     int close_input = ::shutdown(s, 0);

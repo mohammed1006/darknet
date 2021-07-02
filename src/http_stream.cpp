@@ -826,7 +826,7 @@ int fill_remaining_id(detection *new_dets, int new_dets_num, int new_track_id, f
 
 float *make_float_array(float* src, size_t size)
 {
-    float *dst = (float*)xcalloc(size, sizeof(float));
+    float *dst = (float*)xcalloc(size, sizeof(float), __FILE__, __LINE__);
     memcpy(dst, src, size*sizeof(float));
     return dst;
 }

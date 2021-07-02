@@ -15,32 +15,32 @@ layer make_batchnorm_layer(int batch, int w, int h, int c, int train)
     layer.c = layer.out_c = c;
 
     layer.n = layer.c;
-    layer.output = (float*)xcalloc(h * w * c * batch, sizeof(float));
-    layer.delta = (float*)xcalloc(h * w * c * batch, sizeof(float));
+    layer.output = (float*)xcalloc(h * w * c * batch, sizeof(float), __FILE__, __LINE__);
+    layer.delta = (float*)xcalloc(h * w * c * batch, sizeof(float), __FILE__, __LINE__);
     layer.inputs = w*h*c;
     layer.outputs = layer.inputs;
 
-    layer.biases = (float*)xcalloc(c, sizeof(float));
-    layer.bias_updates = (float*)xcalloc(c, sizeof(float));
+    layer.biases = (float*)xcalloc(c, sizeof(float), __FILE__, __LINE__);
+    layer.bias_updates = (float*)xcalloc(c, sizeof(float), __FILE__, __LINE__);
 
-    layer.scales = (float*)xcalloc(c, sizeof(float));
-    layer.scale_updates = (float*)xcalloc(c, sizeof(float));
+    layer.scales = (float*)xcalloc(c, sizeof(float), __FILE__, __LINE__);
+    layer.scale_updates = (float*)xcalloc(c, sizeof(float), __FILE__, __LINE__);
     int i;
     for(i = 0; i < c; ++i){
         layer.scales[i] = 1;
     }
 
-    layer.mean = (float*)xcalloc(c, sizeof(float));
-    layer.variance = (float*)xcalloc(c, sizeof(float));
+    layer.mean = (float*)xcalloc(c, sizeof(float), __FILE__, __LINE__);
+    layer.variance = (float*)xcalloc(c, sizeof(float), __FILE__, __LINE__);
 
-    layer.rolling_mean = (float*)xcalloc(c, sizeof(float));
-    layer.rolling_variance = (float*)xcalloc(c, sizeof(float));
+    layer.rolling_mean = (float*)xcalloc(c, sizeof(float), __FILE__, __LINE__);
+    layer.rolling_variance = (float*)xcalloc(c, sizeof(float), __FILE__, __LINE__);
 
-    layer.mean_delta = (float*)xcalloc(c, sizeof(float));
-    layer.variance_delta = (float*)xcalloc(c, sizeof(float));
+    layer.mean_delta = (float*)xcalloc(c, sizeof(float), __FILE__, __LINE__);
+    layer.variance_delta = (float*)xcalloc(c, sizeof(float), __FILE__, __LINE__);
 
-    layer.x = (float*)xcalloc(layer.batch*layer.outputs, sizeof(float));
-    layer.x_norm = (float*)xcalloc(layer.batch*layer.outputs, sizeof(float));
+    layer.x = (float*)xcalloc(layer.batch*layer.outputs, sizeof(float), __FILE__, __LINE__);
+    layer.x_norm = (float*)xcalloc(layer.batch*layer.outputs, sizeof(float), __FILE__, __LINE__);
 
     layer.forward = forward_batchnorm_layer;
     layer.backward = backward_batchnorm_layer;

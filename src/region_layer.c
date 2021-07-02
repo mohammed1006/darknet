@@ -26,16 +26,16 @@ region_layer make_region_layer(int batch, int w, int h, int n, int classes, int 
     l.out_c = l.c;
     l.classes = classes;
     l.coords = coords;
-    l.cost = (float*)xcalloc(1, sizeof(float));
-    l.biases = (float*)xcalloc(n * 2, sizeof(float));
-    l.bias_updates = (float*)xcalloc(n * 2, sizeof(float));
+    l.cost = (float*)xcalloc(1, sizeof(float), __FILE__, __LINE__);
+    l.biases = (float*)xcalloc(n * 2, sizeof(float), __FILE__, __LINE__);
+    l.bias_updates = (float*)xcalloc(n * 2, sizeof(float), __FILE__, __LINE__);
     l.outputs = h*w*n*(classes + coords + 1);
     l.inputs = l.outputs;
     l.max_boxes = max_boxes;
     l.truth_size = 4 + 2;
     l.truths = max_boxes*l.truth_size;
-    l.delta = (float*)xcalloc(batch * l.outputs, sizeof(float));
-    l.output = (float*)xcalloc(batch * l.outputs, sizeof(float));
+    l.delta = (float*)xcalloc(batch * l.outputs, sizeof(float), __FILE__, __LINE__);
+    l.output = (float*)xcalloc(batch * l.outputs, sizeof(float), __FILE__, __LINE__);
     int i;
     for(i = 0; i < n*2; ++i){
         l.biases[i] = .5;
@@ -68,8 +68,8 @@ void resize_region_layer(layer *l, int w, int h)
     l->outputs = h*w*l->n*(l->classes + l->coords + 1);
     l->inputs = l->outputs;
 
-    l->output = (float*)xrealloc(l->output, l->batch * l->outputs * sizeof(float));
-    l->delta = (float*)xrealloc(l->delta, l->batch * l->outputs * sizeof(float));
+    l->output = (float*)xrealloc(l->output, l->batch * l->outputs * sizeof(float), __FILE__, __LINE__);
+    l->delta = (float*)xrealloc(l->delta, l->batch * l->outputs * sizeof(float), __FILE__, __LINE__);
 
 #ifdef GPU
     //if (old_w < w || old_h < h)

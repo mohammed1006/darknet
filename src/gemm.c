@@ -75,7 +75,7 @@ void gemm_bin(int M, int N, int K, float ALPHA,
 float *random_matrix(int rows, int cols)
 {
     int i;
-    float* m = (float*)xcalloc(rows * cols, sizeof(float));
+    float* m = (float*)xcalloc(rows * cols, sizeof(float), __FILE__, __LINE__);
     for(i = 0; i < rows*cols; ++i){
         m[i] = (float)rand()/RAND_MAX;
     }

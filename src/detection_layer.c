@@ -25,11 +25,11 @@ detection_layer make_detection_layer(int batch, int inputs, int n, int side, int
     l.w = side;
     l.h = side;
     assert(side*side*((1 + l.coords)*l.n + l.classes) == inputs);
-    l.cost = (float*)xcalloc(1, sizeof(float));
+    l.cost = (float*)xcalloc(1, sizeof(float), __FILE__, __LINE__);
     l.outputs = l.inputs;
     l.truths = l.side*l.side*(1+l.coords+l.classes);
-    l.output = (float*)xcalloc(batch * l.outputs, sizeof(float));
-    l.delta = (float*)xcalloc(batch * l.outputs, sizeof(float));
+    l.output = (float*)xcalloc(batch * l.outputs, sizeof(float), __FILE__, __LINE__);
+    l.delta = (float*)xcalloc(batch * l.outputs, sizeof(float), __FILE__, __LINE__);
 
     l.forward = forward_detection_layer;
     l.backward = backward_detection_layer;
@@ -182,7 +182,7 @@ void forward_detection_layer(const detection_layer l, network_state state)
         }
 
         if(0){
-            float* costs = (float*)xcalloc(l.batch * locations * l.n, sizeof(float));
+            float* costs = (float*)xcalloc(l.batch * locations * l.n, sizeof(float), __FILE__, __LINE__);
             for (b = 0; b < l.batch; ++b) {
                 int index = b*l.inputs;
                 for (i = 0; i < locations; ++i) {

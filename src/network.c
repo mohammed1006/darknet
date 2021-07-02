@@ -243,25 +243,25 @@ network make_network(int n)
 {
     network net = {0};
     net.n = n;
-    net.layers = (layer*)xcalloc(net.n, sizeof(layer));
-    net.seen = (uint64_t*)xcalloc(1, sizeof(uint64_t));
-    net.cuda_graph_ready = (int*)xcalloc(1, sizeof(int));
-    net.badlabels_reject_threshold = (float*)xcalloc(1, sizeof(float));
-    net.delta_rolling_max = (float*)xcalloc(1, sizeof(float));
-    net.delta_rolling_avg = (float*)xcalloc(1, sizeof(float));
-    net.delta_rolling_std = (float*)xcalloc(1, sizeof(float));
-    net.cur_iteration = (int*)xcalloc(1, sizeof(int));
-    net.total_bbox = (int*)xcalloc(1, sizeof(int));
-    net.rewritten_bbox = (int*)xcalloc(1, sizeof(int));
+    net.layers = (layer*)xcalloc(net.n, sizeof(layer), __FILE__, __LINE__);
+    net.seen = (uint64_t*)xcalloc(1, sizeof(uint64_t), __FILE__, __LINE__);
+    net.cuda_graph_ready = (int*)xcalloc(1, sizeof(int), __FILE__, __LINE__);
+    net.badlabels_reject_threshold = (float*)xcalloc(1, sizeof(float), __FILE__, __LINE__);
+    net.delta_rolling_max = (float*)xcalloc(1, sizeof(float), __FILE__, __LINE__);
+    net.delta_rolling_avg = (float*)xcalloc(1, sizeof(float), __FILE__, __LINE__);
+    net.delta_rolling_std = (float*)xcalloc(1, sizeof(float), __FILE__, __LINE__);
+    net.cur_iteration = (int*)xcalloc(1, sizeof(int), __FILE__, __LINE__);
+    net.total_bbox = (int*)xcalloc(1, sizeof(int), __FILE__, __LINE__);
+    net.rewritten_bbox = (int*)xcalloc(1, sizeof(int), __FILE__, __LINE__);
     *net.rewritten_bbox = *net.total_bbox = 0;
 #ifdef GPU
-    net.input_gpu = (float**)xcalloc(1, sizeof(float*));
-    net.truth_gpu = (float**)xcalloc(1, sizeof(float*));
+    net.input_gpu = (float**)xcalloc(1, sizeof(float*), __FILE__, __LINE__);
+    net.truth_gpu = (float**)xcalloc(1, sizeof(float*), __FILE__, __LINE__);
 
-    net.input16_gpu = (float**)xcalloc(1, sizeof(float*));
-    net.output16_gpu = (float**)xcalloc(1, sizeof(float*));
-    net.max_input16_size = (size_t*)xcalloc(1, sizeof(size_t));
-    net.max_output16_size = (size_t*)xcalloc(1, sizeof(size_t));
+    net.input16_gpu = (float**)xcalloc(1, sizeof(float*), __FILE__, __LINE__);
+    net.output16_gpu = (float**)xcalloc(1, sizeof(float*), __FILE__, __LINE__);
+    net.max_input16_size = (size_t*)xcalloc(1, sizeof(size_t), __FILE__, __LINE__);
+    net.max_output16_size = (size_t*)xcalloc(1, sizeof(size_t), __FILE__, __LINE__);
 #endif
     return net;
 }
@@ -383,8 +383,8 @@ float train_network_datum(network net, float *x, float *y)
 float train_network_sgd(network net, data d, int n)
 {
     int batch = net.batch;
-    float* X = (float*)xcalloc(batch * d.X.cols, sizeof(float));
-    float* y = (float*)xcalloc(batch * d.y.cols, sizeof(float));
+    float* X = (float*)xcalloc(batch * d.X.cols, sizeof(float), __FILE__, __LINE__);
+    float* y = (float*)xcalloc(batch * d.y.cols, sizeof(float), __FILE__, __LINE__);
 
     int i;
     float sum = 0;
@@ -409,8 +409,8 @@ float train_network_waitkey(network net, data d, int wait_key)
     assert(d.X.rows % net.batch == 0);
     int batch = net.batch;
     int n = d.X.rows / batch;
-    float* X = (float*)xcalloc(batch * d.X.cols, sizeof(float));
-    float* y = (float*)xcalloc(batch * d.y.cols, sizeof(float));
+    float* X = (float*)xcalloc(batch * d.X.cols, sizeof(float), __FILE__, __LINE__);
+    float* y = (float*)xcalloc(batch * d.y.cols, sizeof(float), __FILE__, __LINE__);
 
     int i;
     float sum = 0;
@@ -529,7 +529,7 @@ int recalculate_workspace_size(network *net)
     }
 #else
     free(net->workspace);
-    net->workspace = (float*)xcalloc(1, workspace_size);
+    net->workspace = (float*)xcalloc(1, workspace_size, __FILE__, __LINE__);
 #endif
     //fprintf(stderr, " Done!\n");
     return 0;
@@ -639,7 +639,7 @@ int resize_network(network *net, int w, int h)
             resize_cost_layer(&l, inputs);
         }else{
             fprintf(stderr, "Resizing type %d \n", (int)l.type);
-            error("Cannot resize this type of layer");
+            error("Cannot resize this type of layer", __FILE__, __LINE__);
         }
         if(l.workspace_size > workspace_size) workspace_size = l.workspace_size;
         inputs = l.outputs;
@@ -673,7 +673,7 @@ int resize_network(network *net, int w, int h)
     }
 #else
     free(net->workspace);
-    net->workspace = (float*)xcalloc(1, workspace_size);
+    net->workspace = (float*)xcalloc(1, workspace_size, __FILE__, __LINE__);
 #endif
     //fprintf(stderr, " Done!\n");
     return 0;
@@ -825,17 +825,17 @@ detection *make_network_boxes(network *net, float thresh, int *num)
 
     int nboxes = num_detections(net, thresh);
     if (num) *num = nboxes;
-    detection* dets = (detection*)xcalloc(nboxes, sizeof(detection));
+    detection* dets = (detection*)xcalloc(nboxes, sizeof(detection), __FILE__, __LINE__);
     for (i = 0; i < nboxes; ++i) {
-        dets[i].prob = (float*)xcalloc(l.classes, sizeof(float));
+        dets[i].prob = (float*)xcalloc(l.classes, sizeof(float), __FILE__, __LINE__);
         // tx,ty,tw,th uncertainty
-        if(l.type == GAUSSIAN_YOLO) dets[i].uc = (float*)xcalloc(4, sizeof(float)); // Gaussian_YOLOv3
+        if(l.type == GAUSSIAN_YOLO) dets[i].uc = (float*)xcalloc(4, sizeof(float), __FILE__, __LINE__); // Gaussian_YOLOv3
         else dets[i].uc = NULL;
 
-        if (l.coords > 4) dets[i].mask = (float*)xcalloc(l.coords - 4, sizeof(float));
+        if (l.coords > 4) dets[i].mask = (float*)xcalloc(l.coords - 4, sizeof(float), __FILE__, __LINE__);
         else dets[i].mask = NULL;
 
-        if(l.embedding_output) dets[i].embeddings = (float*)xcalloc(l.embedding_size, sizeof(float));
+        if(l.embedding_output) dets[i].embeddings = (float*)xcalloc(l.embedding_size, sizeof(float), __FILE__, __LINE__);
         else dets[i].embeddings = NULL;
         dets[i].embedding_size = l.embedding_size;
     }
@@ -861,13 +861,13 @@ detection *make_network_boxes_batch(network *net, float thresh, int *num, int ba
     for (i = 0; i < nboxes; ++i) {
         dets[i].prob = (float*)calloc(l.classes, sizeof(float));
         // tx,ty,tw,th uncertainty
-        if (l.type == GAUSSIAN_YOLO) dets[i].uc = (float*)xcalloc(4, sizeof(float)); // Gaussian_YOLOv3
+        if (l.type == GAUSSIAN_YOLO) dets[i].uc = (float*)xcalloc(4, sizeof(float), __FILE__, __LINE__); // Gaussian_YOLOv3
         else dets[i].uc = NULL;
 
-        if (l.coords > 4) dets[i].mask = (float*)xcalloc(l.coords - 4, sizeof(float));
+        if (l.coords > 4) dets[i].mask = (float*)xcalloc(l.coords - 4, sizeof(float), __FILE__, __LINE__);
         else dets[i].mask = NULL;
 
-        if (l.embedding_output) dets[i].embeddings = (float*)xcalloc(l.embedding_size, sizeof(float));
+        if (l.embedding_output) dets[i].embeddings = (float*)xcalloc(l.embedding_size, sizeof(float), __FILE__, __LINE__);
         else dets[i].embeddings = NULL;
         dets[i].embedding_size = l.embedding_size;
     }
@@ -876,10 +876,10 @@ detection *make_network_boxes_batch(network *net, float thresh, int *num, int ba
 
 void custom_get_region_detections(layer l, int w, int h, int net_w, int net_h, float thresh, int *map, float hier, int relative, detection *dets, int letter)
 {
-    box* boxes = (box*)xcalloc(l.w * l.h * l.n, sizeof(box));
-    float** probs = (float**)xcalloc(l.w * l.h * l.n, sizeof(float*));
+    box* boxes = (box*)xcalloc(l.w * l.h * l.n, sizeof(box), __FILE__, __LINE__);
+    float** probs = (float**)xcalloc(l.w * l.h * l.n, sizeof(float*), __FILE__, __LINE__);
     int i, j;
-    for (j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float*)xcalloc(l.classes, sizeof(float));
+    for (j = 0; j < l.w*l.h*l.n; ++j) probs[j] = (float*)xcalloc(l.classes, sizeof(float), __FILE__, __LINE__);
     get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, map);
     for (j = 0; j < l.w*l.h*l.n; ++j) {
         dets[j].classes = l.classes;
@@ -1098,7 +1098,7 @@ matrix network_predict_data_multi(network net, data test, int n)
     int i,j,b,m;
     int k = get_network_output_size(net);
     matrix pred = make_matrix(test.X.rows, k);
-    float* X = (float*)xcalloc(net.batch * test.X.rows, sizeof(float));
+    float* X = (float*)xcalloc(net.batch * test.X.rows, sizeof(float), __FILE__, __LINE__);
     for(i = 0; i < test.X.rows; i += net.batch){
         for(b = 0; b < net.batch; ++b){
             if(i+b == test.X.rows) break;
@@ -1123,7 +1123,7 @@ matrix network_predict_data(network net, data test)
     int i,j,b;
     int k = get_network_output_size(net);
     matrix pred = make_matrix(test.X.rows, k);
-    float* X = (float*)xcalloc(net.batch * test.X.cols, sizeof(float));
+    float* X = (float*)xcalloc(net.batch * test.X.cols, sizeof(float), __FILE__, __LINE__);
     for(i = 0; i < test.X.rows; i += net.batch){
         for(b = 0; b < net.batch; ++b){
             if(i+b == test.X.rows) break;

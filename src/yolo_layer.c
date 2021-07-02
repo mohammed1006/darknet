@@ -29,28 +29,28 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
     l.out_h = l.h;
     l.out_c = l.c;
     l.classes = classes;
-    l.cost = (float*)xcalloc(1, sizeof(float));
-    l.biases = (float*)xcalloc(total * 2, sizeof(float));
+    l.cost = (float*)xcalloc(1, sizeof(float), __FILE__, __LINE__);
+    l.biases = (float*)xcalloc(total * 2, sizeof(float), __FILE__, __LINE__);
     if(mask) l.mask = mask;
     else{
-        l.mask = (int*)xcalloc(n, sizeof(int));
+        l.mask = (int*)xcalloc(n, sizeof(int), __FILE__, __LINE__);
         for(i = 0; i < n; ++i){
             l.mask[i] = i;
         }
     }
-    l.bias_updates = (float*)xcalloc(n * 2, sizeof(float));
+    l.bias_updates = (float*)xcalloc(n * 2, sizeof(float), __FILE__, __LINE__);
     l.outputs = h*w*n*(classes + 4 + 1);
     l.inputs = l.outputs;
     l.max_boxes = max_boxes;
     l.truth_size = 4 + 2;
     l.truths = l.max_boxes*l.truth_size;    // 90*(4 + 1);
-    l.labels = (int*)xcalloc(batch * l.w*l.h*l.n, sizeof(int));
+    l.labels = (int*)xcalloc(batch * l.w*l.h*l.n, sizeof(int), __FILE__, __LINE__);
     for (i = 0; i < batch * l.w*l.h*l.n; ++i) l.labels[i] = -1;
-    l.class_ids = (int*)xcalloc(batch * l.w*l.h*l.n, sizeof(int));
+    l.class_ids = (int*)xcalloc(batch * l.w*l.h*l.n, sizeof(int), __FILE__, __LINE__);
     for (i = 0; i < batch * l.w*l.h*l.n; ++i) l.class_ids[i] = -1;
 
-    l.delta = (float*)xcalloc(batch * l.outputs, sizeof(float));
-    l.output = (float*)xcalloc(batch * l.outputs, sizeof(float));
+    l.delta = (float*)xcalloc(batch * l.outputs, sizeof(float), __FILE__, __LINE__);
+    l.output = (float*)xcalloc(batch * l.outputs, sizeof(float), __FILE__, __LINE__);
     for(i = 0; i < total*2; ++i){
         l.biases[i] = .5;
     }
@@ -93,12 +93,12 @@ void resize_yolo_layer(layer *l, int w, int h)
     l->outputs = h*w*l->n*(l->classes + 4 + 1);
     l->inputs = l->outputs;
 
-    if (l->embedding_output) l->embedding_output = (float*)xrealloc(l->output, l->batch * l->embedding_size * l->n * l->h * l->w * sizeof(float));
-    if (l->labels) l->labels = (int*)xrealloc(l->labels, l->batch * l->n * l->h * l->w * sizeof(int));
-    if (l->class_ids) l->class_ids = (int*)xrealloc(l->class_ids, l->batch * l->n * l->h * l->w * sizeof(int));
+    if (l->embedding_output) l->embedding_output = (float*)xrealloc(l->output, l->batch * l->embedding_size * l->n * l->h * l->w * sizeof(float), __FILE__, __LINE__);
+    if (l->labels) l->labels = (int*)xrealloc(l->labels, l->batch * l->n * l->h * l->w * sizeof(int), __FILE__, __LINE__);
+    if (l->class_ids) l->class_ids = (int*)xrealloc(l->class_ids, l->batch * l->n * l->h * l->w * sizeof(int), __FILE__, __LINE__);
 
-    if (!l->output_pinned) l->output = (float*)xrealloc(l->output, l->batch*l->outputs * sizeof(float));
-    if (!l->delta_pinned) l->delta = (float*)xrealloc(l->delta, l->batch*l->outputs*sizeof(float));
+    if (!l->output_pinned) l->output = (float*)xrealloc(l->output, l->batch*l->outputs * sizeof(float), __FILE__, __LINE__);
+    if (!l->delta_pinned) l->delta = (float*)xrealloc(l->delta, l->batch*l->outputs*sizeof(float), __FILE__, __LINE__);
 
 #ifdef GPU
     if (l->output_pinned) {
@@ -713,7 +713,7 @@ void forward_yolo_layer(const layer l, network_state state)
     int num_threads = l.batch;
     pthread_t* threads = (pthread_t*)calloc(num_threads, sizeof(pthread_t));
 
-    struct train_yolo_args* yolo_args = (train_yolo_args*)xcalloc(l.batch, sizeof(struct train_yolo_args));
+    struct train_yolo_args* yolo_args = (train_yolo_args*)xcalloc(l.batch, sizeof(struct train_yolo_args), __FILE__, __LINE__);
 
     for (b = 0; b < l.batch; b++)
     {
@@ -727,7 +727,7 @@ void forward_yolo_layer(const layer l, network_state state)
         yolo_args[b].count = 0;
         yolo_args[b].class_count = 0;
 
-        if (pthread_create(&threads[b], 0, process_batch, &(yolo_args[b]))) error("Thread creation failed");
+        if (pthread_create(&threads[b], 0, process_batch, &(yolo_args[b]))) error("Thread creation failed", __FILE__, __LINE__);
     }
 
     for (b = 0; b < l.batch; b++)

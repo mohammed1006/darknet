@@ -43,8 +43,8 @@ layer make_shortcut_layer(int batch, int n, int *input_layers, int* input_sizes,
     l.index = l.input_layers[0];
 
 
-    if (train) l.delta = (float*)xcalloc(l.outputs * batch, sizeof(float));
-    l.output = (float*)xcalloc(l.outputs * batch, sizeof(float));
+    if (train) l.delta = (float*)xcalloc(l.outputs * batch, sizeof(float), __FILE__, __LINE__);
+    l.output = (float*)xcalloc(l.outputs * batch, sizeof(float), __FILE__, __LINE__);
 
     l.nweights = 0;
     if (l.weights_type == PER_FEATURE) l.nweights = (l.n + 1);
@@ -99,8 +99,8 @@ void resize_shortcut_layer(layer *l, int w, int h, network *net)
     l->h = l->out_h = h;
     l->outputs = w*h*l->out_c;
     l->inputs = l->outputs;
-    if (l->train) l->delta = (float*)xrealloc(l->delta, l->outputs * l->batch * sizeof(float));
-    l->output = (float*)xrealloc(l->output, l->outputs * l->batch * sizeof(float));
+    if (l->train) l->delta = (float*)xrealloc(l->delta, l->outputs * l->batch * sizeof(float), __FILE__, __LINE__);
+    l->output = (float*)xrealloc(l->output, l->outputs * l->batch * sizeof(float), __FILE__, __LINE__);
 
     int i;
     for (i = 0; i < l->n; ++i) {

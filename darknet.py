@@ -3,10 +3,9 @@
 """
 Python 3 wrapper for identifying objects in images
 
+Running the script requires opencv-python to be installed (`pip install opencv-python`)
 Directly viewing or returning bounding-boxed images requires scikit-image to be installed (`pip install scikit-image`)
-
-@author: Philip Kahn
-@date: 20180503
+Use pip3 instead of pip on some systems to be sure to install modules for python3
 """
 
 from ctypes import *
@@ -168,8 +167,7 @@ def detect_image(network, class_names, image, thresh=.5, hier_thresh=.5, nms=.45
 
 if os.name == "posix":
     cwd = os.path.dirname(__file__)
-    os.environ['PATH'] = cwd + ':' + os.environ['PATH']
-    lib = CDLL("libdarknet.so", RTLD_GLOBAL)
+    lib = CDLL(cwd + "/libdarknet.so", RTLD_GLOBAL)
 elif os.name == "nt":
     cwd = os.path.dirname(__file__)
     os.environ['PATH'] = cwd + ';' + os.environ['PATH']

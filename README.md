@@ -65,6 +65,7 @@ About Darknet framework: http://pjreddie.com/darknet/
   - [How to improve object detection](#how-to-improve-object-detection)
   - [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
   - [How to use Yolo as a library](#how-to-use-yolo-as-a-library)
+  - [Citation](#citation)
 
 ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png)
 
@@ -144,13 +145,19 @@ There are weights-file for different cfg-files (trained for MS COCO dataset):
 
 FPS on RTX 2070 (R) and Tesla V100 (V):
 
-- [yolov4x-mish.cfg](https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov4x-mish.cfg) - 640x640 - **67.9% mAP@0.5 (49.4% AP@0.5:0.95) - 23(R) FPS / 50(V) FPS** - 221 BFlops (110 FMA) - 381 MB: [yolov4x-mish.weights](https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4x-mish.weights)
+- [yolov4-p6.cfg](https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov4-p6.cfg) - 1280x1280 - **72.1% mAP@0.5 (54.0% AP@0.5:0.95) - 32(V) FPS** - xxx BFlops (xxx FMA) - 487 MB: [yolov4-p6.weights](https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-p6.weights)
+  - pre-trained weights for training: https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-p6.conv.289
+
+- [yolov4-p5.cfg](https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov4-p5.cfg) - 896x896 - **70.0% mAP@0.5 (51.6% AP@0.5:0.95) - 43(V) FPS** - xxx BFlops (xxx FMA) - 271 MB: [yolov4-p5.weights](https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-p5.weights)
+  - pre-trained weights for training: https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-p5.conv.232
+
+- [yolov4x-mish.cfg](https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov4x-mish.cfg) - 640x640 - **68.5% mAP@0.5 (50.1% AP@0.5:0.95) - 23(R) FPS / 50(V) FPS** - 221 BFlops (110 FMA) - 381 MB: [yolov4x-mish.weights](https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4x-mish.weights)
   - pre-trained weights for training: https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4x-mish.conv.166
 
 - [yolov4-csp.cfg](https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov4-csp.cfg) - 202 MB: [yolov4-csp.weights](https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-csp.weights) paper [Scaled Yolo v4](https://arxiv.org/abs/2011.08036)
 
     just change `width=` and `height=` parameters in `yolov4-csp.cfg` file and use the same `yolov4-csp.weights` file for all cases:
-  - `width=640 height=640` in cfg: **66.2% mAP@0.5 (47.5% AP@0.5:0.95) - 70(V) FPS** - 120 (60 FMA) BFlops
+  - `width=640 height=640` in cfg: **67.4% mAP@0.5 (48.7% AP@0.5:0.95) - 70(V) FPS** - 120 (60 FMA) BFlops
   - `width=512 height=512` in cfg: **64.8% mAP@0.5 (46.2% AP@0.5:0.95) - 93(V) FPS** - 77 (39 FMA) BFlops
   - pre-trained weights for training: https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-csp.conv.142
 
@@ -219,7 +226,7 @@ You can get cfg-files by path: `darknet/cfg/`
   - [maudzung/3D-YOLOv4](https://github.com/maudzung/Complex-YOLOv4-Pytorch)
   - [Tianxiaomo/pytorch-YOLOv4](https://github.com/Tianxiaomo/pytorch-YOLOv4)
   - [YOLOv5](https://github.com/ultralytics/yolov5)
-- **ONNX** on Jetson for YOLOv4: https://developer.nvidia.com/blog/announcing-onnx-runtime-for-jetson/
+- **ONNX** on Jetson for YOLOv4: https://developer.nvidia.com/blog/announcing-onnx-runtime-for-jetson/ and https://github.com/ttanzhiqiang/onnx_tensorrt_project
 - **nVidia Transfer Learning Toolkit (TLT>=3.0)** Training and Detection https://docs.nvidia.com/metropolis/TLT/tlt-user-guide/text/object_detection/yolo_v4.html
 - **TensorRT+tkDNN**: https://github.com/ceccocats/tkDNN#fps-results
 - **Deepstream 5.0 / TensorRT for YOLOv4** https://github.com/NVIDIA-AI-IOT/yolov4_deepstream or https://github.com/marcoslucianops/DeepStream-Yolo read [Yolo is natively supported in DeepStream 4.0](https://news.developer.nvidia.com/deepstream-sdk-4-now-available/) and [PDF](https://docs.nvidia.com/metropolis/deepstream/Custom_YOLO_Model_in_the_DeepStream_YOLO_App.pdf). Additionally [jkjung-avt/tensorrt_demos](https://github.com/jkjung-avt/tensorrt_demos) or [wang-xinyu/tensorrtx](https://github.com/wang-xinyu/tensorrtx)
@@ -719,4 +726,28 @@ public:
         std::shared_ptr<image_t> mat_to_image_resize(cv::Mat mat) const;
 #endif
 };
+```
+
+## Citation
+
+```bibtex
+@misc{bochkovskiy2020yolov4,
+      title={YOLOv4: Optimal Speed and Accuracy of Object Detection}, 
+      author={Alexey Bochkovskiy and Chien-Yao Wang and Hong-Yuan Mark Liao},
+      year={2020},
+      eprint={2004.10934},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
+```
+
+```bibtex
+@InProceedings{Wang_2021_CVPR,
+    author    = {Wang, Chien-Yao and Bochkovskiy, Alexey and Liao, Hong-Yuan Mark},
+    title     = {{Scaled-YOLOv4}: Scaling Cross Stage Partial Network},
+    booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+    month     = {June},
+    year      = {2021},
+    pages     = {13029-13038}
+}
 ```

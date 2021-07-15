@@ -286,7 +286,7 @@ int main(int argc, char *argv[])
 
     float const thresh = (argc > 5) ? std::stof(argv[5]) : 0.2;
 
-    Detector detector(cfg_file, weights_file, 1);
+    Detector detector(cfg_file, weights_file);
 
     auto obj_names = objects_names_from_file(names_file);
     std::string out_videofile = "result.avi";

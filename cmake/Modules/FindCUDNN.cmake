@@ -26,10 +26,10 @@
 include(FindPackageHandleStandardArgs)
 
 find_path(CUDNN_INCLUDE_DIR NAMES cudnn.h cudnn_v8.h cudnn_v7.h
-  HINTS $ENV{CUDA_PATH} $ENV{CUDA_TOOLKIT_ROOT_DIR} $ENV{cudnn} $ENV{CUDNN} $ENV{CUDNN_ROOT_DIR} /usr/include
+  HINTS $ENV{CUDA_PATH} $ENV{CUDA_TOOLKIT_ROOT_DIR} $ENV{CUDA_HOME} $ENV{CUDNN_ROOT_DIR} /usr/include
   PATH_SUFFIXES cuda/include include)
 find_library(CUDNN_LIBRARY NAMES cudnn cudnn8 cudnn7
-  HINTS $ENV{CUDA_PATH} $ENV{CUDA_TOOLKIT_ROOT_DIR} $ENV{cudnn} $ENV{CUDNN} $ENV{CUDNN_ROOT_DIR} /usr/lib/x86_64-linux-gnu/
+  HINTS $ENV{CUDA_PATH} $ENV{CUDA_TOOLKIT_ROOT_DIR} $ENV{CUDA_HOME} $ENV{CUDNN_ROOT_DIR} /usr/lib/x86_64-linux-gnu/
   PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 lib/x64 cuda/lib/x64)
 if(EXISTS "${CUDNN_INCLUDE_DIR}/cudnn.h")
   file(READ ${CUDNN_INCLUDE_DIR}/cudnn.h CUDNN_HEADER_CONTENTS)
@@ -65,9 +65,9 @@ if(CUDNN_HEADER_CONTENTS)
   string(REGEX REPLACE "define CUDNN_PATCHLEVEL * +([0-9]+)" "\\1"
                _CUDNN_VERSION_PATCH "${_CUDNN_VERSION_PATCH}")
   if(NOT _CUDNN_VERSION_MAJOR)
-    set(_CUDNN_VERSION "?")
+    set(CUDNN_VERSION "?")
   else()
-    set(_CUDNN_VERSION "${_CUDNN_VERSION_MAJOR}.${_CUDNN_VERSION_MINOR}.${_CUDNN_VERSION_PATCH}")
+    set(CUDNN_VERSION "${_CUDNN_VERSION_MAJOR}.${_CUDNN_VERSION_MINOR}.${_CUDNN_VERSION_PATCH}")
   endif()
 endif()
 

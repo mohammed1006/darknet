@@ -391,7 +391,7 @@ float train_network_datum_gpu(network net, float *x, float *y)
         printf("\n adversarial training, adversarial_lr = %f \n", net.adversarial_lr * scale);
 
         //forward_backward_network_gpu(net, x, truth_cpu);
-        //forward_backward_network_gpu(net, x, y);
+        forward_backward_network_gpu(net, x, y);
 
         int b;
         for (b = 0; b < net.batch; ++b) {

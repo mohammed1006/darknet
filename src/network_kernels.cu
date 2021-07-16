@@ -377,7 +377,8 @@ float train_network_datum_gpu(network net, float *x, float *y)
         //scale = sin(scale * M_PI);
         net.learning_rate = net.adversarial_lr * scale;
         layer l = net.layers[net.n - 1];
-        /* This paragraph is overlapping with the following  forward_backward_network_gpu(net, x, truth_cpu) function content.
+
+        /* This paragraph is redundant with the following  forward_backward_network_gpu(net, x, truth_cpu) function content.
         int y_size = get_network_output_size(net)*net.batch;
         if (net.layers[net.n - 1].truths) y_size = net.layers[net.n - 1].truths*net.batch;
         */
@@ -389,7 +390,8 @@ float train_network_datum_gpu(network net, float *x, float *y)
 
         printf("\n adversarial training, adversarial_lr = %f \n", net.adversarial_lr * scale);
 
-        forward_backward_network_gpu(net, x, truth_cpu);
+        //forward_backward_network_gpu(net, x, truth_cpu);
+        //forward_backward_network_gpu(net, x, y);
 
         int b;
         for (b = 0; b < net.batch; ++b) {

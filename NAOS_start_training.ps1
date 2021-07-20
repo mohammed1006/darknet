@@ -34,10 +34,10 @@ if ($Env:OS -match "Windows"){
 	$darknetExe = ".\darknet.exe"
 	if(-Not $isWindows){ $isWindows = 1 } # older versions of powershell do not have this variable!
 } elseif ($isLinux) {
-	$darknetExe = "darknet"
+	$darknetExe = "./darknet"
 	# isWindows is already set!
 } else { # assume it is Linux, but an old version of powershell!
-	$darknetExe = "darknet"
+	$darknetExe = "./darknet"
 	$isWindows = 0
 }
 

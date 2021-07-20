@@ -289,10 +289,8 @@ LIB_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool use
 
     image sized;
 
-    if (net.w == im.w && net.h == im.h) {
-        sized = make_image(im.w, im.h, im.c);
-        memcpy(sized.data, im.data, im.w*im.h*im.c * sizeof(float));
-    }
+    if (net.w == im.w && net.h == im.h)
+        memcpy(&sized, &im, sizeof(image));
     else
         sized = resize_image(im, net.w, net.h);
 
@@ -344,7 +342,7 @@ LIB_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool use
     }
 
     free_detections(dets, nboxes);
-    if(sized.data)
+    if ((net.w != im.w || net.h != im.h) && sized.data)
         free(sized.data);
 
 #ifdef GPU

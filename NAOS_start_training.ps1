@@ -6,6 +6,8 @@ param (
 	[switch]$onlyPrint = $False
 )
 
+# Example call: ./NAOS_start_training.ps1 -version "vL.56/APall" -yolovers "yolov4" -aug "noAHE"
+
 # if version contains folders e.g. vL.1s/AP26to35 then the / or \ should be replaced by _ <underscore>
 $v = $version -replace "\\","_"
 $v = $v -replace "/","_"

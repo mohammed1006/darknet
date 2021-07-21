@@ -20,13 +20,13 @@ if (-Not (Test-Path "./backup/NAOS/$version/$yolovers/$aug/" -PathType Container
 
 # check if we are on windows or Linux. If Linux we assume a headless system!
 if ($Env:OS -match "Windows"){
-	$darknetExe = "darknet.exe"
+	$darknetExe = "./darknet.exe"
 	$isWindows = 1
 } elseif ($isLinux) {
-	$darknetExe = "darknet"
+	$darknetExe = "./darknet"
 	# isWindows is already set!
 } else { # assume it is Linux, but an old version of powershell!
-	$darknetExe = "darknet"
+	$darknetExe = "./darknet"
 	$isWindows = 0
 }
 

@@ -576,7 +576,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
         for (j = 0; j < l.groups; ++j) {
             //float *im = state.input + i*l.c*l.h*l.w;
             float *im = state.input + (i*l.groups + j)*l.c / l.groups*l.h*l.w;
-            float *a = l.weights_gpu + j*l.nweights / l.groups;
+            float *a = l.weights_gpu + j*l.nweights ;  // l.nweights is already initialized divided by l.groups as l.nweights = (c / groups) * n * size * size in convolutional_layer.c.
             float *b = state.workspace;
             float *c = l.output_gpu + (i*l.groups + j)*n*m;
             if (l.size == 1 && l.stride == 1 && l.dilation == 1) {

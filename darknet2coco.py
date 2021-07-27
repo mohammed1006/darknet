@@ -1,4 +1,3 @@
-
 import numpy as np
 import darknet
 from darknet_images import (image_detection, load_images)
@@ -7,7 +6,6 @@ import os
 import imagesize
 import json
 from argparse import ArgumentParser
-
 
 def main():
 
@@ -40,7 +38,6 @@ def main():
                 cats.append(cat_dict)
             
         return cats
-
 
     def get_data(detections, cats):
         class_id_list = []
@@ -114,5 +111,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-

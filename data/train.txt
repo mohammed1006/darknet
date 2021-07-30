@@ -1,0 +1,6 @@
+data/dog.jpg
+data/horses.jpg
+data/giraffe.jpg
+data/scream.jpg
+data/person.jpg
+data/eagle.jpg

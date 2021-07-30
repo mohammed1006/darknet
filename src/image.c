@@ -65,6 +65,20 @@ static void add_pixel(image m, int x, int y, int c, float val)
     m.data[c*m.h*m.w + y*m.w + x] += val;
 }
 
+
+// Get object distance in inches acc. formula from Paul Pias Github
+// Inputs: Bounding box bbox, image im
+// Output: Float representing object distance to camera, in inches.
+static float get_distance_p_pias(image im, box bbox) {
+
+    float w = bbox.w * im.w;
+    float h = bbox.h * im.h;
+
+    float distance = (2 * 3.14 * 180) / (w + h * 360) * 1000 + 3;
+
+    return distance;
+}
+
 void composite_image(image source, image dest, int dx, int dy)
 {
     int x,y,k;
@@ -341,10 +355,11 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
         const int best_class = selected_detections[i].best_class;
         printf("%s: %.0f%%", names[best_class],    selected_detections[i].det.prob[best_class] * 100);
         if (ext_output)
-            printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f)\n",
+            printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f   distance (m): %0.4f)\n",
                 round((selected_detections[i].det.bbox.x - selected_detections[i].det.bbox.w / 2)*im.w),
                 round((selected_detections[i].det.bbox.y - selected_detections[i].det.bbox.h / 2)*im.h),
-                round(selected_detections[i].det.bbox.w*im.w), round(selected_detections[i].det.bbox.h*im.h));
+                round(selected_detections[i].det.bbox.w*im.w), round(selected_detections[i].det.bbox.h*im.h),
+                get_distance_p_pias(im, selected_detections[i].det.bbox)*0.0254);
         else
             printf("\n");
         int j;
@@ -353,10 +368,11 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
                 printf("%s: %.0f%%", names[j], selected_detections[i].det.prob[j] * 100);
 
                 if (ext_output)
-                    printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f)\n",
+                    printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f   distance(m): %0.4f)\n",
                         round((selected_detections[i].det.bbox.x - selected_detections[i].det.bbox.w / 2)*im.w),
                         round((selected_detections[i].det.bbox.y - selected_detections[i].det.bbox.h / 2)*im.h),
-                        round(selected_detections[i].det.bbox.w*im.w), round(selected_detections[i].det.bbox.h*im.h));
+                        round(selected_detections[i].det.bbox.w*im.w), round(selected_detections[i].det.bbox.h*im.h),
+                        get_distance_p_pias(im, selected_detections[i].det.bbox)*0.0254);
                 else
                     printf("\n");
             }
@@ -448,6 +464,15 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
                 //draw_label(im, top + width, left, label, rgb);
                 draw_weighted_label(im, top + width, left, label, rgb, 0.7);
                 free_image(label);
+
+                // Display object distance
+                char distance[8];
+                sprintf(distance, "%0.4f", get_distance_p_pias(im, b)*0.0254);
+                strcat(distance, "m");
+                image distance_label = get_label_v3(alphabet, distance, (im.h*0.02));
+                draw_weighted_label(im, bot + width, left, distance_label, rgb, 0.7);
+                free_image(distance_label);
+
             }
             if (selected_detections[i].det.mask) {
                 image mask = float_to_image(14, 14, 1, selected_detections[i].det.mask);

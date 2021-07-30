@@ -895,6 +895,25 @@ extern "C" void save_cv_jpg(mat_cv *img_src, const char *name)
 // ====================================================================
 // Draw Detection
 // ====================================================================
+
+
+// Distance helper functions
+
+
+// Get object distance in inches acc. formula from Paul Pias Github
+// Inputs: Bounding box bbox, image im
+// Output: Float representing object distance to camera, in inches.
+static float get_distance_p_pias(const cv::Mat *im, box bbox) {
+
+    float w = bbox.w * im->cols;
+    float h = bbox.h * im->rows;
+
+    float distance = (2 * 3.14 * 180) / (w + h * 360) * 1000 + 3;
+
+    return distance;
+}
+
+
 extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output)
 {
     try {
@@ -1013,10 +1032,13 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
                 //cvSaveImage(image_name, copy_img, 0);
                 //cvResetImageROI(copy_img);
 
+
+                float obj_distance = get_distance_p_pias(show_img, b) * 0.0254; //distance in meters
+
                 cv::rectangle(*show_img, pt1, pt2, color, width, 8, 0);
                 if (ext_output)
-                    printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f)\n",
-                    (float)left, (float)top, b.w*show_img->cols, b.h*show_img->rows);
+                    printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f   distance(m): %0.4f)\n",
+                    (float)left, (float)top, b.w*show_img->cols, b.h*show_img->rows, obj_distance);
                 else
                     printf("\n");
 
@@ -1025,6 +1047,23 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
                 cv::Scalar black_color = CV_RGB(0, 0, 0);
                 cv::putText(*show_img, labelstr, pt_text, cv::FONT_HERSHEY_COMPLEX_SMALL, font_size, black_color, 2 * font_size, CV_AA);
                 // cv::FONT_HERSHEY_COMPLEX_SMALL, cv::FONT_HERSHEY_SIMPLEX
+
+
+                // Display object distance
+                char distance[8];
+                sprintf(distance, "%0.4f", obj_distance);
+                strcat(distance, "m");
+
+                cv::Point distance_text, distance_text_bg1, distance_text_bg2;
+                distance_text.x = left;
+                distance_text.y = bot;
+                distance_text_bg1.x = left;
+                distance_text_bg1.y = bot - (3 + 18 * font_size);
+                distance_text_bg2.x = right;
+                distance_text_bg2.y = bot;
+                cv::rectangle(*show_img, distance_text_bg1, distance_text_bg2, color, width, 8, 0);
+                cv::rectangle(*show_img, distance_text_bg1, distance_text_bg2, color, CV_FILLED, 8, 0);    // filled
+                cv::putText(*show_img, distance, distance_text, cv::FONT_HERSHEY_COMPLEX_SMALL, font_size, black_color, 2 * font_size, CV_AA);
             }
         }
         if (ext_output) {

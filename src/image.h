@@ -77,6 +77,9 @@ void show_image_collapsed(image p, char *name);
 
 void print_image(image m);
 
+// Distance calculation
+float get_distance_p_pias(const image im, const box bbox); // object distance in inches; formula from Paul Pias Github
+
 //LIB_API image make_image(int w, int h, int c);
 image make_random_image(int w, int h, int c);
 image make_empty_image(int w, int h, int c);

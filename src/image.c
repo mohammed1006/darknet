@@ -65,20 +65,6 @@ static void add_pixel(image m, int x, int y, int c, float val)
     m.data[c*m.h*m.w + y*m.w + x] += val;
 }
 
-
-// Get object distance in inches acc. formula from Paul Pias Github
-// Inputs: Bounding box bbox, image im
-// Output: Float representing object distance to camera, in inches.
-static float get_distance_p_pias(image im, box bbox) {
-
-    float w = bbox.w * im.w;
-    float h = bbox.h * im.h;
-
-    float distance = (2 * 3.14 * 180) / (w + h * 360) * 1000 + 3;
-
-    return distance;
-}
-
 void composite_image(image source, image dest, int dx, int dy)
 {
     int x,y,k;
@@ -1605,6 +1591,16 @@ void print_image(image m)
         printf("\n");
     }
     printf("\n");
+}
+
+float get_distance_p_pias(const image im, const box bbox) {
+
+    float w = bbox.w * im.w;
+    float h = bbox.h * im.h;
+
+    float distance = (2 * 3.14 * 180) / (w + h * 360) * 1000 + 3;
+
+    return distance;
 }
 
 image collapse_images_vert(image *ims, int n)

@@ -897,9 +897,6 @@ extern "C" void save_cv_jpg(mat_cv *img_src, const char *name)
 // ====================================================================
 
 
-// Distance helper functions
-
-
 // Get object distance in inches acc. formula from Paul Pias Github
 // Inputs: Bounding box bbox, image im
 // Output: Float representing object distance to camera, in inches.
@@ -912,7 +909,6 @@ static float get_distance_p_pias(const cv::Mat *im, box bbox) {
 
     return distance;
 }
-
 
 extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output)
 {
@@ -1033,7 +1029,7 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
                 //cvResetImageROI(copy_img);
 
 
-                float obj_distance = get_distance_p_pias(show_img, b) * 0.0254; //distance in meters
+                float obj_distance = get_distance_p_pias(show_img, b) * 0.0254; // object distance in meters
 
                 cv::rectangle(*show_img, pt1, pt2, color, width, 8, 0);
                 if (ext_output)

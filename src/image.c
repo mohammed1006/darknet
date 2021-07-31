@@ -345,7 +345,7 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
                 round((selected_detections[i].det.bbox.x - selected_detections[i].det.bbox.w / 2)*im.w),
                 round((selected_detections[i].det.bbox.y - selected_detections[i].det.bbox.h / 2)*im.h),
                 round(selected_detections[i].det.bbox.w*im.w), round(selected_detections[i].det.bbox.h*im.h),
-                get_distance_p_pias(im, selected_detections[i].det.bbox)*0.0254);
+                get_distance_aov(im, selected_detections[i].det.bbox, 60.0)*0.0254);
         else
             printf("\n");
         int j;
@@ -358,7 +358,7 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
                         round((selected_detections[i].det.bbox.x - selected_detections[i].det.bbox.w / 2)*im.w),
                         round((selected_detections[i].det.bbox.y - selected_detections[i].det.bbox.h / 2)*im.h),
                         round(selected_detections[i].det.bbox.w*im.w), round(selected_detections[i].det.bbox.h*im.h),
-                        get_distance_p_pias(im, selected_detections[i].det.bbox)*0.0254);
+                        get_distance_aov(im, selected_detections[i].det.bbox, 60.0)*0.0254);
                 else
                     printf("\n");
             }
@@ -453,7 +453,7 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
 
                 // Display object distance
                 char distance[8];
-                sprintf(distance, "%0.4f", get_distance_p_pias(im, b)*0.0254);
+                sprintf(distance, "%0.4f", get_distance_aov(im, b, 60.0)*0.0254);
                 strcat(distance, "m");
                 image distance_label = get_label_v3(alphabet, distance, (im.h*0.02));
                 draw_weighted_label(im, bot + width, left, distance_label, rgb, 0.7);
@@ -1602,6 +1602,21 @@ float get_distance_p_pias(const image im, const box bbox) {
 
     return distance;
 }
+
+float get_distance_aov(const image im, const box bbox, float aov) {
+
+    //aov expected to be in degrees
+
+    assert(aov >= 0 && aov <= 90);
+
+    aov = aov * (M_PI/180);
+
+    float w = bbox.w * im.w;
+    float distance = w/(2*tan(aov));
+
+    return distance;
+}
+
 
 image collapse_images_vert(image *ims, int n)
 {

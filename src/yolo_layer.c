@@ -137,15 +137,14 @@ box get_yolo_box(float *x, float *biases, int n, int index, int i, int j, int lw
     // y` = t.y * lh - i;   // y = ln(y`/(1-y`))   // y - output of previous conv-layer
     // w = ln(t.w * net.w / anchors_w); // w - output of previous conv-layer
     // h = ln(t.h * net.h / anchors_h); // h - output of previous conv-layer
+    b.x = (i + x[index + 0 * stride]) / lw;
+    b.y = (j + x[index + 1 * stride]) / lh;
+    
     if (new_coords) {
-        b.x = (i + x[index + 0 * stride]) / lw;
-        b.y = (j + x[index + 1 * stride]) / lh;
         b.w = x[index + 2 * stride] * x[index + 2 * stride] * 4 * biases[2 * n] / w;
         b.h = x[index + 3 * stride] * x[index + 3 * stride] * 4 * biases[2 * n + 1] / h;
     }
     else {
-        b.x = (i + x[index + 0 * stride]) / lw;
-        b.y = (j + x[index + 1 * stride]) / lh;
         b.w = exp(x[index + 2 * stride]) * biases[2 * n] / w;
         b.h = exp(x[index + 3 * stride]) * biases[2 * n + 1] / h;
     }

@@ -897,31 +897,267 @@ extern "C" void save_cv_jpg(mat_cv *img_src, const char *name)
 // ====================================================================
 
 
-// Get object distance in inches acc. formula from Paul Pias Github
-// Inputs: Bounding box bbox, image im
-// Output: Float representing object distance to camera, in inches.
-static float get_distance_p_pias(const cv::Mat *im, const box bbox) {
+// Object proximity
+// Inputs: Bounding box and image
+// Output: String indicating how close the object is, determined by lower edge of b
+//         ['Very close', 'Close', 'Normal', 'Far', 'Very far']
 
-    float w = bbox.w * im->cols;
-    float h = bbox.h * im->rows;
+extern "C" std::string ObjectProximity(const box b, const cv::Mat *img) {
 
-    float distance = (2 * 3.14 * 180) / (w + h * 360) * 1000 + 3;
+    /*  |-------------------------------|  */
+    /*  |    Horizon at (0, H/4)        |  */
+    /*  |-------------------------------|  */
+    /*  |           Ranges              |  */
+    /*  |-------------------------------|  */
+    /*  | Very close | [5H/8 - H]       |  */
+    /*  | Close      | [7H/16 - 5H/8)   |  */
+    /*  | Normal     | [11H/32 - 7H/16) |  */
+    /*  | Far        | [19H/64 - 11H/32)|  */
+    /*  | Very far   | [0 - 19H/64)     |  */
+    /*  |-------------------------------|  */
 
-    return distance;
+
+    int bot = (b.y + b.h / 2.)*img->rows;
+    if (bot > img->rows - 1) bot = img->rows - 1;
+
+    float h = (float)img->rows - 1;
+
+    //printf("V close >= %0.4f   close >= %0.4f   normal >= %0.4f   far >= %0.4f\n", 
+    //    5*h/8, 7*h/16, 11*h/32, 19*h/64);
+
+    // Classify
+
+    if (bot >= 5*h/8) {
+
+        return "Very close";
+
+    } else if (bot < 5*h/8 && bot >= 7*h/16) {
+
+        return "Close";
+
+    } else if (bot < 7*h/16 && bot >= 11*h/32) {
+
+        return "Normal";
+
+    } else if (bot < 11*h/32 && bot >= 19*h/64) {
+
+        return "Far";
+
+    } else {
+
+        return "Very far";
+
+    }
+
 }
 
-//object distance in inches; aov formula; aov expected in degrees
-static float get_distance_aov(const cv::Mat *im, const box bbox, float aov=60.0) {
 
-    assert(aov >= 0 && aov <= 90);
+// Object angle
+// Returns angle of the object from center of the bottom edge of image
+// to center of bottom edge of bounding box -- in radians
 
-    aov = aov * (M_PI/180);
+extern "C" float ObjectAngle(const box b, const cv::Mat *img) {
 
-    float w = bbox.w * im->cols;
-    float distance = w/(2*tan(aov));
+    try {
 
-    return distance;
+        int bot = (b.y + b.h/2.)*img->rows;
+        if (bot > img->rows - 1) bot = img->rows - 1;
+
+        float o_d = img->cols/2. - (b.x*img->cols);
+        float o_s = img->rows - 1 - bot;
+        float o_h = sqrt(pow(o_d, 2) + pow(o_s, 2));
+
+        float angle = asin(o_d/o_h); //radians
+
+        return angle;
+
+    }
+
+    catch (...) {
+
+        cerr << "Object Angle exception \n";
+
+    }
+
 }
+
+
+// Threshold angle
+// Given the box, returns the threshold angle (radians)
+// below which the object would be classified as front
+
+extern "C" float ObjectThresholdAngle(const box b, const cv::Mat *img, float cutoff=3.0) {
+
+    try {
+
+        int bot = (b.y + b.h / 2.)*img->rows;
+        if (bot > img->rows - 1) bot = img->rows - 1;
+
+        float o_d = img->cols/2. - (img->cols/cutoff);
+        float o_s = img->rows - 1 - bot;
+        float o_h = sqrt(pow(o_d, 2) + pow(o_s, 2));
+
+        float thresh_angle = asin(o_d/o_h); // radians
+
+        return thresh_angle;
+
+    }
+
+    catch(...) {
+
+        cerr << "Object threshold angle exception \n";
+    }
+
+}
+
+
+// Threshold angle given proximity
+// Given the box and proximity of object, returns the threshold angle (radians)
+// below which the object would be classified as front
+
+extern "C" float ObjectThresholdAngleProximity(const box b, const cv::Mat *img, std::string proximity) {
+
+    try {
+
+        if (strcmp(proximity.c_str(), "Normal") == 0 || strcmp(proximity.c_str(), "Far") == 0 || strcmp(proximity.c_str(), "Very far") == 0) {
+
+            return ObjectThresholdAngle(b, img, 2.4); // (W/3 + W/2)/2
+
+        } else {
+
+            return ObjectThresholdAngle(b, img);
+
+        }
+
+    }
+
+    catch (...) {
+
+        cerr << "Object threshold angle with proximity exception \n";
+
+    }
+
+}
+
+
+// Get object lane position given bounding box, image and proximity
+// Position can be "front", "left", "right"
+extern "C" std::string ObjectLanePosition(const box b, const cv::Mat *img, std::string proximity="")
+{
+
+    float threshold_angle = 0.0;
+
+    if (!proximity.empty()) {
+
+        threshold_angle = ObjectThresholdAngleProximity(b, img, proximity);
+
+    } else {
+
+        threshold_angle = ObjectThresholdAngle(b, img);
+
+    }
+
+    float object_angle = ObjectAngle(b, img);
+
+    //printf("Object angle = %0.4f, Threshold angle = %0.4f, b.x*img->cols/2. = %0.4f, img->cols/2. = %0.4f \n", 
+    //    object_angle, threshold_angle, b.x*img->cols/2., img->cols/2.);
+
+    if (abs(object_angle) < threshold_angle) {
+
+        return "front";
+
+    } else if (object_angle < 0.0 && abs(object_angle) >= threshold_angle) {
+
+        return "right";
+
+    } else {
+
+        return "left";
+
+    }
+
+}
+
+
+/* 
+
+Function for the triangle-method of calculating object lane position
+Triangle T is defined by 3 points p1(W/3, H), p2(2W/3, H), p3(W/2, H/4). p1-p2 is the base.
+
+Using the barycentric coordinate system (http://totologic.blogspot.com/2014/01/accurate-point-in-triangle-test.html), 
+the function determines whether the object is to the left, right or front, based on the location of the center of the 
+lower edge of the bounding box
+
+*/
+
+extern "C" std::string ObjectLanePositionTriangle(const box b, const cv::Mat *img) {
+
+    try {
+
+
+        // Center of bottom edge of the box (b_x, b_y)
+        float b_x = b.x*img->cols;
+        float b_y = (b.y + b.h / 2.)*img->rows;
+        if (b_y > img->rows - 1) b_y = img->rows - 1;
+
+
+        // Triangle vertex coordinates p1(x1, y1), p2(x2, y2) and p3(x3, y3)
+        float x1 = img->cols/3.;
+        float y1 = (float)img->rows;
+
+        float x2 = 2*img->cols/3.;
+        float y2 = (float)img->rows;
+
+        float x3 = img->cols/2.;
+        float y3 = img->rows/4.;
+
+        
+        // Barycentric coordinate system
+        float denominator = (y2 - y3)*(x1 - x3) + (x3 - x2)*(y1 - y3);
+
+        float a = ((y2 - y3)*(b_x - x3) + (x3 - x2)*(b_y - y3)) / denominator;
+        float b = ((y3 - y1)*(b_x - x3) + (x1 - x3)*(b_y - y3)) / denominator;
+        float c = 1. - a - b;
+
+        //printf("a = %0.4f, b = %0.4f, c = %0.4f \n", a, b, c);
+
+        if (0 <= a && a <= 1 && 0 <= b && b <= 1 && 0 <= c && c <= 1) {
+
+            return "front";
+
+        } else {
+
+            if (b_x >= x3) {
+
+                return "right";
+
+            } else {
+
+                return "left";
+
+            }
+
+        }
+
+    }
+
+    catch(...) {
+
+        cerr << "Object Lane Position Triangle Method exception \n";
+
+    }
+
+}
+
+
+bool RelevantObject(const std::string &value) {
+
+    std::vector<std::string> objects {"car", "truck", "pedestrian", "fire engine", "bicycle", "street sign", "bus", "pedestrian crossing"};
+
+    return std::find(objects.begin(), objects.end(), value) != objects.end();
+
+}
+
 
 extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output)
 {
@@ -932,6 +1168,8 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
         static int frame_id = 0;
         frame_id++;
 
+        bool is_relevant = false;
+
         for (i = 0; i < num; ++i) {
             char labelstr[4096] = { 0 };
             int class_id = -1;
@@ -940,6 +1178,7 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
                 if (dets[i].prob[j] > thresh && show) {
                     if (class_id < 0) {
                         strcat(labelstr, names[j]);
+                        is_relevant = RelevantObject(std::string(labelstr)); // check if relevant object
                         class_id = j;
                         char buff[20];
                         if (dets[i].track_id) {
@@ -1042,37 +1281,45 @@ extern "C" void draw_detections_cv_v3(mat_cv* mat, detection *dets, int num, flo
                 //cvResetImageROI(copy_img);
 
 
-                float obj_distance = get_distance_aov(show_img, b) * 0.0254; // object distance in meters
+                // Object proximity and lane position for relevant objects only
 
-                cv::rectangle(*show_img, pt1, pt2, color, width, 8, 0);
-                if (ext_output)
-                    printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f   distance(m): %0.4f)\n",
-                    (float)left, (float)top, b.w*show_img->cols, b.h*show_img->rows, obj_distance);
-                else
-                    printf("\n");
+                if (is_relevant) {
 
-                cv::rectangle(*show_img, pt_text_bg1, pt_text_bg2, color, width, 8, 0);
-                cv::rectangle(*show_img, pt_text_bg1, pt_text_bg2, color, CV_FILLED, 8, 0);    // filled
-                cv::Scalar black_color = CV_RGB(0, 0, 0);
-                cv::putText(*show_img, labelstr, pt_text, cv::FONT_HERSHEY_COMPLEX_SMALL, font_size, black_color, 2 * font_size, CV_AA);
-                // cv::FONT_HERSHEY_COMPLEX_SMALL, cv::FONT_HERSHEY_SIMPLEX
+                    std::string object_proximity = ObjectProximity(b, show_img);
+                    //std::string object_lane_position = ObjectLanePosition(b, show_img, object_proximity);
+                    std::string object_lane_position = ObjectLanePositionTriangle(b, show_img);
 
 
-                // Display object distance
-                char distance[8];
-                sprintf(distance, "%0.4f", obj_distance);
-                strcat(distance, "m");
+                    cv::rectangle(*show_img, pt1, pt2, color, width, 8, 0);
+                    if (ext_output)
+                        printf("\t(left_x: %4.0f   top_y: %4.0f   width: %4.0f   height: %4.0f)\n",
+                        (float)left, (float)top, b.w*show_img->cols, b.h*show_img->rows);
+                    else
+                        printf("\n");
 
-                cv::Point distance_text, distance_text_bg1, distance_text_bg2;
-                distance_text.x = left;
-                distance_text.y = bot;
-                distance_text_bg1.x = left;
-                distance_text_bg1.y = bot - (3 + 18 * font_size);
-                distance_text_bg2.x = right;
-                distance_text_bg2.y = bot;
-                cv::rectangle(*show_img, distance_text_bg1, distance_text_bg2, color, width, 8, 0);
-                cv::rectangle(*show_img, distance_text_bg1, distance_text_bg2, color, CV_FILLED, 8, 0);    // filled
-                cv::putText(*show_img, distance, distance_text, cv::FONT_HERSHEY_COMPLEX_SMALL, font_size, black_color, 2 * font_size, CV_AA);
+                    cv::rectangle(*show_img, pt_text_bg1, pt_text_bg2, color, width, 8, 0);
+                    cv::rectangle(*show_img, pt_text_bg1, pt_text_bg2, color, CV_FILLED, 8, 0);    // filled
+                    cv::Scalar black_color = CV_RGB(0, 0, 0);
+                    cv::putText(*show_img, labelstr, pt_text, cv::FONT_HERSHEY_COMPLEX_SMALL, font_size, black_color, 2 * font_size, CV_AA);
+                    // cv::FONT_HERSHEY_COMPLEX_SMALL, cv::FONT_HERSHEY_SIMPLEX
+
+
+                    // Display Object proximity and lane position
+
+                    std::string object_information = object_proximity + " " + object_lane_position;
+
+                    cv::Point position_text, position_text_bg1, position_text_bg2;
+                    position_text.x = left;
+                    position_text.y = bot;
+                    position_text_bg1.x = left;
+                    position_text_bg1.y = bot - (3 + 18 * font_size);
+                    position_text_bg2.x = right;
+                    position_text_bg2.y = bot;
+                    cv::rectangle(*show_img, position_text_bg1, position_text_bg2, color, width, 8, 0);
+                    cv::rectangle(*show_img, position_text_bg1, position_text_bg2, color, CV_FILLED, 8, 0);    // filled
+                    cv::putText(*show_img, object_information, position_text, cv::FONT_HERSHEY_COMPLEX_SMALL, font_size, black_color, 2 * font_size, CV_AA);
+
+                }
             }
         }
         if (ext_output) {

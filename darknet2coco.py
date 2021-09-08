@@ -45,8 +45,8 @@ def main():
         area_list = []
         for i in detections:
             class_name = i[0]
-            left = int(i[2][0])
-            top = int(i[2][1])
+            left = int(i[2][0]) - int(i[2][2])/2
+            top = int(i[2][1]) - int(i[2][3])/2
             bbox_width = int(i[2][2])
             bbox_height = int(i[2][3])
             bbox = [left, top, bbox_width, bbox_height]

@@ -113,7 +113,11 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
         if (!avgpool) l.indexes = (int*)xcalloc(output_size, sizeof(int));
         l.delta = (float*)xcalloc(output_size, sizeof(float));
     }
+#ifdef UNIFIED_MEM
+    cudaMallocManaged(&l.output, output_size*sizeof(float), cudaMemAttachGlobal);
+#else
     l.output = (float*)xcalloc(output_size, sizeof(float));
+#endif
     if (avgpool) {
         l.forward = forward_local_avgpool_layer;
         l.backward = backward_local_avgpool_layer;
@@ -136,7 +140,11 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
         if (!avgpool) l.indexes_gpu = cuda_make_int_array(output_size);
         l.delta_gpu = cuda_make_array(l.delta, output_size);
     }
+#ifdef UNIFIED_MEM
+    l.output_gpu = l.output;
+#else
     l.output_gpu  = cuda_make_array(l.output, output_size);
+#endif
     create_maxpool_cudnn_tensors(&l);
     if (avgpool) cudnn_local_avgpool_setup(&l);
     else cudnn_maxpool_setup(&l);

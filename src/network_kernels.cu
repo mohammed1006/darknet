@@ -38,6 +38,11 @@
 
 #include "http_stream.h"
 
+#include "j_header.h"
+#include "nvToolsExt.h"
+#include <unistd.h>
+#include <cuda_profiler_api.h>
+
 float * get_network_output_gpu_layer(network net, int i);
 float * get_network_delta_gpu_layer(network net, int i);
 float * get_network_output_gpu(network net);
@@ -59,6 +64,8 @@ int time_comparator(const void *pa, const void *pb)
 
 void forward_network_gpu(network net, network_state state)
 {
+    nvtxRangeId_t nvtx_forward_network;
+    nvtx_forward_network = nvtxRangeStartA("Forward_network_gpu");
     static time_benchmark_layers *avg_time_per_layer = NULL;
     static time_benchmark_layers *sorted_avg_time_per_layer = NULL;
     double start_time, end_time;
@@ -73,18 +80,72 @@ void forward_network_gpu(network net, network_state state)
     //printf("\n");
     state.workspace = net.workspace;
     int i;
+    
+#ifdef ONDEMAND_LOAD
+#ifdef GPU
+    blas_handle();
+#endif
+    static int once = 0;
+    float cur_time = get_time_point();
+    char *weights = net.weights_file_name;
+    FILE *fp = fopen(weights, "rb");
+    if(!fp) fprintf(stderr,"Can't open!!\n");
+#endif
+
     for(i = 0; i < net.n; ++i){
         state.index = i;
-        layer l = net.layers[i];
-        if(l.delta_gpu && state.train){
-            fill_ongpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
+        layer *l = &net.layers[i];
+        if(l->delta_gpu && state.train){
+            fill_ongpu(l->outputs * l->batch, 0, l->delta_gpu, 1);
         }
 
         if (net.benchmark_layers) {
             start_time = get_time_point();
         }
 
-        l.forward_gpu(l, state);
+#ifdef ONDEMAND_LOAD
+#ifdef NVTX
+        nvtxRangeId_t nvtx_layer;
+        if(l->type == CONVOLUTIONAL){
+            nvtx_layer = nvtxRangeStartA("CONV_LOAD");
+        }
+        else if(l-> type == ROUTE){
+            nvtx_layer = nvtxRangeStartA("ROUTE_LOAD");
+        }
+        else if(l-> type == SHORTCUT){
+            nvtx_layer = nvtxRangeStartA("SHORTCUT_LOAD");
+        }
+        else if(l-> type == MAXPOOL){
+            nvtx_layer = nvtxRangeStartA("MAXPOOL_LOAD");
+        }
+        else if(l-> type == YOLO){
+            nvtx_layer = nvtxRangeStartA("YOLO_LOAD");
+        }
+#endif //NVTX
+
+        // if host memory allocated at pinned memory, occur false result
+        // but cudaMemcpyAsyncs are shorter than when host mem alloc pageable memory
+        if(l->weights_file != NULL) 
+        {
+            fseek(fp, l->weights_loc, SEEK_SET);
+            l->weights_gpu = global_layer_weights;
+            int read_bytes = fread(hGlobal_layer_weights, sizeof(float), l->nweights, fp);
+            l->weights = hGlobal_layer_weights;
+            cuda_push_array(l->weights_gpu, l->weights, l->nweights);
+        }
+#endif //ONDEMAND_LOAD
+
+#ifdef NVTX
+        nvtxRangeId_t nvtx_forward_gpu;
+        nvtx_forward_gpu = nvtxRangeStartW(L"l.forward_gpu");
+#endif //NVTX
+        
+        l->forward_gpu(*l, state);
+
+#ifdef NVTX
+        nvtxRangeEnd(nvtx_forward_gpu);
+        nvtxRangeEnd(nvtx_layer);
+#endif //NVTX
 
         if (net.benchmark_layers) {
             CHECK_CUDA(cudaDeviceSynchronize());
@@ -93,18 +154,18 @@ void forward_network_gpu(network net, network_state state)
             const double alpha = 0.9;
             if (avg_time_per_layer[i].time == 0) {
                 avg_time_per_layer[i].layer_id = i;
-                avg_time_per_layer[i].layer_type = l.type;
+                avg_time_per_layer[i].layer_type = l->type;
                 avg_time_per_layer[i].time = took_time;
             }
             else avg_time_per_layer[i].time = avg_time_per_layer[i].time * alpha + took_time * (1 - alpha);
 
             sorted_avg_time_per_layer[i] = avg_time_per_layer[i];
-            printf("\n fw-layer %d - type: %d - %lf ms - avg_time %lf ms \n", i, l.type, took_time, avg_time_per_layer[i].time);
+            printf("\n fw-layer %d - type: %d - %lf ms - avg_time %lf ms \n", i, l->type, took_time, avg_time_per_layer[i].time);
         }
 
         if(net.wait_stream)
             cudaStreamSynchronize(get_cuda_stream());
-        state.input = l.output_gpu;
+        state.input = l->output_gpu;
         //cudaDeviceSynchronize();
 
         /*
@@ -135,6 +196,10 @@ void forward_network_gpu(network net, network_state state)
         }
 */
     }
+#ifdef ONDEMAND_LOAD
+    fclose(fp);
+    printf("inference time: %lfms\n",(get_time_point() - cur_time)/1000);
+#endif
 
     if (net.benchmark_layers) {
         printf("\n\nSorted by time (forward):\n");

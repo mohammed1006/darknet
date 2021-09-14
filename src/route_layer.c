@@ -26,6 +26,11 @@ route_layer make_route_layer(int batch, int n, int *input_layers, int *input_siz
     l.inputs = outputs;
     //fprintf(stderr, " inputs = %d \t outputs = %d, groups = %d, group_id = %d \n", l.inputs, l.outputs, l.groups, l.group_id);
     l.delta = (float*)xcalloc(outputs * batch, sizeof(float));
+//#ifndef UNIFIED_MEM
+//    l.output = (float*)xcalloc(outputs * batch, sizeof(float));
+//#else
+//    cudaMallocManaged(&l.output, outputs*batch*sizeof(float), cudaMemAttachGlobal);
+//#endif
     l.output = (float*)xcalloc(outputs * batch, sizeof(float));
 
     l.forward = forward_route_layer;
@@ -35,6 +40,11 @@ route_layer make_route_layer(int batch, int n, int *input_layers, int *input_siz
     l.backward_gpu = backward_route_layer_gpu;
 
     l.delta_gpu =  cuda_make_array(l.delta, outputs*batch);
+//#ifndef UNIFIED_MEM
+//    l.output_gpu = cuda_make_array(l.output, outputs*batch);
+//#else
+//    l.output_gpu = l.output;
+//#endif
     l.output_gpu = cuda_make_array(l.output, outputs*batch);
     #endif
     return l;

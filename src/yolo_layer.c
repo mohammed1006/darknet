@@ -30,6 +30,11 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
     l.out_c = l.c;
     l.classes = classes;
     l.cost = (float*)xcalloc(1, sizeof(float));
+//#ifdef UNIFIED_MEM
+//    cudaMallocManaged(&l.biases, total*2*sizeof(float),cudaMemAttachGlobal);
+//#else
+//    l.biases = (float*)xcalloc(total * 2, sizeof(float));
+//#endif //UNIFIED_MEM
     l.biases = (float*)xcalloc(total * 2, sizeof(float));
     if(mask) l.mask = mask;
     else{
@@ -50,7 +55,11 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
     for (i = 0; i < batch * l.w*l.h*l.n; ++i) l.class_ids[i] = -1;
 
     l.delta = (float*)xcalloc(batch * l.outputs, sizeof(float));
+#ifdef UNIFIED_MEM
+    cudaMallocManaged(&l.output, batch*l.outputs*sizeof(float),cudaMemAttachGlobal);
+#else
     l.output = (float*)xcalloc(batch * l.outputs, sizeof(float));
+#endif //UNIFIED_MEM
     for(i = 0; i < total*2; ++i){
         l.biases[i] = .5;
     }
@@ -60,11 +69,15 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
 #ifdef GPU
     l.forward_gpu = forward_yolo_layer_gpu;
     l.backward_gpu = backward_yolo_layer_gpu;
+#ifdef UNIFIED_MEM
+    l.output_gpu = l.output;
+#else
     l.output_gpu = cuda_make_array(l.output, batch*l.outputs);
     l.output_avg_gpu = cuda_make_array(l.output, batch*l.outputs);
+    free(l.output);
+#endif //UNIFIED_MEM
     l.delta_gpu = cuda_make_array(l.delta, batch*l.outputs);
 
-    free(l.output);
     if (cudaSuccess == cudaHostAlloc(&l.output, batch*l.outputs*sizeof(float), cudaHostRegisterMapped)) l.output_pinned = 1;
     else {
         cudaGetLastError(); // reset CUDA-error

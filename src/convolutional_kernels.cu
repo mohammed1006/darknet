@@ -565,7 +565,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
     }
 
 
-#else
+#else //gpu_use
     fill_ongpu(l.outputs*l.batch, 0, l.output_gpu, 1);
 
     int i, j;
@@ -579,6 +579,7 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network_state state)
             float *a = l.weights_gpu + j*l.nweights / l.groups;
             float *b = state.workspace;
             float *c = l.output_gpu + (i*l.groups + j)*n*m;
+//            printf("l.output_gpu %lf\n",l.output_gpu[0]);
             if (l.size == 1 && l.stride == 1 && l.dilation == 1) {
                 b = im;
             }
@@ -1238,12 +1239,32 @@ void pull_convolutional_layer(convolutional_layer l)
 
 void push_convolutional_layer(convolutional_layer l)
 {
-    cuda_push_array(l.weights_gpu, l.weights, l.nweights);
 #ifdef CUDNN_HALF
     assert(l.nweights > 0);
     cuda_convert_f32_to_f16(l.weights_gpu, l.nweights, l.weights_gpu16);
 #endif
+
+#if defined(ONDEMAND_LOAD) && defined(UNIFIED_MEM)
+    l.biases_gpu = l.biases;
+#elif defined(ONDEMAND_LOAD) && !defined(UNIFIED_MEM)
     cuda_push_array(l.biases_gpu, l.biases, l.n);
+#elif !defined(ONDEMAND_LOAD) && defined(UNIFIED_MEM)
+    l.biases_gpu = l.biases;
+    l.weights_gpu = l.weights;
+#elif !defined(ONDEMAND_LOAD) && !defined(UNIFIED_MEM)
+    cuda_push_array(l.weights_gpu, l.weights, l.nweights);
+    cuda_push_array(l.biases_gpu, l.biases, l.n);
+#endif
+
+//#ifndef ONDEMAND_LOAD
+//    cuda_push_array(l.weights_gpu, l.weights, l.nweights);
+//#endif
+//#ifndef UNIFIED_MEM
+//    cuda_push_array(l.biases_gpu, l.biases, l.n);
+//#else
+//    l.biases_gpu = l.biases;
+//#endif
+
     if (l.train) {
         cuda_push_array(l.weight_updates_gpu, l.weight_updates, l.nweights);
         cuda_push_array(l.bias_updates_gpu, l.bias_updates, l.n);

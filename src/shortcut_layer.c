@@ -45,6 +45,11 @@ layer make_shortcut_layer(int batch, int n, int *input_layers, int* input_sizes,
 
     if (train) l.delta = (float*)xcalloc(l.outputs * batch, sizeof(float));
     l.output = (float*)xcalloc(l.outputs * batch, sizeof(float));
+//#ifndef UNIFIED_MEM
+//    l.output = (float*)xcalloc(l.outputs * batch, sizeof(float));
+//#else
+//    cudaMallocManaged(&l.output, l.outputs*batch*sizeof(float), cudaMemAttachGlobal);
+//#endif
 
     l.nweights = 0;
     if (l.weights_type == PER_FEATURE) l.nweights = (l.n + 1);
@@ -79,6 +84,11 @@ layer make_shortcut_layer(int batch, int n, int *input_layers, int* input_sizes,
 
     if (train) l.delta_gpu =  cuda_make_array(l.delta, l.outputs*batch);
     l.output_gpu = cuda_make_array(l.output, l.outputs*batch);
+//#ifndef UNIFIED_MEM
+//    l.output_gpu = cuda_make_array(l.output, l.outputs*batch);
+//#else
+//    l.output_gpu = l.output;
+//#endif
 
     l.input_sizes_gpu = cuda_make_int_array_new_api(input_sizes, l.n);
     l.layers_output_gpu = (float**)cuda_make_array_pointers((void**)layers_output_gpu, l.n);

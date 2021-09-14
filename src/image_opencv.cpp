@@ -605,8 +605,8 @@ extern "C" cap_cv* get_capture_webcam(int index)
     cv::VideoCapture* cap = NULL;
     try {
         cap = new cv::VideoCapture(index);
-        //cap->set(CV_CAP_PROP_FRAME_WIDTH, 1280);
-        //cap->set(CV_CAP_PROP_FRAME_HEIGHT, 960);
+        cap->set(CV_CAP_PROP_FRAME_WIDTH, 640);//1280
+        cap->set(CV_CAP_PROP_FRAME_HEIGHT, 480);//960
     }
     catch (...) {
         cerr << " OpenCV exception: Web-camera " << index << " can't be opened! \n";

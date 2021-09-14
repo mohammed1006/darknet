@@ -692,6 +692,11 @@ struct layer {
     void* poolingDesc;
 #endif  // CUDNN
 //#endif  // GPU
+
+#ifdef ONDEMAND_LOAD
+    FILE *weights_file;
+    long int weights_loc;
+#endif
 };
 
 
@@ -834,6 +839,9 @@ typedef struct network {
     int optimized_memory;
     int dynamic_minibatch;
     size_t workspace_size_limit;
+
+    char *weights_file_name;
+
 } network;
 
 // network.h
@@ -1037,6 +1045,7 @@ LIB_API det_num_pair* network_predict_batch(network *net, image im, int batch_si
 LIB_API void free_detections(detection *dets, int n);
 LIB_API void free_batch_detections(det_num_pair *det_num_pairs, int n);
 LIB_API void fuse_conv_batchnorm(network net);
+LIB_API void fuse_conv_batchnorm_layer(layer *original_l);
 LIB_API void calculate_binary_weights(network net);
 LIB_API char *detection_to_json(detection *dets, int nboxes, int classes, char **names, long long int frame_id, char *filename);
 

@@ -140,6 +140,51 @@ double get_wall_time()
     return (double)walltime.tv_sec + (double)walltime.tv_usec * .000001;
 }
 
+void printMEM()
+{
+    char cmd[1024];
+    int nMemTot =0;
+    int nMemAva =0;
+    int nMapMem =0;
+    int mCPU, mGPU, mTOT;
+
+    sprintf(cmd, "/proc/meminfo");
+    FILE* fp = fopen(cmd, "r");
+    if(fp == NULL) return;
+
+    while(fgets(cmd, 1024, fp) != NULL) {
+        if(strstr(cmd, "MemTotal"))  {
+            char t[32];
+            char size[32];
+            sscanf(cmd, "%s%s", t, size);
+            nMemTot = atoi(size);
+        }
+        else if(strstr(cmd, "MemAvailable")) {
+            char t[32];
+            char size[32];
+            sscanf(cmd, "%s%s", t, size);
+            nMemAva = atoi(size);
+        }
+        else if(strstr(cmd, "NvMapMemUsed")) {
+            char t[32];
+            char size[32];
+            sscanf(cmd, "%s%s", t, size);
+            nMapMem = atoi(size);
+            break;
+        }
+    }
+    fclose(fp);
+    
+    mTOT = (nMemTot - nMemAva);
+    mGPU = nMapMem;
+    mCPU = mTOT - mGPU;
+
+    printf("mTOT: %dkB (=%dMB)\n",mTOT,mTOT/1024);
+    printf("mCPU: %dkB (=%dMB)\n",mCPU,mCPU/1024);
+    printf("mGPU: %dkB (=%dMB)\n",mGPU,mGPU/1024);
+    
+}
+
 void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes, int avgframes,
     int frame_skip, char *prefix, char *out_filename, int mjpeg_port, int dontdraw_bbox, int json_port, int dont_show, int ext_output, int letter_box_in, int time_limit_sec, char *http_post_host,
     int benchmark, int benchmark_layers)
@@ -160,12 +205,15 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     printf("Demo\n");
     net = parse_network_cfg_custom(cfgfile, 1, 1);    // set batch=1
     if(weightfile){
+        net.weights_file_name = weightfile;
         load_weights(&net, weightfile);
     }
     if (net.letter_box) letter_box = 1;
     net.benchmark_layers = benchmark_layers;
+#ifndef ONDEMAND_LOAD
     fuse_conv_batchnorm(net);
     calculate_binary_weights(net);
+#endif //ONDEMAND_LOAD
     srand(2222222);
 
     if(filename){
@@ -232,7 +280,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     int count = 0;
     if(!prefix && !dont_show){
         int full_screen = 0;
-        create_window_cv("Demo", full_screen, 1352, 1013);
+        create_window_cv("Demo", full_screen, 640, 480);
     }
 
 

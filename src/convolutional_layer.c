@@ -13,6 +13,8 @@
 #include "xnor_layer.h"
 #endif
 
+#include "j_header.h"
+
 #ifdef __cplusplus
 #define PUT_IN_REGISTER
 #else
@@ -560,8 +562,18 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
         l.bias_updates = l.share_layer->bias_updates;
     }
     else {
+        if(max_size_of_nweights < l.nweights) max_size_of_nweights = l.nweights;//
+#if !defined(ONDEMAND_LOAD) && !defined(UNIFIED_MEM)
         l.weights = (float*)xcalloc(l.nweights, sizeof(float));
+#elif !defined(ONDEMAND_LOAD) && defined(UNIFIED_MEM)
+        cudaMallocManaged(&l.weights,l.nweights*sizeof(float),cudaMemAttachGlobal);
+#endif //ONDEMAND_LOAD
+
+#ifndef UNIFIED_MEM
         l.biases = (float*)xcalloc(n, sizeof(float));
+#else
+        cudaMallocManaged(&l.biases,n*sizeof(float),cudaMemAttachGlobal);
+#endif //UNIFIED_MEM
 
         if (train) {
             l.weight_updates = (float*)xcalloc(l.nweights, sizeof(float));
@@ -572,6 +584,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
         }
     }
 
+#ifndef ONDEMAND_LOAD
     // float scale = 1./sqrt(size*size*c);
     float scale = sqrt(2./(size*size*c/groups));
     if (l.activation == NORM_CHAN || l.activation == NORM_CHAN_SOFTMAX || l.activation == NORM_CHAN_SOFTMAX_MAXVAL) {
@@ -580,6 +593,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     else {
         for (i = 0; i < l.nweights; ++i) l.weights[i] = scale*rand_uniform(-1, 1);   // rand_normal();
     }
+#endif //ONDEMAND_LOAD
     int out_h = convolutional_out_height(l);
     int out_w = convolutional_out_width(l);
     l.out_h = out_h;
@@ -589,7 +603,11 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     l.inputs = l.w * l.h * l.c;
     l.activation = activation;
 
+#ifndef UNIFIED_MEM
     l.output = (float*)xcalloc(total_batch*l.outputs, sizeof(float));
+#else
+    cudaMallocManaged(&l.output,total_batch*l.outputs*sizeof(float),cudaMemAttachGlobal);
+#endif //UNIFIED_MEM
 #ifndef GPU
     if (train) l.delta = (float*)xcalloc(total_batch*l.outputs, sizeof(float));
 #endif  // not GPU
@@ -707,17 +725,29 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
             l.bias_updates_gpu = l.share_layer->bias_updates_gpu;
         }
         else {
+#if !defined(ONDEMAND_LOAD) && !defined(UNIFIED_MEM)
             l.weights_gpu = cuda_make_array(l.weights, l.nweights);
+#elif !defined(ONDEMAND_LOAD) && defined(UNIFIED_MEM)
+            l.weights_gpu = l.weights;
+#endif //ONDEMAND_LOAD
+#ifndef UNIFIED_MEM
+            l.biases_gpu = cuda_make_array(l.biases, n);
+#else
+            l.biases_gpu = l.biases;
+#endif //UNIFIED_MEM
             if (train) l.weight_updates_gpu = cuda_make_array(l.weight_updates, l.nweights);
 #ifdef CUDNN_HALF
             l.weights_gpu16 = cuda_make_array(NULL, l.nweights / 2 + 1);
             if (train) l.weight_updates_gpu16 = cuda_make_array(NULL, l.nweights / 2 + 1);
 #endif  // CUDNN_HALF
-            l.biases_gpu = cuda_make_array(l.biases, n);
             if (train) l.bias_updates_gpu = cuda_make_array(l.bias_updates, n);
         }
 
+#ifndef UNIFIED_MEM
         l.output_gpu = cuda_make_array(l.output, total_batch*out_h*out_w*n);
+#else
+        l.output_gpu = l.output;
+#endif //UNIFIED_MEM
         if (train) l.delta_gpu = cuda_make_array(l.delta, total_batch*out_h*out_w*n);
 
         if(binary){

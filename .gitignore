@@ -20,6 +20,7 @@ convnet/
 decaf/
 submission/
 cfg/
+weights/
 temp/
 build/darknet/*
 build_*/
@@ -29,6 +30,7 @@ vcpkg_installed/
 !build/darknet/YoloWrapper.cs
 .fuse*
 *.weights
+*.mp4
 build/*.cmake
 build/*.ninja
 build/*.txt

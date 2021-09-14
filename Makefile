@@ -1,7 +1,7 @@
 GPU=0
 CUDNN=0
 CUDNN_HALF=0
-OPENCV=0
+OPENCV=1
 AVX=0
 OPENMP=0
 LIBSO=1
@@ -116,10 +116,10 @@ endif
 ifeq ($(OPENCV), 1)
 COMMON+= -DOPENCV
 CFLAGS+= -DOPENCV
-LDFLAGS+= `pkg-config --libs opencv` -lstdc++
-COMMON+= `pkg-config --cflags opencv`
-#LDFLAGS+= `pkg-config --libs opencv4 2> /dev/null || pkg-config --libs opencv`
-#COMMON+= `pkg-config --cflags opencv4 2> /dev/null || pkg-config --cflags opencv`
+#LDFLAGS+= `pkg-config --libs opencv` -lstdc++
+#COMMON+= `pkg-config --cflags opencv`
+LDFLAGS+= `pkg-config --libs opencv4 2> /dev/null || pkg-config --libs opencv` -lstdc++
+COMMON+= `pkg-config --cflags opencv4 2> /dev/null || pkg-config --cflags opencv`
 endif
 
 ifeq ($(OPENMP), 1)

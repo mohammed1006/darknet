@@ -1743,8 +1743,6 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         free_image(im);
         free_image(sized);
 
-        printMEM();
-
         if (!dont_show) {
             wait_until_press_key_cv();
             destroy_all_windows_cv();
@@ -1848,8 +1846,6 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         free_detections(dets, nboxes);
         free_image(im);
         free_image(sized);
-
-        printMEM();
 
         if (!dont_show) {
             wait_until_press_key_cv();

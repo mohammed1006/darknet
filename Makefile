@@ -1,7 +1,7 @@
-GPU=1
+GPU=0
 CUDNN=0
 CUDNN_HALF=0
-OPENCV=1
+OPENCV=0
 AVX=0
 OPENMP=0
 LIBSO=1
@@ -191,7 +191,7 @@ $(APPNAMESO): $(LIBNAMESO) include/yolo_v2_class.hpp src/yolo_console_dll.cpp
 endif
 
 $(EXEC): $(OBJS)
-	$(CPP) -std=c++11 $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS) -lnvToolsExt
+	$(CPP) -std=c++11 $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS) #-lnvToolsExt
 
 $(OBJDIR)%.o: %.c $(DEPS)
 	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@

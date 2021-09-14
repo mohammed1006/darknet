@@ -64,8 +64,10 @@ int time_comparator(const void *pa, const void *pb)
 
 void forward_network_gpu(network net, network_state state)
 {
+#ifdef NVTX
     nvtxRangeId_t nvtx_forward_network;
     nvtx_forward_network = nvtxRangeStartA("Forward_network_gpu");
+#endif
     static time_benchmark_layers *avg_time_per_layer = NULL;
     static time_benchmark_layers *sorted_avg_time_per_layer = NULL;
     double start_time, end_time;

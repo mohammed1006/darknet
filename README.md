@@ -54,6 +54,7 @@ About Darknet framework: http://pjreddie.com/darknet/
       - [How to use on the command line](#how-to-use-on-the-command-line)
         - [For using network video-camera mjpeg-stream with any Android smartphone](#for-using-network-video-camera-mjpeg-stream-with-any-android-smartphone)
     - [How to compile on Linux/macOS (using `CMake`)](#how-to-compile-on-linuxmacos-using-cmake)
+    - [How to compile on Linux/macOS (using `CMake + Ninja`)](#how-to-compile-on-linuxmacos-using-cmake-ninja)
     - [Using also PowerShell](#using-also-powershell)
     - [How to compile on Linux (using `make`)](#how-to-compile-on-linux-using-make)
     - [How to compile on Windows (using `CMake`)](#how-to-compile-on-windows-using-cmake)
@@ -214,6 +215,7 @@ You can get cfg-files by path: `darknet/cfg/`
 ### Requirements for Windows, Linux and macOS
 
 - **CMake >= 3.18**: https://cmake.org/download/
+- **Ninja (ninja-build) >= 1.10**: https://github.com/ninja-build/ninja
 - **Powershell** (already installed on windows): https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell
 - **CUDA >= 10.2**: https://developer.nvidia.com/cuda-toolkit-archive (on Linux do [Post-installation Actions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#post-installation-actions))
 - **OpenCV >= 2.4**: use your preferred package manager (brew, apt), build from source using [vcpkg](https://github.com/Microsoft/vcpkg) or download from [OpenCV official site](https://opencv.org/releases.html) (on Windows set system variable `OpenCV_DIR` = `C:\opencv\build` - where are the `include` and `x64` folders [image](https://user-images.githubusercontent.com/4096485/53249516-5130f480-36c9-11e9-8238-a6e82e48c6f2.png))
@@ -339,10 +341,23 @@ To update CMake on Ubuntu, it's better to follow guide here: https://apt.kitware
 ```bash
 git clone https://github.com/AlexeyAB/darknet
 cd darknet
-mkdir build_release
-cd build_release
-cmake ..
-cmake --build . --target install --parallel 8
+cmake -S . -B build_release
+cmake --build build --target install --parallel 8
+```
+
+### How to compile on Linux/macOS (using `CMake + Ninja`)
+
+The `CMakeLists.txt` will attempt to find installed optional dependencies like CUDA, cudnn, ZED and build against those. It will also create a shared object library file to use `darknet` for code development.
+
+To update CMake on Ubuntu, it's better to follow guide here: https://apt.kitware.com/ or https://cmake.org/download/
+
+For Ninja-build: https://github.com/ninja-build/ninja
+
+```bash
+git clone https://github.com/AlexeyAB/darknet
+cd darknet
+cmake -S . -B build_release -G Ninja
+ninja -C build_release install # Automatically use all core and generally faster build than CMake only
 ```
 
 ### Using also PowerShell

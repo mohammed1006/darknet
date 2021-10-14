@@ -26,6 +26,7 @@ option(VCPKG_BUILD_OPENCV_WITH_CUDA "Build OpenCV with CUDA extension integratio
 option(VCPKG_USE_OPENCV2 "Use legacy OpenCV 2" OFF)
 option(VCPKG_USE_OPENCV3 "Use legacy OpenCV 3" OFF)
 option(VCPKG_USE_OPENCV4 "Use OpenCV 4" ON)
+option(ENABLE_SSE_AND_AVX_FLAGS "Enable AVX and SSE optimizations (x86-only)" ON)
 
 if(VCPKG_USE_OPENCV4 AND VCPKG_USE_OPENCV2)
   message(STATUS "You required vcpkg feature related to OpenCV 2 but forgot to turn off those for OpenCV 4, doing that for you")
@@ -75,8 +76,6 @@ if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86")
 else()
   set(IS_X86 FALSE)
 endif()
-
-cmake_dependent_option(ENABLE_SSE_AND_AVX_FLAGS "Enable AVX and SSE optimizations (x86-only)" ON "CMAKE_COMPILER_IS_GNUCC_OR_CLANG;IS_X86" OFF)
 
 if(ENABLE_VCPKG_INTEGRATION AND DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")

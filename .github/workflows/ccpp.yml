@@ -329,7 +329,7 @@ jobs:
 
     - name: 'Setup'
       shell: bash
-      run: ./scripts/setup.sh -InstallCUDA -BypassDRIVER
+      run: ./scripts/setup.sh -InstallTOOLS -InstallCUDA -BypassDRIVER
 
 
   osx-vcpkg:

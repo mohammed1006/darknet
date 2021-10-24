@@ -10,10 +10,15 @@ else
   exit 3
 fi
 
-export CUDA_VERSION="11.5"
+script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
+if [ -f $script_dir/requested_cuda_version.sh ]; then
+  source $script_dir/requested_cuda_version.sh
+else
+  echo "Unable to find requested_cuda_version.sh script"
+  exit 1
+fi
 
-cuda_ver="${CUDA_VERSION//./-}"
 sudo apt-get update
 sudo apt-get install build-essential g++
 sudo apt-get install apt-transport-https ca-certificates gnupg software-properties-common wget
@@ -23,7 +28,7 @@ sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/r
 sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/machine-learning/repos/$distr_name/x86_64/ /"
 sudo apt-get update
 sudo apt-get dist-upgrade -y
-sudo apt-get install -y --no-install-recommends cuda-compiler-${cuda_ver} cuda-libraries-dev-${cuda_ver} cuda-driver-dev-${cuda_ver} cuda-cudart-dev-${cuda_ver}
+sudo apt-get install -y --no-install-recommends cuda-compiler-${CUDA_VERSION_DASHED} cuda-libraries-dev-${CUDA_VERSION_DASHED} cuda-driver-dev-${CUDA_VERSION_DASHED} cuda-cudart-dev-${CUDA_VERSION_DASHED}
 sudo apt-get install -y --no-install-recommends libcudnn8-dev
 sudo rm -rf /usr/local/cuda
 sudo ln -s /usr/local/cuda-${CUDA_VERSION} /usr/local/cuda

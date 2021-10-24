@@ -25,9 +25,10 @@ jobs:
 
     - name: 'Create softlinks for CUDA'
       run: |
-        sudo ln -s /usr/local/cuda-11.5/lib64/stubs/libcuda.so /usr/local/cuda-11.5/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.5/lib64/stubs/libcuda.so /usr/local/cuda-11.5/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.5/lib64/stubs/libcuda.so /usr/local/cuda-11.5/lib64/libcuda.so
+        source ./scripts/requested-cuda-version.sh
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
 
     - name: 'LIBSO=1 GPU=0 CUDNN=0 OPENCV=0'
       run: |
@@ -82,9 +83,10 @@ jobs:
 
     - name: 'Create softlinks for CUDA'
       run: |
-        sudo ln -s /usr/local/cuda-11.5/lib64/stubs/libcuda.so /usr/local/cuda-11.5/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.5/lib64/stubs/libcuda.so /usr/local/cuda-11.5/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.5/lib64/stubs/libcuda.so /usr/local/cuda-11.5/lib64/libcuda.so
+        source ./scripts/requested-cuda-version.sh
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
 
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
@@ -142,9 +144,10 @@ jobs:
 
     - name: 'Create softlinks for CUDA'
       run: |
-        sudo ln -s /usr/local/cuda-11.5/lib64/stubs/libcuda.so /usr/local/cuda-11.5/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.5/lib64/stubs/libcuda.so /usr/local/cuda-11.5/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.5/lib64/stubs/libcuda.so /usr/local/cuda-11.5/lib64/libcuda.so
+        source ./scripts/requested-cuda-version.sh
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
 
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
@@ -185,9 +188,10 @@ jobs:
 
     - name: 'Create softlinks for CUDA'
       run: |
-        sudo ln -s /usr/local/cuda-11.5/lib64/stubs/libcuda.so /usr/local/cuda-11.5/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.5/lib64/stubs/libcuda.so /usr/local/cuda-11.5/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.5/lib64/stubs/libcuda.so /usr/local/cuda-11.5/lib64/libcuda.so
+        source ./scripts/requested-cuda-version.sh
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
 
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
@@ -267,9 +271,10 @@ jobs:
 
     - name: 'Create softlinks for CUDA'
       run: |
-        sudo ln -s /usr/local/cuda-11.5/lib64/stubs/libcuda.so /usr/local/cuda-11.5/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.5/lib64/stubs/libcuda.so /usr/local/cuda-11.5/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.5/lib64/stubs/libcuda.so /usr/local/cuda-11.5/lib64/libcuda.so
+        source ./scripts/requested-cuda-version.sh
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
 
     - name: 'Build'
       shell: pwsh

@@ -37,14 +37,21 @@ temp_folder="./temp"
 mkdir -p $temp_folder
 cd $temp_folder
 
+if [ -f $script_dir/requested_cuda_version.sh ]; then
+  source $script_dir/requested_cuda_version.sh
+else
+  echo "Unable to find requested_cuda_version.sh script"
+  exit 1
+fi
+
 if [[ "$OSTYPE" == "darwin"* ]]; then
   if [ "$install_cuda" = true ] ; then
     echo "Unable to install CUDA on macOS, please wait for a future script update or do not put -InstallCUDA command line flag to continue"
-    exit 1
+    exit 2
   fi
   if [ "$install_tools" = true ] ; then
     echo "Unable to provide tools on macOS, please wait for a future script update or do not put -InstallTOOLS command line flag to continue"
-    exit 2
+    exit 3
   fi
 elif [[ $(cut -f2 <<< $(lsb_release -i)) == "Ubuntu" ]]; then
   if [ "$install_cuda" = true ] ; then
@@ -77,11 +84,11 @@ elif [[ $(cut -f2 <<< $(lsb_release -i)) == "Ubuntu" ]]; then
 else
   if [ "$install_cuda" = true ] ; then
     echo "Unable to install CUDA on this OS, please wait for a future script update or do not put -InstallCUDA command line flag to continue"
-    exit 3
+    exit 4
   fi
   if [ "$install_tools" = true ] ; then
     echo "Unable to install tools on this OS, please wait for a future script update or do not put -InstallTOOLS command line flag to continue"
-    exit 4
+    exit 5
   fi
 fi
 

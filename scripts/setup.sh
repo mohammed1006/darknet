@@ -37,28 +37,30 @@ temp_folder="./temp"
 mkdir -p $temp_folder
 cd $temp_folder
 
-if [ "$install_tools" = true ] ; then
-  if [[ "$OSTYPE" == "darwin"* ]]; then
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  if [ "$install_cuda" = true ] ; then
+    echo "Unable to install CUDA on macOS, please wait for a future script update or do not put -InstallCUDA command line flag to continue"
+    exit 1
+  fi
+  if [ "$install_tools" = true ] ; then
     echo "Unable to provide tools on macOS, please wait for a future script update or do not put -InstallTOOLS command line flag to continue"
-    if [ "$install_cuda" = true ] ; then
-      echo "Unable to install CUDA on macOS, please wait for a future script update or do not put -InstallCUDA command line flag to continue"
-      exit 1
-    fi
     exit 2
-  elif [[ $(cut -f2 <<< $(lsb_release -i)) == "Ubuntu" ]]; then
-    if [ "$install_cuda" = true ] ; then
-      $script_dir/deploy-cuda.sh
-      if [ "$bypass_driver_installation" = true ] ; then
-        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
-      fi
-      export PATH=/usr/local/cuda/bin:$PATH
-      export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
-      export CUDACXX=/usr/local/cuda/bin/nvcc
-      export CUDA_PATH=/usr/local/cuda
-      export CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda
+  fi
+elif [[ $(cut -f2 <<< $(lsb_release -i)) == "Ubuntu" ]]; then
+  if [ "$install_cuda" = true ] ; then
+    $script_dir/deploy-cuda.sh
+    if [ "$bypass_driver_installation" = true ] ; then
+      sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
+      sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
+      sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
     fi
+    export PATH=/usr/local/cuda/bin:$PATH
+    export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+    export CUDACXX=/usr/local/cuda/bin/nvcc
+    export CUDA_PATH=/usr/local/cuda
+    export CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda
+  fi
+  if [ "$install_tools" = true ] ; then
     sudo apt-get update
     sudo apt-get install git ninja-build build-essential g++ nasm yasm
     sudo apt-get install apt-transport-https ca-certificates gnupg software-properties-common wget
@@ -71,12 +73,14 @@ if [ "$install_tools" = true ] ; then
     sudo apt-get dist-upgrade -y
     sudo apt-get install -y cmake
     sudo apt-get install -y powershell
-  else
+  fi
+else
+  if [ "$install_cuda" = true ] ; then
+    echo "Unable to install CUDA on this OS, please wait for a future script update or do not put -InstallCUDA command line flag to continue"
+    exit 3
+  fi
+  if [ "$install_tools" = true ] ; then
     echo "Unable to install tools on this OS, please wait for a future script update or do not put -InstallTOOLS command line flag to continue"
-    if [ "$install_cuda" = true ] ; then
-      echo "Unable to install CUDA on this OS, please wait for a future script update or do not put -InstallCUDA command line flag to continue"
-      exit 3
-    fi
     exit 4
   fi
 fi

@@ -17,11 +17,11 @@ jobs:
       run: sudo apt install libopencv-dev
 
     - name: 'Install CUDA'
-      run: ./scripts/deploy-cuda.sh
+      run: ${{ github.workspace }}/scripts/deploy-cuda.sh
 
     - name: 'Create softlinks for CUDA'
       run: |
-        source ./scripts/requested-cuda-version.sh
+        source ${{ github.workspace }}/scripts/requested-cuda-version.sh
         sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
         sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
         sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
@@ -75,11 +75,11 @@ jobs:
       run: sudo apt install yasm nasm
 
     - name: 'Install CUDA'
-      run: ./scripts/deploy-cuda.sh
+      run: ${{ github.workspace }}/scripts/deploy-cuda.sh
 
     - name: 'Create softlinks for CUDA'
       run: |
-        source ./scripts/requested-cuda-version.sh
+        source ${{ github.workspace }}/scripts/requested-cuda-version.sh
         sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
         sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
         sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
@@ -88,8 +88,8 @@ jobs:
       shell: bash
       run: >
         git clone https://github.com/microsoft/vcpkg ;
-        ./vcpkg/bootstrap-vcpkg.sh ;
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh ;
+        mono $(${{ github.workspace }}/vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
         -Source http://93.49.111.10:5555/v3/index.json
 
@@ -100,7 +100,7 @@ jobs:
         CUDA_PATH: "/usr/local/cuda"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      run: ./build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN -DisableInteractive -DoNotUpdateDARKNET
 
 
   ubuntu-vcpkg-opencv3-cuda:
@@ -116,11 +116,11 @@ jobs:
       run: sudo apt install yasm nasm
 
     - name: 'Install CUDA'
-      run: ./scripts/deploy-cuda.sh
+      run: ${{ github.workspace }}/scripts/deploy-cuda.sh
 
     - name: 'Create softlinks for CUDA'
       run: |
-        source ./scripts/requested-cuda-version.sh
+        source ${{ github.workspace }}/scripts/requested-cuda-version.sh
         sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
         sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
         sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
@@ -129,8 +129,8 @@ jobs:
       shell: bash
       run: >
         git clone https://github.com/microsoft/vcpkg ;
-        ./vcpkg/bootstrap-vcpkg.sh ;
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh ;
+        mono $(${{ github.workspace }}/vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
         -Source http://93.49.111.10:5555/v3/index.json
 
@@ -141,7 +141,7 @@ jobs:
         CUDA_PATH: "/usr/local/cuda"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      run: ./build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN -ForceOpenCVVersion 3 -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN -ForceOpenCVVersion 3 -DisableInteractive -DoNotUpdateDARKNET
 
 
   ubuntu-vcpkg-opencv2-cuda:
@@ -157,11 +157,11 @@ jobs:
       run: sudo apt install yasm nasm
 
     - name: 'Install CUDA'
-      run: ./scripts/deploy-cuda.sh
+      run: ${{ github.workspace }}/scripts/deploy-cuda.sh
 
     - name: 'Create softlinks for CUDA'
       run: |
-        source ./scripts/requested-cuda-version.sh
+        source ${{ github.workspace }}/scripts/requested-cuda-version.sh
         sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
         sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
         sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
@@ -170,8 +170,8 @@ jobs:
       shell: bash
       run: >
         git clone https://github.com/microsoft/vcpkg ;
-        ./vcpkg/bootstrap-vcpkg.sh ;
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh ;
+        mono $(${{ github.workspace }}/vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
         -Source http://93.49.111.10:5555/v3/index.json
 
@@ -182,7 +182,7 @@ jobs:
         CUDA_PATH: "/usr/local/cuda"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      run: ./build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN -ForceOpenCVVersion 2 -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN -ForceOpenCVVersion 2 -DisableInteractive -DoNotUpdateDARKNET
 
 
   ubuntu:
@@ -204,7 +204,7 @@ jobs:
         CUDA_PATH: "/usr/local/cuda"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      run: ./build.ps1 -EnableOPENCV -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -EnableOPENCV -DisableInteractive -DoNotUpdateDARKNET
 
 
   ubuntu-cuda:
@@ -220,11 +220,11 @@ jobs:
     - uses: lukka/get-cmake@latest
 
     - name: 'Install CUDA'
-      run: ./scripts/deploy-cuda.sh
+      run: ${{ github.workspace }}/scripts/deploy-cuda.sh
 
     - name: 'Create softlinks for CUDA'
       run: |
-        source ./scripts/requested-cuda-version.sh
+        source ${{ github.workspace }}/scripts/requested-cuda-version.sh
         sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
         sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
         sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
@@ -236,7 +236,7 @@ jobs:
         CUDA_PATH: "/usr/local/cuda"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      run: ./build.ps1 -EnableOPENCV -EnableCUDA -EnableCUDNN -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -EnableOPENCV -EnableCUDA -EnableCUDNN -DisableInteractive -DoNotUpdateDARKNET
 
 
   ubuntu-no-ocv-cpp:
@@ -248,7 +248,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateDARKNET
 
 
   ubuntu-setup-sh:
@@ -260,14 +260,14 @@ jobs:
       shell: bash
       run: >
         git clone https://github.com/microsoft/vcpkg ;
-        ./vcpkg/bootstrap-vcpkg.sh ;
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh ;
+        mono $(${{ github.workspace }}/vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
         -Source http://93.49.111.10:5555/v3/index.json
 
     - name: 'Setup'
       shell: bash
-      run: ./scripts/setup.sh -InstallCUDA -BypassDRIVER
+      run: ${{ github.workspace }}/scripts/setup.sh -InstallCUDA -BypassDRIVER
 
 
   osx-vcpkg:
@@ -284,14 +284,14 @@ jobs:
       shell: bash
       run: >
         git clone https://github.com/microsoft/vcpkg ;
-        ./vcpkg/bootstrap-vcpkg.sh ;
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh ;
+        mono $(${{ github.workspace }}/vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
         -Source http://93.49.111.10:5555/v3/index.json
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -UseVCPKG -DoNotUpdateVCPKG -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -DisableInteractive -DoNotUpdateDARKNET
 
 
   osx:
@@ -306,7 +306,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -EnableOPENCV -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -EnableOPENCV -DisableInteractive -DoNotUpdateDARKNET
 
 
   osx-no-ocv-no-omp-cpp:
@@ -318,7 +318,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateDARKNET
 
 
   win-vcpkg:
@@ -332,14 +332,14 @@ jobs:
       shell: bash
       run: >
         git clone https://github.com/microsoft/vcpkg ;
-        ./vcpkg/bootstrap-vcpkg.sh ;
-        $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh ;
+        $(${{ github.workspace }}/vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
         -Source http://93.49.111.10:5555/v3/index.json
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -DisableInteractive -DoNotUpdateDARKNET
 
 
   win-intlibs:
@@ -351,7 +351,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -DisableInteractive -DoNotUpdateDARKNET
 
 
   win-setup-ps1:
@@ -363,14 +363,14 @@ jobs:
       shell: bash
       run: >
         git clone https://github.com/microsoft/vcpkg ;
-        ./vcpkg/bootstrap-vcpkg.sh ;
-        $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh ;
+        $(${{ github.workspace }}/vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
         -Source http://93.49.111.10:5555/v3/index.json
 
     - name: 'Setup'
       shell: pwsh
-      run: ./scripts/setup.ps1 -InstallCUDA
+      run: ${{ github.workspace }}/scripts/setup.ps1 -InstallCUDA
 
 
   win-intlibs-cpp:
@@ -382,7 +382,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateDARKNET
 
 
   win-csharp:
@@ -394,7 +394,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -EnableCSharpWrapper -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -EnableCSharpWrapper -DisableInteractive -DoNotUpdateDARKNET
 
 
   win-intlibs-cuda:
@@ -402,7 +402,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: 'Install CUDA'
-      run: ./scripts/deploy-cuda.ps1
+      run: ${{ github.workspace }}/scripts/deploy-cuda.ps1
 
     - uses: lukka/get-cmake@latest
 
@@ -412,7 +412,7 @@ jobs:
         CUDA_TOOLKIT_ROOT_DIR: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.5"
         CUDACXX: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.5\\bin\\nvcc.exe"
       shell: pwsh
-      run: ./build.ps1 -EnableCUDA -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -EnableCUDA -DisableInteractive -DoNotUpdateDARKNET
 
 
   mingw:

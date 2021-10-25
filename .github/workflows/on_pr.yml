@@ -88,8 +88,8 @@ jobs:
       shell: bash
       run: >
         git clone https://github.com/microsoft/vcpkg ;
-        ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh ;
-        mono $(${{ github.workspace }}/vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
         -Source http://93.49.111.10:5555/v3/index.json
 
@@ -129,8 +129,8 @@ jobs:
       shell: bash
       run: >
         git clone https://github.com/microsoft/vcpkg ;
-        ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh ;
-        mono $(${{ github.workspace }}/vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
         -Source http://93.49.111.10:5555/v3/index.json
 
@@ -170,8 +170,8 @@ jobs:
       shell: bash
       run: >
         git clone https://github.com/microsoft/vcpkg ;
-        ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh ;
-        mono $(${{ github.workspace }}/vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
         -Source http://93.49.111.10:5555/v3/index.json
 
@@ -260,8 +260,8 @@ jobs:
       shell: bash
       run: >
         git clone https://github.com/microsoft/vcpkg ;
-        ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh ;
-        mono $(${{ github.workspace }}/vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
         -Source http://93.49.111.10:5555/v3/index.json
 
@@ -284,8 +284,8 @@ jobs:
       shell: bash
       run: >
         git clone https://github.com/microsoft/vcpkg ;
-        ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh ;
-        mono $(${{ github.workspace }}/vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
         -Source http://93.49.111.10:5555/v3/index.json
 
@@ -332,8 +332,8 @@ jobs:
       shell: bash
       run: >
         git clone https://github.com/microsoft/vcpkg ;
-        ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh ;
-        $(${{ github.workspace }}/vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
         -Source http://93.49.111.10:5555/v3/index.json
 
@@ -363,8 +363,8 @@ jobs:
       shell: bash
       run: >
         git clone https://github.com/microsoft/vcpkg ;
-        ${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh ;
-        $(${{ github.workspace }}/vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
         -Source http://93.49.111.10:5555/v3/index.json
 

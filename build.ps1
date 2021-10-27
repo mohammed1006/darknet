@@ -28,7 +28,7 @@ param (
   [string]$AdditionalBuildSetup = ""  # "-DCMAKE_CUDA_ARCHITECTURES=30"
 )
 
-$build_ps1_version = "0.9.6"
+$build_ps1_version = "0.9.7"
 
 $ErrorActionPreference = "SilentlyContinue"
 Stop-Transcript | out-null
@@ -390,6 +390,14 @@ function getLatestVisualStudioWithDesktopWorkloadPath() {
       }
     }
     if (!$installationPath) {
+      Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also pre-release installations" -ForegroundColor Yellow
+      $output = & $vswhereExe -prerelease -products * -latest -format xml
+      [xml]$asXml = $output
+      foreach ($instance in $asXml.instances.instance) {
+        $installationPath = $instance.InstallationPath -replace "\\$" # Remove potential trailing backslash
+      }
+    }
+    if (!$installationPath) {
       MyThrow("Could not locate any installation of Visual Studio")
     }
   }
@@ -412,6 +420,14 @@ function getLatestVisualStudioWithDesktopWorkloadVersion() {
     if (!$installationVersion) {
       Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also partial installations" -ForegroundColor Yellow
       $output = & $vswhereExe -products * -latest -format xml
+      [xml]$asXml = $output
+      foreach ($instance in $asXml.instances.instance) {
+        $installationVersion = $instance.installationVersion
+      }
+    }
+    if (!$installationVersion) {
+      Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also pre-release installations" -ForegroundColor Yellow
+      $output = & $vswhereExe -prerelease -products * -latest -format xml
       [xml]$asXml = $output
       foreach ($instance in $asXml.instances.instance) {
         $installationVersion = $instance.installationVersion

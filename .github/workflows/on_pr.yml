@@ -267,7 +267,7 @@ jobs:
 
     - name: 'Setup'
       shell: bash
-      run: ${{ github.workspace }}/scripts/setup.sh -InstallCUDA -BypassDRIVER
+      run: ${{ github.workspace }}/scripts/setup.sh -InstallTOOLS -InstallCUDA -BypassDRIVER
 
 
   osx-vcpkg:

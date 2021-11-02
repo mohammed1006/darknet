@@ -19,6 +19,7 @@ param (
   [switch]$ForceCPP = $false,
   [switch]$ForceStaticLib = $false,
   [switch]$ForceVCPKGCacheRemoval = $false,
+  [switch]$DoNotDeleteBuildtreesFolder = $false,
   [switch]$ForceSetupVS = $false,
   [switch]$EnableCSharpWrapper = $false,
   [switch]$DownloadWeights = $false,
@@ -522,6 +523,11 @@ if ($ForceVCPKGCacheRemoval -and (-Not $UseVCPKG)) {
   Write-Host "VCPKG is not enabled, so local vcpkg binary cache will not be deleted even if requested" -ForegroundColor Yellow
 }
 
+if ($UseVCPKG -and (-Not $DoNotDeleteBuildtreesFolder)) {
+  Write-Host "Cleaning folder buildtrees inside vcpkg" -ForegroundColor Yellow
+  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue "$env:VCPKG_ROOT/buildtrees"
+}
+
 if (($ForceOpenCVVersion -eq 2) -and $UseVCPKG) {
   Write-Host "You requested OpenCV version 2, so vcpkg will install that version" -ForegroundColor Yellow
   $AdditionalBuildSetup = $AdditionalBuildSetup + " -DVCPKG_USE_OPENCV4=OFF -DVCPKG_USE_OPENCV2=ON"
@@ -743,6 +749,11 @@ else {
   Set-Location ..
   Copy-Item cmake/Modules/*.cmake share/darknet/
   Pop-Location
+}
+
+if ($UseVCPKG -and (-Not $DoNotDeleteBuildtreesFolder)) {
+  Write-Host "Cleaning folder buildtrees inside vcpkg" -ForegroundColor Yellow
+  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue "$env:VCPKG_ROOT/buildtrees"
 }
 
 Write-Host "Build complete!" -ForegroundColor Green

@@ -1,5 +1,95 @@
 #!/usr/bin/env pwsh
 
+<#
+
+.SYNOPSIS
+        build
+        Created By: Stefano Sinigardi
+        Created Date: February 18, 2019
+        Last Modified Date: November 10, 2021
+
+.DESCRIPTION
+Build darknet using CMake, trying to properly setup the environment around compiler
+
+.PARAMETER DisableInteractive
+Disable script interactivity (useful for CI runs)
+
+.PARAMETER EnableCUDA
+Enable CUDA feature
+
+.PARAMETER EnableCUDNN
+Enable CUDNN feature
+
+.PARAMETER EnableOPENCV
+Build darknet linking to OpenCV
+
+.PARAMETER EnableOPENCV_CUDA
+Use a CUDA-enabled OpenCV build
+
+.PARAMETER UseVCPKG
+Use VCPKG to build darknet dependencies. Clone it if not already found on system
+
+.PARAMETER InstallDARKNETthroughVCPKG
+Use VCPKG to install darknet thanks to the port integrated in it
+
+.PARAMETER InstallDARKNETdependenciesThroughVCPKGManifest
+Use VCPKG to install darknet dependencies using vcpkg manifest feature
+
+.PARAMETER ForceVCPKGDarknetHEAD
+Install darknet from vcpkg and force it to HEAD version, not latest port release
+
+.PARAMETER DoNotUpdateVCPKG
+Do not update vcpkg before running the build (valid only if vcpkg is cloned by this script or the version found on the system is git-enabled)
+
+.PARAMETER DoNotUpdateDARKNET
+Do not update darknet before running the build (valid only if darknet is git-enabled)
+
+.PARAMETER DoNotDeleteBuildFolder
+Do not delete temporary cmake build folder at the end of the script
+
+.PARAMETER DoNotSetupVS
+Do not setup VisualStudio environment using the vcvars script
+
+.PARAMETER DoNotUseNinja
+Do not use Ninja for build
+
+.PARAMETER ForceCPP
+Force building darknet using C++ compiler also for plain C code
+
+.PARAMETER ForceStaticLib
+Create darknet library as static instead of the default linking mode of your system
+
+.PARAMETER ForceVCPKGCacheRemoval
+Force clean up of the local vcpkg binary cache before building
+
+.PARAMETER DoNotDeleteBuildtreesFolder
+Do not delete vcpkg buildtrees temp folder at the end of the script
+
+.PARAMETER ForceSetupVS
+Forces Visual Studio setup, also on systems on which it would not have been enabled automatically
+
+.PARAMETER EnableCSharpWrapper
+Enables building C# darknet wrapper
+
+.PARAMETER DownloadWeights
+Download pre-trained weight files
+
+.PARAMETER ForceGCCVersion
+Force a specific GCC version
+
+.PARAMETER ForceOpenCVVersion
+Force a specific OpenCV version (valid only with vcpkg-enabled builds)
+
+.PARAMETER NumberOfBuildWorkers
+Forces a specific number of threads for parallel building
+
+.PARAMETER AdditionalBuildSetup
+Additional setup parameters to manually pass to CMake
+
+.EXAMPLE
+.\build -DisableInteractive -DoNotDeleteBuildFolder -UseVCPKG
+
+#>
 
 param (
   [switch]$DisableInteractive = $false,

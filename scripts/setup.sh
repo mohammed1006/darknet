@@ -69,7 +69,7 @@ elif [[ $(cut -f2 <<< $(lsb_release -i)) == "Ubuntu" ]]; then
   fi
   if [ "$install_tools" = true ] ; then
     sudo apt-get update
-    sudo apt-get install -y git ninja-build build-essential g++ nasm yasm
+    sudo apt-get install -y git ninja-build build-essential g++ nasm yasm gperf
     sudo apt-get install -y apt-transport-https ca-certificates gnupg software-properties-common wget
     wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
     sudo apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(cut -f2 <<< $(lsb_release -c)) main"

@@ -288,7 +288,7 @@ if (($IsLinux -or $IsMacOS) -and ($ForceGCCVersion -gt 0)) {
 }
 
 if (($IsWindows -or $IsWindowsPowerShell) -and (-Not $env:VCPKG_DEFAULT_TRIPLET)) {
-  $env:VCPKG_DEFAULT_TRIPLET = "x64-windows"
+  $env:VCPKG_DEFAULT_TRIPLET = "x64-windows-release"
 }
 
 if ($EnableCUDA) {

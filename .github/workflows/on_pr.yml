@@ -291,7 +291,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableCUDNN -DisableInteractive -DoNotUpdateDARKNET
 
 
   osx:

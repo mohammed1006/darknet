@@ -1,4 +1,4 @@
-# Yolo v4, v3 and v2 for Windows and Linux
+# Yolo v4, v3, and v2 for Windows and Linux
 
 ## (neural networks for object detection)
 
@@ -39,14 +39,14 @@ About Darknet framework: http://pjreddie.com/darknet/
 - [Yolo v4 in other frameworks (TensorRT, TensorFlow, PyTorch, OpenVINO, OpenCV-dnn, TVM,...)](#yolo-v4-in-other-frameworks)
 - [Datasets](#datasets)
 
-- [Yolo v4, v3 and v2 for Windows and Linux](#yolo-v4-v3-and-v2-for-windows-and-linux)
+- [Yolo v4, v3, and v2 for Windows and Linux](#yolo-v4-v3-and-v2-for-windows-and-linux)
   - [(neural networks for object detection)](#neural-networks-for-object-detection)
     - [GeForce RTX 2080 Ti](#geforce-rtx-2080-ti)
       - [Youtube video of results](#youtube-video-of-results)
       - [How to evaluate AP of YOLOv4 on the MS COCO evaluation server](#how-to-evaluate-ap-of-yolov4-on-the-ms-coco-evaluation-server)
       - [How to evaluate FPS of YOLOv4 on GPU](#how-to-evaluate-fps-of-yolov4-on-gpu)
       - [Pre-trained models](#pre-trained-models)
-    - [Requirements for Windows, Linux and macOS](#requirements-for-windows-linux-and-macos)
+    - [Requirements for Windows, Linux, and macOS](#requirements-for-windows-linux-and-macos)
     - [Yolo v4 in other frameworks](#yolo-v4-in-other-frameworks)
       - [Datasets](#datasets)
     - [Improvements in this repository](#improvements-in-this-repository)
@@ -254,7 +254,7 @@ You can get cfg-files by path: `darknet/cfg/`
 - OpenImages: use `python ./scripts/get_openimages_dataset.py` for labeling train detection dataset
 - Pascal VOC: use `python ./scripts/voc_label.py` for labeling Train/Test/Val detection datasets
 - ILSVRC2012 (ImageNet classification): use `./scripts/get_imagenet_train.sh` (also `imagenet_label.sh` for labeling valid set)
-- German/Belgium/Russian/LISA/MASTIF Traffic Sign Datasets for Detection - use this parsers: https://github.com/angeligareta/Datasets2Darknet#detection-task
+- German/Belgium/Russian/LISA/MASTIF Traffic Sign Datasets for Detection - use this parser: https://github.com/angeligareta/Datasets2Darknet#detection-task
 - List of other datasets: https://github.com/AlexeyAB/darknet/tree/master/scripts#datasets
 
 ### Improvements in this repository
@@ -325,9 +325,9 @@ If you customize build with CMake GUI, darknet executable will be installed in y
     - Smart WebCam - preferably: https://play.google.com/store/apps/details?id=com.acontech.android.SmartWebCam2
     - IP Webcam: https://play.google.com/store/apps/details?id=com.pas.webcam
 
-2. Connect your Android phone to computer by WiFi (through a WiFi-router) or USB
+2. Connect your Android phone to the computer by WiFi (through a WiFi-router) or USB
 3. Start Smart WebCam on your phone
-4. Replace the address below, on shown in the phone application (Smart WebCam) and launch:
+4. Replace the address below, shown in the phone application (Smart WebCam) and launch:
 
 - Yolo v4 COCO-model: `./darknet detector demo data/coco.data yolov4.cfg yolov4.weights http://192.168.0.80:8080/video?dummy=param.mjpg -i 0`
 
@@ -381,7 +381,7 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
     or use in such a way: `LD_LIBRARY_PATH=./:$LD_LIBRARY_PATH ./uselib data/coco.names cfg/yolov4.cfg yolov4.weights test.mp4`
 - `ZED_CAMERA=1` to build a library with ZED-3D-camera support (should be ZED SDK installed), then run
     `LD_LIBRARY_PATH=./:$LD_LIBRARY_PATH ./uselib data/coco.names cfg/yolov4.cfg yolov4.weights zed_camera`
-- You also need to specify for which graphics card the code is generated. This is done by setting `ARCH=`. If you use a never version than CUDA 11 you further need to edit line 20 from Makefile and remove `-gencode arch=compute_30,code=sm_30 \` as Kepler GPU support was dropped in CUDA 11. You can also drop the general `ARCH=` and just uncomment `ARCH=` for your graphics card.
+- You also need to specify for which graphics card the code is generated. This is done by setting `ARCH=`. If you use a newer version than CUDA 11 you further need to edit line 20 from Makefile and remove `-gencode arch=compute_30,code=sm_30 \` as Kepler GPU support was dropped in CUDA 11. You can also drop the general `ARCH=` and just uncomment `ARCH=` for your graphics card.
 
 ### How to compile on Windows (using `CMake`)
 
@@ -564,7 +564,7 @@ If you made you custom model that isn't based on other models, then you can trai
 
 ## When should I stop training
 
-Usually sufficient 2000 iterations for each class(object), but not less than number of training images and not less than 6000 iterations in total. But for a more precise definition when you should stop training, use the following manual:
+Usually sufficient 2000 iterations for each class(object), but not less than number of training images and not less than 6000 iterations in total. But for a more precise definition of when you should stop training, use the following manual:
 
 1. During training, you will see varying indicators of error, and you should stop when no longer decreases **0.XXXXXXX avg**:
 
@@ -645,7 +645,7 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
 
 - my Loss is very high and mAP is very low, is training wrong? Run training with `-show_imgs` flag at the end of training command, do you see correct bounded boxes of objects (in windows or in files `aug_...jpg`)? If no - your training dataset is wrong.
 
-- for each object which you want to detect - there must be at least 1 similar object in the Training dataset with about the same: shape, side of object, relative size, angle of rotation, tilt, illumination. So desirable that your training dataset include images with objects at different: scales, rotations, lightings, from different sides, on different backgrounds - you should preferably have 2000 different images for each class or more, and you should train `2000*classes` iterations or more
+- for each object which you want to detect - there must be at least 1 similar object in the Training dataset with about the same: shape, size of object, relative size, angle of rotation, tilt, illumination. So desirable that your training dataset include images with objects at different: scales, rotations, lightings, from different sides, on different backgrounds - you should preferably have 2000 different images for each class or more, and you should train `2000*classes` iterations or more
 
 - desirable that your training dataset include images with non-labeled objects that you do not want to detect - negative samples without bounded box (empty `.txt` files) - use as many images of negative samples as there are images with objects
 

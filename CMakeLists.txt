@@ -585,6 +585,11 @@ install(FILES
   DESTINATION "${INSTALL_CMAKE_DIR}"
 )
 
+install(FILES
+  "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules/FindCUDNN.cmake"
+  DESTINATION "${INSTALL_CMAKE_DIR}"
+)
+
 if(ENABLE_CSHARP_WRAPPER)
   add_subdirectory(src/csharp)
 endif()

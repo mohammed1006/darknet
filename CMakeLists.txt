@@ -588,6 +588,7 @@ install(FILES
 
 install(FILES
   "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules/FindCUDNN.cmake"
+  "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules/FindPThreads4W.cmake"
   DESTINATION "${INSTALL_CMAKE_DIR}"
 )
 

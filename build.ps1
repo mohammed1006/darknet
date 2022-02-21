@@ -439,7 +439,7 @@ if (-Not $DoNotUseNinja) {
   $NINJA_EXE = Get-Command "ninja" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
   if (-Not $NINJA_EXE) {
     DownloadNinja
-    $env:PATH += ";${PSScriptRoot}/ninja"
+    $env:PATH = '{0}{1}{2}' -f $env:PATH, [IO.Path]::PathSeparator, "${PSScriptRoot}/ninja"
     $NINJA_EXE = Get-Command "ninja" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
     if (-Not $NINJA_EXE) {
       $DoNotUseNinja = $true
@@ -714,7 +714,7 @@ if (-Not $IsMacOS -and $EnableCUDA) {
   $NVCC_EXE = Get-Command "nvcc" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
   if (-Not $NVCC_EXE) {
     if (Test-Path env:CUDA_PATH) {
-      $env:PATH += ";${env:CUDA_PATH}/bin"
+      $env:PATH = '{0}{1}{2}' -f $env:PATH, [IO.Path]::PathSeparator, "${env:CUDA_PATH}/bin"
       Write-Host "Found cuda in ${env:CUDA_PATH}"
     }
     else {

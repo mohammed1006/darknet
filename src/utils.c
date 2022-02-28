@@ -275,6 +275,8 @@ void replace_image_to_label(const char* input_path, char* output_path)
     //find_replace(output_path, "/images/", "/labels/", output_path);    // COCO
     //find_replace(output_path, "/VOC2007/JPEGImages/", "/VOC2007/labels/", output_path);        // PascalVOC
     //find_replace(output_path, "/VOC2012/JPEGImages/", "/VOC2012/labels/", output_path);        // PascalVOC
+    
+    find_replace(output_path, "/ims/", "/anns/", output_path); // generic dataset
 
     //find_replace(output_path, "/raw/", "/labels/", output_path);
     trim(output_path);

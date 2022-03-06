@@ -762,6 +762,10 @@ if ($EnableCSharpWrapper) {
   $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_CSHARP_WRAPPER:BOOL=ON"
 }
 
+if (-Not $InstallDARKNETthroughVCPKG) {
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_DEPLOY_CUSTOM_CMAKE_MODULES:BOOL=ON"
+}
+
 if ($InstallDARKNETthroughVCPKG) {
   if ($ForceVCPKGDarknetHEAD) {
     $headMode = " --head "
@@ -860,7 +864,6 @@ else {
     }
   }
   Set-Location ..
-  Copy-Item cmake/Modules/*.cmake share/darknet/
 }
 
 

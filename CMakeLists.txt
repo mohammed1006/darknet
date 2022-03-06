@@ -593,8 +593,8 @@ install(FILES
 
 if (ENABLE_DEPLOY_CUSTOM_CMAKE_MODULES)
   install(FILES
-    "${CMAKE_CURRENT_LIST_DIR}/cmake/FindCUDNN.cmake"
-    "${CMAKE_CURRENT_LIST_DIR}/cmake/FindPThreads4W.cmake"
+    "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules/FindCUDNN.cmake"
+    "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules/FindPThreads4W.cmake"
     DESTINATION "${INSTALL_CMAKE_DIR}"
   )
 endif()

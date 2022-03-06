@@ -857,7 +857,7 @@ else {
   }
   Remove-Item -Force -ErrorAction SilentlyContinue DarknetConfig.cmake
   Remove-Item -Force -ErrorAction SilentlyContinue DarknetConfigVersion.cmake
-  if (-Not $UseVCPKG) {
+  if (-Not $UseVCPKG -And -Not $DisableDLLcopy) {
     $dllfiles = Get-ChildItem ./${dllfolder}/*.dll
     if ($dllfiles) {
       Copy-Item $dllfiles ..

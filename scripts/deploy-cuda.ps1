@@ -25,12 +25,14 @@ else {
 }
 
 try {
+  Push-Location $PSScriptRoot
   Write-Host 'Downloading CUDA...'
   Invoke-WebRequest -Uri $url -OutFile "cuda_11.6.1_windows_network.exe"
   Write-Host 'Installing CUDA...'
   $proc = Start-Process -PassThru -FilePath "./cuda_11.6.1_windows_network.exe" -ArgumentList @($SilentFlag + $CudaFeatures)
   $proc.WaitForExit()
   $exitCode = $proc.ExitCode
+  Pop-Location
   if ($exitCode -eq 0) {
     Write-Host 'Installation successful!'
   }

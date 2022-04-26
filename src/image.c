@@ -273,7 +273,7 @@ image **load_alphabet()
         alphabets[j] = (image*)xcalloc(128, sizeof(image));
         for(i = 32; i < 127; ++i){
             char buff[256];
-            sprintf(buff, "data/labels/%d_%d.png", i, j);
+            sprintf(buff, "data/labels/%d_%d.jpg", i, j);
             alphabets[j][i] = load_image_color(buff, 0, 0);
         }
     }
@@ -705,7 +705,7 @@ void show_image(image p, const char *name)
 #ifdef OPENCV
     show_image_cv(p, name);
 #else
-    fprintf(stderr, "Not compiled with OpenCV, saving to %s.png instead\n", name);
+    fprintf(stderr, "Not compiled with OpenCV, saving to %s.jpg instead\n", name);
     save_image(p, name);
 #endif  // OPENCV
 }

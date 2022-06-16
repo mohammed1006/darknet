@@ -9,9 +9,10 @@ Use pip3 instead of pip on some systems to be sure to install modules for python
 """
 
 from ctypes import *
-import math
 import random
 import os
+import cv2
+import numpy as np
 
 
 class BOX(Structure):
@@ -35,6 +36,7 @@ class DETECTION(Structure):
                 ("embedding_size", c_int),
                 ("sim", c_float),
                 ("track_id", c_int)]
+
 
 class DETNUMPAIR(Structure):
     _fields_ = [("num", c_int),
@@ -67,10 +69,10 @@ def bbox2points(bbox):
     to corner points cv2 rectangle
     """
     x, y, w, h = bbox
-    xmin = int(round(x - (w / 2)))
-    xmax = int(round(x + (w / 2)))
-    ymin = int(round(y - (h / 2)))
-    ymax = int(round(y + (h / 2)))
+    xmin = round(x - (w / 2))
+    xmax = round(x + (w / 2))
+    ymin = round(y - (h / 2))
+    ymax = round(y + (h / 2))
     return xmin, ymin, xmax, ymax
 
 
@@ -134,6 +136,7 @@ def decode_detection(detections):
         decoded.append((str(label), confidence, bbox))
     return decoded
 
+
 # https://www.pyimagesearch.com/2015/02/16/faster-non-maximum-suppression-python/
 # Malisiewicz et al.
 def non_max_suppression_fast(detections, overlap_thresh):
@@ -184,6 +187,7 @@ def non_max_suppression_fast(detections, overlap_thresh):
         # return only the bounding boxes that were picked using the
         # integer data type
     return [detections[i] for i in pick]
+
 
 def remove_negatives(detections, class_names, num):
     """
@@ -236,11 +240,12 @@ if os.name == "posix":
     lib = CDLL(cwd + "/libdarknet.so", RTLD_GLOBAL)
 elif os.name == "nt":
     cwd = os.path.dirname(__file__)
-    os.environ['PATH'] = cwd + ';' + os.environ['PATH']
+    os.environ["PATH"] = os.path.pathsep.join((cwd, os.environ["PATH"]))
     lib = CDLL("darknet.dll", RTLD_GLOBAL)
 else:
+    lib = None  # Intellisense
     print("Unsupported OS")
-    exit
+    exit()
 
 lib.network_width.argtypes = [c_void_p]
 lib.network_width.restype = c_int
@@ -330,5 +335,6 @@ predict_image_letterbox.restype = POINTER(c_float)
 
 network_predict_batch = lib.network_predict_batch
 network_predict_batch.argtypes = [c_void_p, IMAGE, c_int, c_int, c_int,
-                                   c_float, c_float, POINTER(c_int), c_int, c_int]
+                                  c_float, c_float, POINTER(c_int), c_int, c_int]
 network_predict_batch.restype = POINTER(DETNUMPAIR)
+

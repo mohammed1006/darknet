@@ -52,11 +52,9 @@ def check_arguments_errors(args):
         raise(ValueError("Invalid video path {}".format(os.path.abspath(args.input))))
 
 
-def set_saved_video(input_video, output_video, size):
+def set_saved_video(output_video, size, fps):
     fourcc = cv2.VideoWriter_fourcc(*"MJPG")
-    fps = int(input_video.get(cv2.CAP_PROP_FPS))
-    video = cv2.VideoWriter(output_video, fourcc, fps, size)
-    return video
+    return cv2.VideoWriter(output_video, fourcc, fps, size)
 
 
 def convert2relative(bbox, preproc_h, preproc_w):
@@ -107,8 +105,9 @@ def convert4cropping(image, bbox, preproc_h, preproc_w):
     return bbox_cropping
 
 
-def video_capture(raw_frame_queue, preprocessed_frame_queue, preproc_h, preproc_w):
-    while cap.isOpened():
+def video_capture(stop_event, input_path, raw_frame_queue, preprocessed_frame_queue, preproc_h, preproc_w):
+    cap = cv2.VideoCapture(input_path)
+    while cap.isOpened() and not stop_event.is_set():
         ret, frame = cap.read()
         if not ret:
             break
@@ -119,11 +118,12 @@ def video_capture(raw_frame_queue, preprocessed_frame_queue, preproc_h, preproc_
         img_for_detect = darknet.make_image(preproc_w, preproc_h, 3)
         darknet.copy_image_from_bytes(img_for_detect, frame_resized.tobytes())
         preprocessed_frame_queue.put(img_for_detect)
+    stop_event.set()
     cap.release()
 
 
-def inference(preprocessed_frame_queue, detections_queue, fps_queue):
-    while cap.isOpened():
+def inference(stop_event, preprocessed_frame_queue, detections_queue, fps_queue):
+    while not stop_event.is_set():
         darknet_image = preprocessed_frame_queue.get()
         prev_time = time.time()
         detections = darknet.detect_image(network, class_names, darknet_image, thresh=args.thresh)
@@ -133,14 +133,13 @@ def inference(preprocessed_frame_queue, detections_queue, fps_queue):
         print("FPS: {:.2f}".format(fps))
         darknet.print_detections(detections, args.ext_output)
         darknet.free_image(darknet_image)
-    cap.release()
 
 
-def drawing(raw_frame_queue, detections_queue, fps_queue, preproc_h, preproc_w, vid_h, vid_w):
+def drawing(stop_event, input_video_fps, raw_frame_queue, detections_queue, fps_queue, preproc_h, preproc_w, vid_h, vid_w):
     random.seed(3)  # deterministic bbox colors
-    video = set_saved_video(cap, args.out_filename, (vid_w, vid_h))
+    video = set_saved_video(args.out_filename, (vid_w, vid_h), input_video_fps)
     fps = 1
-    while cap.isOpened():
+    while not stop_event.is_set():
         frame = raw_frame_queue.get()
         detections = detections_queue.get()
         fps = fps_queue.get()
@@ -156,7 +155,7 @@ def drawing(raw_frame_queue, detections_queue, fps_queue, preproc_h, preproc_w, 
                 video.write(image)
             if cv2.waitKey(fps) == 27:
                 break
-    cap.release()
+    stop_event.set()
     video.release()
     cv2.destroyAllWindows()
     timeout = 1 / (fps if fps > 0 else 0.5)
@@ -183,16 +182,22 @@ if __name__ == "__main__":
     darknet_width = darknet.network_width(network)
     darknet_height = darknet.network_height(network)
     input_path = str2int(args.input)
-    cap = cv2.VideoCapture(input_path)
+    cap = cv2.VideoCapture(input_path)  # Open video twice :(
     video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     video_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    video_fps = int(cap.get(cv2.CAP_PROP_FPS))
+    cap.release()
+    del cap
+
+    stop_event = threading.Event()
+    ExecUnit = threading.Thread
 
     exec_units = (
-        threading.Thread(target=video_capture, args=(raw_frame_queue, preprocessed_frame_queue,
-                                                     darknet_height, darknet_width)),
-        threading.Thread(target=inference, args=(preprocessed_frame_queue, detections_queue, fps_queue)),
-        threading.Thread(target=drawing, args=(raw_frame_queue, detections_queue, fps_queue,
-                                               darknet_height, darknet_width, video_height, video_width)),
+        ExecUnit(target=video_capture, args=(stop_event, input_path, raw_frame_queue, preprocessed_frame_queue,
+                                             darknet_height, darknet_width)),
+        ExecUnit(target=inference, args=(stop_event, preprocessed_frame_queue, detections_queue, fps_queue)),
+        ExecUnit(target=drawing, args=(stop_event, video_fps, raw_frame_queue, detections_queue, fps_queue,
+                                       darknet_height, darknet_width, video_height, video_width)),
     )
     for exec_unit in exec_units:
         exec_unit.start()

@@ -140,6 +140,7 @@ def inference(preprocessed_frame_queue, detections_queue, fps_queue):
 def drawing(raw_frame_queue, detections_queue, fps_queue):
     random.seed(3)  # deterministic bbox colors
     video = set_saved_video(cap, args.out_filename, (video_width, video_height))
+    fps = 1
     while cap.isOpened():
         frame = raw_frame_queue.get()
         detections = detections_queue.get()
@@ -159,6 +160,12 @@ def drawing(raw_frame_queue, detections_queue, fps_queue):
     cap.release()
     video.release()
     cv2.destroyAllWindows()
+    timeout = 1 / (fps if fps > 0 else 0.5)
+    for q in (detections_queue, fps_queue, preprocessed_frame_queue):
+        try:
+            q.get(block=True, timeout=timeout)
+        except queue.Empty:
+            pass
 
 
 if __name__ == "__main__":
@@ -180,6 +187,7 @@ if __name__ == "__main__":
     cap = cv2.VideoCapture(input_path)
     video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     video_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
     threading.Thread(target=video_capture, args=(raw_frame_queue, preprocessed_frame_queue)).start()
     threading.Thread(target=inference, args=(preprocessed_frame_queue, detections_queue, fps_queue)).start()
     threading.Thread(target=drawing, args=(raw_frame_queue, detections_queue, fps_queue)).start()

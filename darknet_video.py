@@ -59,18 +59,16 @@ def set_saved_video(input_video, output_video, size):
     return video
 
 
-def convert2relative(bbox):
+def convert2relative(bbox, preproc_h, preproc_w):
     """
     YOLO format use relative coordinates for annotation
     """
     x, y, w, h = bbox
-    _height = darknet_height
-    _width = darknet_width
-    return x / _width, y / _height, w / _width, h / _height
+    return x / preproc_w, y / preproc_h, w / preproc_w, h / preproc_h
 
 
-def convert2original(image, bbox):
-    x, y, w, h = convert2relative(bbox)
+def convert2original(image, bbox, preproc_h, preproc_w):
+    x, y, w, h = convert2relative(bbox, preproc_h, preproc_w)
 
     image_h, image_w, __ = image.shape
 
@@ -84,8 +82,9 @@ def convert2original(image, bbox):
     return bbox_converted
 
 
-def convert4cropping(image, bbox):
-    x, y, w, h = convert2relative(bbox)
+# @TODO - cfati: Unused
+def convert4cropping(image, bbox, preproc_h, preproc_w):
+    x, y, w, h = convert2relative(bbox, preproc_h, preproc_w)
 
     image_h, image_w, __ = image.shape
 
@@ -108,16 +107,16 @@ def convert4cropping(image, bbox):
     return bbox_cropping
 
 
-def video_capture(raw_frame_queue, preprocessed_frame_queue):
+def video_capture(raw_frame_queue, preprocessed_frame_queue, preproc_h, preproc_w):
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        frame_resized = cv2.resize(frame_rgb, (darknet_width, darknet_height),
+        frame_resized = cv2.resize(frame_rgb, (preproc_w, preproc_h),
                                    interpolation=cv2.INTER_LINEAR)
         raw_frame_queue.put(frame)
-        img_for_detect = darknet.make_image(darknet_width, darknet_height, 3)
+        img_for_detect = darknet.make_image(preproc_w, preproc_h, 3)
         darknet.copy_image_from_bytes(img_for_detect, frame_resized.tobytes())
         preprocessed_frame_queue.put(img_for_detect)
     cap.release()
@@ -137,9 +136,9 @@ def inference(preprocessed_frame_queue, detections_queue, fps_queue):
     cap.release()
 
 
-def drawing(raw_frame_queue, detections_queue, fps_queue):
+def drawing(raw_frame_queue, detections_queue, fps_queue, preproc_h, preproc_w, vid_h, vid_w):
     random.seed(3)  # deterministic bbox colors
-    video = set_saved_video(cap, args.out_filename, (video_width, video_height))
+    video = set_saved_video(cap, args.out_filename, (vid_w, vid_h))
     fps = 1
     while cap.isOpened():
         frame = raw_frame_queue.get()
@@ -148,7 +147,7 @@ def drawing(raw_frame_queue, detections_queue, fps_queue):
         detections_adjusted = []
         if frame is not None:
             for label, confidence, bbox in detections:
-                bbox_adjusted = convert2original(frame, bbox)
+                bbox_adjusted = convert2original(frame, bbox, preproc_h, preproc_w)
                 detections_adjusted.append((str(label), confidence, bbox_adjusted))
             image = darknet.draw_boxes(detections_adjusted, frame, class_colors)
             if not args.dont_show:
@@ -189,9 +188,11 @@ if __name__ == "__main__":
     video_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     exec_units = (
-        threading.Thread(target=video_capture, args=(raw_frame_queue, preprocessed_frame_queue)),
+        threading.Thread(target=video_capture, args=(raw_frame_queue, preprocessed_frame_queue,
+                                                     darknet_height, darknet_width)),
         threading.Thread(target=inference, args=(preprocessed_frame_queue, detections_queue, fps_queue)),
-        threading.Thread(target=drawing, args=(raw_frame_queue, detections_queue, fps_queue)),
+        threading.Thread(target=drawing, args=(raw_frame_queue, detections_queue, fps_queue,
+                                               darknet_height, darknet_width, video_height, video_width)),
     )
     for exec_unit in exec_units:
         exec_unit.start()

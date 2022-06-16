@@ -6,7 +6,7 @@ import time
 import darknet
 import argparse
 from threading import Thread, enumerate
-from queue import Queue
+import queue
 
 
 def parser():
@@ -159,10 +159,10 @@ def drawing(frame_queue, detections_queue, fps_queue):
 
 
 if __name__ == '__main__':
-    frame_queue = Queue()
-    darknet_image_queue = Queue(maxsize=1)
-    detections_queue = Queue(maxsize=1)
-    fps_queue = Queue(maxsize=1)
+    frame_queue = queue.Queue()
+    darknet_image_queue = queue.Queue(maxsize=1)
+    detections_queue = queue.Queue(maxsize=1)
+    fps_queue = queue.Queue(maxsize=1)
 
     args = parser()
     check_arguments_errors(args)

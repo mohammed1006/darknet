@@ -188,6 +188,15 @@ if __name__ == "__main__":
     video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     video_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    threading.Thread(target=video_capture, args=(raw_frame_queue, preprocessed_frame_queue)).start()
-    threading.Thread(target=inference, args=(preprocessed_frame_queue, detections_queue, fps_queue)).start()
-    threading.Thread(target=drawing, args=(raw_frame_queue, detections_queue, fps_queue)).start()
+    exec_units = (
+        threading.Thread(target=video_capture, args=(raw_frame_queue, preprocessed_frame_queue)),
+        threading.Thread(target=inference, args=(preprocessed_frame_queue, detections_queue, fps_queue)),
+        threading.Thread(target=drawing, args=(raw_frame_queue, detections_queue, fps_queue)),
+    )
+    for exec_unit in exec_units:
+        exec_unit.start()
+    for exec_unit in exec_units:
+        exec_unit.join()
+
+    print("\nDone.")
+

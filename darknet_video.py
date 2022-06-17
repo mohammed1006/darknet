@@ -16,9 +16,9 @@ def parser():
                         help="inference video name. Not saved if empty")
     parser.add_argument("--weights", default="yolov4.weights",
                         help="yolo weights path")
-    parser.add_argument("--dont_show", action='store_true',
-                        help="windown inference display. For headless systems")
-    parser.add_argument("--ext_output", action='store_true',
+    parser.add_argument("--dont_show", action="store_true",
+                        help="window inference display. For headless systems")
+    parser.add_argument("--ext_output", action="store_true",
                         help="display bbox coordinates of detected objects")
     parser.add_argument("--config_file", default="./cfg/yolov4.cfg",
                         help="path to config file")
@@ -31,7 +31,7 @@ def parser():
 
 def str2int(video_path):
     """
-    argparse returns and string althout webcam uses int (0, 1 ...)
+    argparse returns and string although webcam uses int (0, 1 ...)
     Cast to int if needed
     """
     try:
@@ -105,9 +105,9 @@ def convert4cropping(image, bbox, preproc_h, preproc_w):
     return bbox_cropping
 
 
-def video_capture(stop_event, input_path, raw_frame_queue, preprocessed_frame_queue, preproc_h, preproc_w):
+def video_capture(stop_flag, input_path, raw_frame_queue, preprocessed_frame_queue, preproc_h, preproc_w):
     cap = cv2.VideoCapture(input_path)
-    while cap.isOpened() and not stop_event.is_set():
+    while cap.isOpened() and not stop_flag.is_set():
         ret, frame = cap.read()
         if not ret:
             break
@@ -118,12 +118,12 @@ def video_capture(stop_event, input_path, raw_frame_queue, preprocessed_frame_qu
         img_for_detect = darknet.make_image(preproc_w, preproc_h, 3)
         darknet.copy_image_from_bytes(img_for_detect, frame_resized.tobytes())
         preprocessed_frame_queue.put(img_for_detect)
-    stop_event.set()
+    stop_flag.set()
     cap.release()
 
 
-def inference(stop_event, preprocessed_frame_queue, detections_queue, fps_queue):
-    while not stop_event.is_set():
+def inference(stop_flag, preprocessed_frame_queue, detections_queue, fps_queue):
+    while not stop_flag.is_set():
         darknet_image = preprocessed_frame_queue.get()
         prev_time = time.time()
         detections = darknet.detect_image(network, class_names, darknet_image, thresh=args.thresh)
@@ -135,11 +135,11 @@ def inference(stop_event, preprocessed_frame_queue, detections_queue, fps_queue)
         darknet.free_image(darknet_image)
 
 
-def drawing(stop_event, input_video_fps, raw_frame_queue, detections_queue, fps_queue, preproc_h, preproc_w, vid_h, vid_w):
+def drawing(stop_flag, input_video_fps, raw_frame_queue, detections_queue, fps_queue, preproc_h, preproc_w, vid_h, vid_w):
     random.seed(3)  # deterministic bbox colors
     video = set_saved_video(args.out_filename, (vid_w, vid_h), input_video_fps)
     fps = 1
-    while not stop_event.is_set():
+    while not stop_flag.is_set():
         frame = raw_frame_queue.get()
         detections = detections_queue.get()
         fps = fps_queue.get()
@@ -155,11 +155,11 @@ def drawing(stop_event, input_video_fps, raw_frame_queue, detections_queue, fps_
                 video.write(image)
             if cv2.waitKey(fps) == 27:
                 break
-    stop_event.set()
+    stop_flag.set()
     video.release()
     cv2.destroyAllWindows()
     timeout = 1 / (fps if fps > 0 else 0.5)
-    for q in (detections_queue, fps_queue, preprocessed_frame_queue):
+    for q in (preprocessed_frame_queue, detections_queue, fps_queue):
         try:
             q.get(block=True, timeout=timeout)
         except queue.Empty:
@@ -167,11 +167,6 @@ def drawing(stop_event, input_video_fps, raw_frame_queue, detections_queue, fps_
 
 
 if __name__ == "__main__":
-    raw_frame_queue = queue.Queue()
-    preprocessed_frame_queue = queue.Queue(maxsize=1)
-    detections_queue = queue.Queue(maxsize=1)
-    fps_queue = queue.Queue(maxsize=1)
-
     args = parser()
     check_arguments_errors(args)
     network, class_names, class_colors = darknet.load_network(
@@ -189,14 +184,20 @@ if __name__ == "__main__":
     cap.release()
     del cap
 
-    stop_event = threading.Event()
+    stop_flag = threading.Event()
     ExecUnit = threading.Thread
+    Queue = queue.Queue
+
+    raw_frame_queue = Queue()
+    preprocessed_frame_queue = Queue(maxsize=1)
+    detections_queue = Queue(maxsize=1)
+    fps_queue = Queue(maxsize=1)
 
     exec_units = (
-        ExecUnit(target=video_capture, args=(stop_event, input_path, raw_frame_queue, preprocessed_frame_queue,
+        ExecUnit(target=video_capture, args=(stop_flag, input_path, raw_frame_queue, preprocessed_frame_queue,
                                              darknet_height, darknet_width)),
-        ExecUnit(target=inference, args=(stop_event, preprocessed_frame_queue, detections_queue, fps_queue)),
-        ExecUnit(target=drawing, args=(stop_event, video_fps, raw_frame_queue, detections_queue, fps_queue,
+        ExecUnit(target=inference, args=(stop_flag, preprocessed_frame_queue, detections_queue, fps_queue)),
+        ExecUnit(target=drawing, args=(stop_flag, video_fps, raw_frame_queue, detections_queue, fps_queue,
                                        darknet_height, darknet_width, video_height, video_width)),
     )
     for exec_unit in exec_units:

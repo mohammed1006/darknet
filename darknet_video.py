@@ -122,21 +122,23 @@ def video_capture(stop_flag, input_path, raw_frame_queue, preprocessed_frame_que
     cap.release()
 
 
-def inference(stop_flag, preprocessed_frame_queue, detections_queue, fps_queue):
+def inference(stop_flag, preprocessed_frame_queue, detections_queue, fps_queue,
+              network, class_names, threshold):
     while not stop_flag.is_set():
         darknet_image = preprocessed_frame_queue.get()
         prev_time = time.time()
-        detections = darknet.detect_image(network, class_names, darknet_image, thresh=args.thresh)
-        detections_queue.put(detections)
+        detections = darknet.detect_image(network, class_names, darknet_image, thresh=threshold)
         fps = 1 / (time.time() - prev_time)
+        detections_queue.put(detections)
         fps_queue.put(int(fps))
         print("FPS: {:.2f}".format(fps))
         darknet.print_detections(detections, args.ext_output)
         darknet.free_image(darknet_image)
 
 
-def drawing(stop_flag, input_video_fps, raw_frame_queue, detections_queue, fps_queue, preproc_h, preproc_w, vid_h, vid_w):
+def drawing(stop_flag, input_video_fps, queues, preproc_h, preproc_w, vid_h, vid_w):
     random.seed(3)  # deterministic bbox colors
+    raw_frame_queue, preprocessed_frame_queue, detections_queue, fps_queue = queues
     video = set_saved_video(args.out_filename, (vid_w, vid_h), input_video_fps)
     fps = 1
     while not stop_flag.is_set():
@@ -184,9 +186,9 @@ if __name__ == "__main__":
     cap.release()
     del cap
 
-    stop_flag = threading.Event()
     ExecUnit = threading.Thread
     Queue = queue.Queue
+    stop_flag = threading.Event()
 
     raw_frame_queue = Queue()
     preprocessed_frame_queue = Queue(maxsize=1)
@@ -196,8 +198,10 @@ if __name__ == "__main__":
     exec_units = (
         ExecUnit(target=video_capture, args=(stop_flag, input_path, raw_frame_queue, preprocessed_frame_queue,
                                              darknet_height, darknet_width)),
-        ExecUnit(target=inference, args=(stop_flag, preprocessed_frame_queue, detections_queue, fps_queue)),
-        ExecUnit(target=drawing, args=(stop_flag, video_fps, raw_frame_queue, detections_queue, fps_queue,
+        ExecUnit(target=inference, args=(stop_flag, preprocessed_frame_queue, detections_queue, fps_queue,
+                                         network, class_names, args.thresh)),
+        ExecUnit(target=drawing, args=(stop_flag, video_fps,
+                                       (raw_frame_queue, preprocessed_frame_queue, detections_queue, fps_queue),
                                        darknet_height, darknet_width, video_height, video_width)),
     )
     for exec_unit in exec_units:

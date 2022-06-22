@@ -1,4 +1,4 @@
-FROM ubuntu:latest AS builder
+FROM nvidia/cuda:11.6.0-cudnn8-devel-ubuntu20.04 AS builder
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -10,10 +10,13 @@ COPY  . /darknet
 
 WORKDIR /darknet
 
+RUN rm Dockerfile.cpu
+
+RUN rm Dockerfile.gpu
 
 RUN make
 
-FROM ubuntu:latest
+FROM nvidia/cuda:11.6.0-cudnn8-devel-ubuntu20.04
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -40,5 +43,3 @@ RUN ldconfig
 WORKDIR /home/yolo/darknet
 
 USER yolo
-
-

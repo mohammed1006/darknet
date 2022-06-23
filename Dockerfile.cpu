@@ -10,6 +10,11 @@ COPY  . /darknet
 
 WORKDIR /darknet
 
+RUN rm Dockerfile.cpu
+
+RUN rm Dockerfile.gpu
+
+RUN rm Docker-compose.yml
 
 RUN make
 

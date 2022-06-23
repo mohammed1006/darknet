@@ -14,6 +14,8 @@ RUN rm Dockerfile.cpu
 
 RUN rm Dockerfile.gpu
 
+RUN rm Docker-compose.yml
+
 RUN make
 
 FROM nvidia/cuda:11.6.0-cudnn8-devel-ubuntu20.04

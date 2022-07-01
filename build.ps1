@@ -14,6 +14,9 @@ Build darknet using CMake, trying to properly setup the environment around compi
 .PARAMETER DisableInteractive
 Disable script interactivity (useful for CI runs)
 
+.PARAMETER DisableDLLcopy
+Disable automatic DLL deployment through vcpkg at the end
+
 .PARAMETER EnableCUDA
 Enable CUDA feature
 
@@ -62,8 +65,11 @@ Create darknet library as static instead of the default linking mode of your sys
 .PARAMETER ForceVCPKGCacheRemoval
 Force clean up of the local vcpkg binary cache before building
 
-.PARAMETER DoNotDeleteBuildtreesFolder
-Do not delete vcpkg buildtrees temp folder at the end of the script
+.PARAMETER ForceVCPKGBuildtreesRemoval
+Force clean up of vcpkg buildtrees temp folder at the end of the script
+
+.PARAMETER ForceVCPKGPackagesRemoval
+Force clean up of vcpkg packages folder at the end of the script
 
 .PARAMETER ForceSetupVS
 Forces Visual Studio setup, also on systems on which it would not have been enabled automatically
@@ -93,6 +99,7 @@ Additional setup parameters to manually pass to CMake
 
 param (
   [switch]$DisableInteractive = $false,
+  [switch]$DisableDLLcopy = $false,
   [switch]$EnableCUDA = $false,
   [switch]$EnableCUDNN = $false,
   [switch]$EnableOPENCV = $false,
@@ -109,7 +116,8 @@ param (
   [switch]$ForceCPP = $false,
   [switch]$ForceStaticLib = $false,
   [switch]$ForceVCPKGCacheRemoval = $false,
-  [switch]$DoNotDeleteBuildtreesFolder = $false,
+  [switch]$ForceVCPKGBuildtreesRemoval = $false,
+  [switch]$ForceVCPKGPackagesRemoval = $false,
   [switch]$ForceSetupVS = $false,
   [switch]$EnableCSharpWrapper = $false,
   [switch]$DownloadWeights = $false,
@@ -119,93 +127,18 @@ param (
   [string]$AdditionalBuildSetup = ""  # "-DCMAKE_CUDA_ARCHITECTURES=30"
 )
 
-$build_ps1_version = "0.9.8"
+$build_ps1_version = "2.0.0"
+Import-Module -Name $PSScriptRoot/scripts/utils.psm1 -Force
 
 $ErrorActionPreference = "SilentlyContinue"
 Stop-Transcript | out-null
 $ErrorActionPreference = "Continue"
 Start-Transcript -Path $PSScriptRoot/build.log
 
-Function MyThrow ($Message) {
-  if ($DisableInteractive) {
-    Write-Host $Message -ForegroundColor Red
-    throw
-  }
-  else {
-    # Check if running in PowerShell ISE
-    if ($psISE) {
-      # "ReadKey" not supported in PowerShell ISE.
-      # Show MessageBox UI
-      $Shell = New-Object -ComObject "WScript.Shell"
-      $Shell.Popup($Message, 0, "OK", 0)
-      throw
-    }
-
-    $Ignore =
-    16, # Shift (left or right)
-    17, # Ctrl (left or right)
-    18, # Alt (left or right)
-    20, # Caps lock
-    91, # Windows key (left)
-    92, # Windows key (right)
-    93, # Menu key
-    144, # Num lock
-    145, # Scroll lock
-    166, # Back
-    167, # Forward
-    168, # Refresh
-    169, # Stop
-    170, # Search
-    171, # Favorites
-    172, # Start/Home
-    173, # Mute
-    174, # Volume Down
-    175, # Volume Up
-    176, # Next Track
-    177, # Previous Track
-    178, # Stop Media
-    179, # Play
-    180, # Mail
-    181, # Select Media
-    182, # Application 1
-    183  # Application 2
-
-    Write-Host $Message -ForegroundColor Red
-    Write-Host -NoNewline "Press any key to continue..."
-    while (($null -eq $KeyInfo.VirtualKeyCode) -or ($Ignore -contains $KeyInfo.VirtualKeyCode)) {
-      $KeyInfo = $Host.UI.RawUI.ReadKey("NoEcho, IncludeKeyDown")
-    }
-    Write-Host ""
-    throw
-  }
-}
-
-Function DownloadNinja() {
-  Write-Host "Unable to find Ninja, downloading a portable version on-the-fly" -ForegroundColor Yellow
-  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue ninja
-  Remove-Item -Force -ErrorAction SilentlyContinue ninja.zip
-  if ($IsWindows -or $IsWindowsPowerShell) {
-    $url = "https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-win.zip"
-  }
-  elseif ($IsLinux) {
-    $url = "https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-linux.zip"
-  }
-  elseif ($IsMacOS) {
-    $url = "https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-mac.zip"
-  }
-  else {
-    MyThrow("Unknown OS, unsupported")
-  }
-  Invoke-RestMethod -Uri $url -Method Get -ContentType application/zip -OutFile "ninja.zip"
-  Expand-Archive -Path ninja.zip
-  Remove-Item -Force -ErrorAction SilentlyContinue ninja.zip
-}
-
-
-Write-Host "Darknet build script version ${build_ps1_version}"
+Write-Host "Build script version ${build_ps1_version}, utils module version ${utils_psm1_version}"
 
 if ((-Not $DisableInteractive) -and (-Not $UseVCPKG)) {
-  $Result = Read-Host "Enable vcpkg to install darknet dependencies (yes/no)"
+  $Result = Read-Host "Enable vcpkg to install dependencies (yes/no)"
   if (($Result -eq 'Yes') -or ($Result -eq 'Y') -or ($Result -eq 'yes') -or ($Result -eq 'y')) {
     $UseVCPKG = $true
   }
@@ -431,7 +364,7 @@ if (-Not $DoNotUseNinja) {
   $NINJA_EXE = Get-Command "ninja" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
   if (-Not $NINJA_EXE) {
     DownloadNinja
-    $env:PATH += ";${PSScriptRoot}/ninja"
+    $env:PATH = '{0}{1}{2}' -f $env:PATH, [IO.Path]::PathSeparator, "${PSScriptRoot}/ninja"
     $NINJA_EXE = Get-Command "ninja" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
     if (-Not $NINJA_EXE) {
       $DoNotUseNinja = $true
@@ -456,90 +389,6 @@ if (-Not $DoNotUseNinja) {
   }
 }
 
-function getProgramFiles32bit() {
-  $out = ${env:PROGRAMFILES(X86)}
-  if ($null -eq $out) {
-    $out = ${env:PROGRAMFILES}
-  }
-
-  if ($null -eq $out) {
-    MyThrow("Could not find [Program Files 32-bit]")
-  }
-
-  return $out
-}
-
-function getLatestVisualStudioWithDesktopWorkloadPath() {
-  $programFiles = getProgramFiles32bit
-  $vswhereExe = "$programFiles\Microsoft Visual Studio\Installer\vswhere.exe"
-  if (Test-Path $vswhereExe) {
-    $output = & $vswhereExe -products * -latest -requires Microsoft.VisualStudio.Workload.NativeDesktop -format xml
-    [xml]$asXml = $output
-    foreach ($instance in $asXml.instances.instance) {
-      $installationPath = $instance.InstallationPath -replace "\\$" # Remove potential trailing backslash
-    }
-    if (!$installationPath) {
-      Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also partial installations" -ForegroundColor Yellow
-      $output = & $vswhereExe -products * -latest -format xml
-      [xml]$asXml = $output
-      foreach ($instance in $asXml.instances.instance) {
-        $installationPath = $instance.InstallationPath -replace "\\$" # Remove potential trailing backslash
-      }
-    }
-    if (!$installationPath) {
-      Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also pre-release installations" -ForegroundColor Yellow
-      $output = & $vswhereExe -prerelease -products * -latest -format xml
-      [xml]$asXml = $output
-      foreach ($instance in $asXml.instances.instance) {
-        $installationPath = $instance.InstallationPath -replace "\\$" # Remove potential trailing backslash
-      }
-    }
-    if (!$installationPath) {
-      MyThrow("Could not locate any installation of Visual Studio")
-    }
-  }
-  else {
-    MyThrow("Could not locate vswhere at $vswhereExe")
-  }
-  return $installationPath
-}
-
-
-function getLatestVisualStudioWithDesktopWorkloadVersion() {
-  $programFiles = getProgramFiles32bit
-  $vswhereExe = "$programFiles\Microsoft Visual Studio\Installer\vswhere.exe"
-  if (Test-Path $vswhereExe) {
-    $output = & $vswhereExe -products * -latest -requires Microsoft.VisualStudio.Workload.NativeDesktop -format xml
-    [xml]$asXml = $output
-    foreach ($instance in $asXml.instances.instance) {
-      $installationVersion = $instance.InstallationVersion
-    }
-    if (!$installationVersion) {
-      Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also partial installations" -ForegroundColor Yellow
-      $output = & $vswhereExe -products * -latest -format xml
-      [xml]$asXml = $output
-      foreach ($instance in $asXml.instances.instance) {
-        $installationVersion = $instance.installationVersion
-      }
-    }
-    if (!$installationVersion) {
-      Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also pre-release installations" -ForegroundColor Yellow
-      $output = & $vswhereExe -prerelease -products * -latest -format xml
-      [xml]$asXml = $output
-      foreach ($instance in $asXml.instances.instance) {
-        $installationVersion = $instance.installationVersion
-      }
-    }
-    if (!$installationVersion) {
-      MyThrow("Could not locate any installation of Visual Studio")
-    }
-  }
-  else {
-    MyThrow("Could not locate vswhere at $vswhereExe")
-  }
-  return $installationVersion
-}
-
 $vcpkg_root_set_by_this_script = $false
 
 if ((Test-Path env:VCPKG_ROOT) -and $UseVCPKG) {
@@ -555,7 +404,7 @@ elseif ((Test-Path "${env:WORKSPACE}/vcpkg") -and $UseVCPKG) {
   $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
 }
 elseif (-not($null -eq ${RUNVCPKG_VCPKG_ROOT_OUT})) {
-  if ((Test-Path "${RUNVCPKG_VCPKG_ROOT_OUT}") -and $UseVCPKG) {
+  if((Test-Path "${RUNVCPKG_VCPKG_ROOT_OUT}") -and $UseVCPKG) {
     $vcpkg_path = "${RUNVCPKG_VCPKG_ROOT_OUT}"
     $env:VCPKG_ROOT = "${RUNVCPKG_VCPKG_ROOT_OUT}"
     $vcpkg_root_set_by_this_script = $true
@@ -619,7 +468,7 @@ if ($ForceVCPKGCacheRemoval -and (-Not $UseVCPKG)) {
   Write-Host "VCPKG is not enabled, so local vcpkg binary cache will not be deleted even if requested" -ForegroundColor Yellow
 }
 
-if ($UseVCPKG -and (-Not $DoNotDeleteBuildtreesFolder)) {
+if ($UseVCPKG -and $ForceVCPKGBuildtreesRemoval) {
   Write-Host "Cleaning folder buildtrees inside vcpkg" -ForegroundColor Yellow
   Remove-Item -Force -Recurse -ErrorAction SilentlyContinue "$env:VCPKG_ROOT/buildtrees"
 }
@@ -706,7 +555,7 @@ if (-Not $IsMacOS -and $EnableCUDA) {
   $NVCC_EXE = Get-Command "nvcc" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
   if (-Not $NVCC_EXE) {
     if (Test-Path env:CUDA_PATH) {
-      $env:PATH += ";${env:CUDA_PATH}/bin"
+      $env:PATH = '{0}{1}{2}' -f $env:PATH, [IO.Path]::PathSeparator, "${env:CUDA_PATH}/bin"
       Write-Host "Found cuda in ${env:CUDA_PATH}"
     }
     else {
@@ -724,6 +573,10 @@ if (-Not $IsMacOS -and $EnableCUDA) {
       Write-Host "Added missing env variable CUDACXX" -ForegroundColor Yellow
     }
   }
+}
+
+if (-Not $DisableDLLcopy) {
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON"
 }
 
 if ($ForceCPP) {
@@ -748,6 +601,10 @@ if (-Not $EnableOPENCV_CUDA) {
 
 if ($EnableCSharpWrapper) {
   $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_CSHARP_WRAPPER:BOOL=ON"
+}
+
+if (-Not $InstallDARKNETthroughVCPKG) {
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_DEPLOY_CUSTOM_CMAKE_MODULES:BOOL=ON"
 }
 
 if ($InstallDARKNETthroughVCPKG) {
@@ -811,7 +668,6 @@ if ($InstallDARKNETthroughVCPKG) {
     if (-Not ($exitCode -eq 0)) {
       MyThrow("Installing darknet dependencies through vcpkg failed! Exited with error code $exitCode.")
     }
-    Pop-Location
   }
 }
 else {
@@ -842,21 +698,43 @@ else {
   }
   Remove-Item -Force -ErrorAction SilentlyContinue DarknetConfig.cmake
   Remove-Item -Force -ErrorAction SilentlyContinue DarknetConfigVersion.cmake
-  $dllfiles = Get-ChildItem ./${dllfolder}/*.dll
-  if ($dllfiles) {
-    Copy-Item $dllfiles ..
+  if (-Not $UseVCPKG -And -Not $DisableDLLcopy) {
+    $dllfiles = Get-ChildItem ./${dllfolder}/*.dll
+    if ($dllfiles) {
+      Copy-Item $dllfiles ..
+    }
   }
   Set-Location ..
-  Copy-Item cmake/Modules/*.cmake share/darknet/
-  Pop-Location
 }
 
-if ($UseVCPKG -and (-Not $DoNotDeleteBuildtreesFolder)) {
-  Write-Host "Cleaning folder buildtrees inside vcpkg" -ForegroundColor Yellow
-  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue "$env:VCPKG_ROOT/buildtrees"
+
+if (-Not $DoNotDeleteBuildFolder) {
+  Write-Host "Removing folder $build_folder" -ForegroundColor Yellow
+  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $build_folder
 }
 
 Write-Host "Build complete!" -ForegroundColor Green
+Pop-Location
+
+if ($ForceVCPKGBuildtreesRemoval -and (-Not $UseVCPKG)) {
+  Write-Host "VCPKG is not enabled, so local vcpkg buildtrees folder will not be deleted even if requested" -ForegroundColor Yellow
+}
+
+if ($UseVCPKG -and $ForceVCPKGBuildtreesRemoval) {
+  $vcpkgbuildtreespath = "$vcpkg_path/buildtrees"
+  Write-Host "Removing local vcpkg buildtrees folder from $vcpkgbuildtreespath" -ForegroundColor Yellow
+  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $vcpkgbuildtreespath
+}
+
+if ($ForceVCPKGPackagesRemoval -and (-Not $UseVCPKG)) {
+  Write-Host "VCPKG is not enabled, so local vcpkg packages folder will not be deleted even if requested" -ForegroundColor Yellow
+}
+
+if ($UseVCPKG -and $ForceVCPKGPackagesRemoval) {
+  $vcpkgpackagespath = "$vcpkg_path/packages"
+  Write-Host "Removing local vcpkg packages folder from $vcpkgpackagespath" -ForegroundColor Yellow
+  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $vcpkgpackagespath
+}
 
 if ($DownloadWeights) {
   Write-Host "Downloading weights..." -ForegroundColor Yellow

@@ -82,8 +82,6 @@ else()
   set(IS_X86 FALSE)
 endif()
 
-cmake_dependent_option(ENABLE_SSE_AND_AVX_FLAGS "Enable AVX and SSE optimizations (x86-only)" ON "CMAKE_COMPILER_IS_GNUCC_OR_CLANG;IS_X86" OFF)
-
 if(ENABLE_VCPKG_INTEGRATION AND DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
   #set(_VCPKG_INSTALLED_DIR ${CMAKE_CURRENT_LIST_DIR}/vcpkg CACHE STRING "")  #folder for manifest-installed dependencies
@@ -127,6 +125,8 @@ else()
   set(CMAKE_COMPILER_IS_GNUCC_OR_CLANG FALSE)
   set(CMAKE_COMPILER_IS_CLANG FALSE)
 endif()
+
+cmake_dependent_option(ENABLE_SSE_AND_AVX_FLAGS "Enable AVX and SSE optimizations (x86-only)" ON "CMAKE_COMPILER_IS_GNUCC_OR_CLANG;IS_X86" OFF)
 
 set(default_build_type "Release")
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)

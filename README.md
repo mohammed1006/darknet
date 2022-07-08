@@ -145,7 +145,7 @@ FPS on RTX 2070 (R) and Tesla V100 (V):
 
 #### yolov7 tiny is available now .
 ##### track other models at https://github.com/WongKinYiu/yolov7
-* [yolov7-tiny.cfg](https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov7-tiny.cfg) 
+* [yolov7-tiny.cfg](https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov7-tiny.cfg)  Avg fps is 256 on teslav v100
   * [yolov7-tiny.weights](https://github.com/AlexeyAB/darknet/releases/download/yolov4/yolov7-tiny.weights)
   * pre-trained weights for training: https://github.com/AlexeyAB/darknet/releases/download/yolov4/yolov7-tiny.conv.87
 

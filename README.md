@@ -143,6 +143,13 @@ There are weights-file for different cfg-files (trained for MS COCO dataset):
 
 FPS on RTX 2070 (R) and Tesla V100 (V):
 
+#### yolov7 tiny is available now .
+##### track other models at https://github.com/WongKinYiu/yolov7
+* [yolov7-tiny.cfg](https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov7-tiny.cfg) 
+  * [yolov7-tiny.weights](https://github.com/AlexeyAB/darknet/releases/download/yolov4/yolov7-tiny.weights)
+  * pre-trained weights for training: https://github.com/AlexeyAB/darknet/releases/download/yolov4/yolov7-tiny.conv.87
+
+
 * [yolov4x-mish.cfg](https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov4x-mish.cfg) - 640x640 - **67.9% mAP@0.5 (49.4% AP@0.5:0.95) - 23(R) FPS / 50(V) FPS** - 221 BFlops (110 FMA) - 381 MB: [yolov4x-mish.weights](https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4x-mish.weights) 
    * pre-trained weights for training: https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4x-mish.conv.166
 

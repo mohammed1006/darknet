@@ -25,6 +25,7 @@ extern int gpu_index;
 #include <curand.h>
 #include <cublas_v2.h>
 #include <cuda_runtime_api.h>
+#include <cuda_gl_interop.h>
 //#include <driver_types.h>
 
 #ifdef CUDNN

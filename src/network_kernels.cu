@@ -756,19 +756,35 @@ float *network_predict_gpu_texture(network net, uint32_t texture_id)
 
     cudaGraphicsResource_t graphics_resource = NULL;
     unsigned int flags = cudaGraphicsRegisterFlagsReadOnly;
-    cudaGraphicsGLRegisterImage(&graphics_resource, texture_id, GL_TEXTURE_2D, flags);
-    cudaGraphicsMapResources(1, &graphics_resource, 0);
+    CHECK_CUDA(cudaGraphicsGLRegisterImage(&graphics_resource, texture_id, GL_TEXTURE_2D, flags));
+    printf("After cudaGraphicsGLRegisterImage\n");
+    CHECK_CUDA(cudaGraphicsMapResources(1, &graphics_resource, 0));
+    printf("After cudaGraphicsMapResources\n");
 
     void* dev_ptr = NULL;
+    cudaArray_t dev_array = NULL;
     size_t texture_size = 0;
-    cudaGraphicsResourceGetMappedPointer(&dev_ptr, &texture_size, graphics_resource);
+    // cudaGraphicsResourceGetMappedPointer(&dev_ptr, &texture_size, graphics_resource);
+    CHECK_CUDA(cudaGraphicsSubResourceGetMappedArray(&dev_array, graphics_resource, 0, 0));
+    printf("After cudaGraphicsSubResourceGetMappedArray\n");
+    // cudaMemcpy2DFromArray ( void* dst, size_t dpitch, cudaArray_const_t src, size_t wOffset, size_t hOffset, size_t width, size_t height, cudaMemcpyKind kind )
+
+
+    size_t input_size = 608;
+    size_t width = input_size;
+    size_t height = input_size;
+    size_t pitch = width * 4;
+    printf("Width: %u\n", input_size);
+    printf("Network channels: %u\n", net.c);
+    CHECK_CUDA(cudaMemcpy2DFromArray(net.input_state_gpu, pitch, dev_array, 0, 0, width * 4, height, cudaMemcpyDeviceToDevice));
     // TODO - print the texture_size
 
     network_state state;
     state.index = 0;
     state.net = net;
     //state.input = cuda_make_array(input, size);   // memory will be allocated in the parse_network_cfg_custom()
-    state.input = (float*)dev_ptr; // TODO(bschwind)
+    // state.input = (float*)dev_ptr; // TODO(bschwind)
+    state.input = net.input_state_gpu;
     // memcpy(net.input_pinned_cpu, input, size * sizeof(float));
     state.truth = 0;
     state.train = 0;

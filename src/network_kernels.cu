@@ -755,9 +755,11 @@ float *network_predict_gpu_texture(network net, uint32_t texture_id)
     int size = get_network_input_size(net) * net.batch;
 
     cudaGraphicsResource_t graphics_resource = NULL;
+
     unsigned int flags = cudaGraphicsRegisterFlagsReadOnly;
     CHECK_CUDA(cudaGraphicsGLRegisterImage(&graphics_resource, texture_id, GL_TEXTURE_2D, flags));
     printf("After cudaGraphicsGLRegisterImage\n");
+
     CHECK_CUDA(cudaGraphicsMapResources(1, &graphics_resource, 0));
     printf("After cudaGraphicsMapResources\n");
 
@@ -769,14 +771,23 @@ float *network_predict_gpu_texture(network net, uint32_t texture_id)
     printf("After cudaGraphicsSubResourceGetMappedArray\n");
     // cudaMemcpy2DFromArray ( void* dst, size_t dpitch, cudaArray_const_t src, size_t wOffset, size_t hOffset, size_t width, size_t height, cudaMemcpyKind kind )
 
-
     size_t input_size = 608;
     size_t width = input_size;
     size_t height = input_size;
-    size_t pitch = width * 4;
+    size_t pitch = width * sizeof(float);
     printf("Width: %u\n", input_size);
     printf("Network channels: %u\n", net.c);
-    CHECK_CUDA(cudaMemcpy2DFromArray(net.input_state_gpu, pitch, dev_array, 0, 0, width * 4, height, cudaMemcpyDeviceToDevice));
+
+    CHECK_CUDA(cudaMemcpy2DFromArray(
+            net.input_state_gpu,   // dst
+            pitch,                 // dst_pitch
+            dev_array,             // src
+            0,                     // width offset
+            0,                     // height offset
+            width * sizeof(float), // width (in bytes)
+            height * net.c,        // height (in rows)
+            cudaMemcpyDeviceToDevice
+    ));
     // TODO - print the texture_size
 
     network_state state;
@@ -806,7 +817,7 @@ float *network_predict_gpu_texture(network net, uint32_t texture_id)
             CHECK_CUDA(cudaStreamBeginCapture(stream0, cudaStreamCaptureModeGlobal));
         }
 
-        cuda_push_array(state.input, net.input_pinned_cpu, size);
+        // cuda_push_array(state.input, net.input_pinned_cpu, size);
         forward_network_gpu(net, state);
 
         if (net.use_cuda_graph == 1) {

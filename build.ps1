@@ -411,6 +411,8 @@ if (Test-Path "$GitRepoPath") {
     if (-Not ($exitCode -eq 0)) {
       MyThrow("Updating this tool sources failed! Exited with error code $exitCode.")
     }
+  }
+}
 
 if ($ForceCmakeFromVS) {
   $vsfound = getLatestVisualStudioWithDesktopWorkloadPath

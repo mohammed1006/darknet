@@ -758,25 +758,20 @@ float *network_predict_gpu_texture(network net, uint32_t texture_id)
 
     unsigned int flags = cudaGraphicsRegisterFlagsReadOnly;
     CHECK_CUDA(cudaGraphicsGLRegisterImage(&graphics_resource, texture_id, GL_TEXTURE_2D, flags));
-    printf("After cudaGraphicsGLRegisterImage\n");
 
     CHECK_CUDA(cudaGraphicsMapResources(1, &graphics_resource, 0));
-    printf("After cudaGraphicsMapResources\n");
 
     void* dev_ptr = NULL;
     cudaArray_t dev_array = NULL;
     size_t texture_size = 0;
     // cudaGraphicsResourceGetMappedPointer(&dev_ptr, &texture_size, graphics_resource);
     CHECK_CUDA(cudaGraphicsSubResourceGetMappedArray(&dev_array, graphics_resource, 0, 0));
-    printf("After cudaGraphicsSubResourceGetMappedArray\n");
     // cudaMemcpy2DFromArray ( void* dst, size_t dpitch, cudaArray_const_t src, size_t wOffset, size_t hOffset, size_t width, size_t height, cudaMemcpyKind kind )
 
     size_t input_size = 608;
     size_t width = input_size;
     size_t height = input_size;
     size_t pitch = width * sizeof(float);
-    printf("Width: %u\n", input_size);
-    printf("Network channels: %u\n", net.c);
 
     CHECK_CUDA(cudaMemcpy2DFromArray(
             net.input_state_gpu,   // dst

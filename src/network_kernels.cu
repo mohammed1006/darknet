@@ -764,10 +764,8 @@ float *network_predict_gpu_gl_texture(network net, uint32_t texture_id)
     cudaArray_t dev_array = NULL;
     CHECK_CUDA(cudaGraphicsSubResourceGetMappedArray(&dev_array, graphics_resource, 0, 0));
 
-    // TODO - get input size from network.
-    size_t input_size = 608;
-    size_t width = input_size;
-    size_t height = input_size;
+    size_t width = net.w;
+    size_t height = net.h;
     size_t pitch = width * sizeof(float);
 
     CHECK_CUDA(cudaMemcpy2DFromArray(

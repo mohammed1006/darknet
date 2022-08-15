@@ -1032,6 +1032,7 @@ LIB_API void diounms_sort(detection *dets, int total, int classes, float thresh,
 // network.h
 LIB_API float *network_predict(network net, float *input);
 LIB_API float *network_predict_ptr(network *net, float *input);
+LIB_API float *network_predict_gl_texture(network *net, uint32_t texture_id);
 LIB_API detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, int *num, int letter);
 LIB_API det_num_pair* network_predict_batch(network *net, image im, int batch_size, int w, int h, float thresh, float hier, int *map, int relative, int letter);
 LIB_API void free_detections(detection *dets, int n);
@@ -1039,10 +1040,6 @@ LIB_API void free_batch_detections(det_num_pair *det_num_pairs, int n);
 LIB_API void fuse_conv_batchnorm(network net);
 LIB_API void calculate_binary_weights(network net);
 LIB_API char *detection_to_json(detection *dets, int nboxes, int classes, char **names, long long int frame_id, char *filename);
-
-#ifdef GPU
-LIB_API float *network_predict_gl_texture(network *net, uint32_t texture_id);
-#endif
 
 LIB_API layer* get_network_layer(network* net, int i);
 //LIB_API detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, int *num, int letter);

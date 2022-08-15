@@ -784,7 +784,7 @@ float *network_predict_gl_texture(network *net, uint32_t texture_id)
     }
 
     if(gpu_index >= 0) {
-        return network_predict_gpu_texture(*net, texture_id);
+        return network_predict_gpu_gl_texture(*net, texture_id);
     }
 
     return NULL;

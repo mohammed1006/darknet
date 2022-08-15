@@ -776,16 +776,20 @@ float *network_predict(network net, float *input)
     return out;
 }
 
-float *network_predict_texture(network *net, uint32_t texture_id)
-{
-    if(net->batch != 1) set_batch_network(net, 1);
-
 #ifdef GPU
-    return network_predict_gpu_texture(*net, texture_id);
-#endif
+float *network_predict_gl_texture(network *net, uint32_t texture_id)
+{
+    if(net->batch != 1) {
+        set_batch_network(net, 1);
+    }
+
+    if(gpu_index >= 0) {
+        return network_predict_gpu_texture(*net, texture_id);
+    }
 
     return NULL;
 }
+#endif // GPU
 
 int num_detections(network *net, float thresh)
 {

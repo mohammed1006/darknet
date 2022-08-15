@@ -748,50 +748,43 @@ float *network_predict_gpu(network net, float *input)
     return out;
 }
 
-float *network_predict_gpu_texture(network net, uint32_t texture_id)
+float *network_predict_gpu_gl_texture(network net, uint32_t texture_id)
 {
     if (net.gpu_index != cuda_get_device())
         cuda_set_device(net.gpu_index);
     int size = get_network_input_size(net) * net.batch;
 
+    // Map the OpenGL texture resource so CUDA can access it.
     cudaGraphicsResource_t graphics_resource = NULL;
-
     unsigned int flags = cudaGraphicsRegisterFlagsReadOnly;
     CHECK_CUDA(cudaGraphicsGLRegisterImage(&graphics_resource, texture_id, GL_TEXTURE_2D, flags));
-
     CHECK_CUDA(cudaGraphicsMapResources(1, &graphics_resource, 0));
 
     void* dev_ptr = NULL;
     cudaArray_t dev_array = NULL;
-    size_t texture_size = 0;
-    // cudaGraphicsResourceGetMappedPointer(&dev_ptr, &texture_size, graphics_resource);
     CHECK_CUDA(cudaGraphicsSubResourceGetMappedArray(&dev_array, graphics_resource, 0, 0));
-    // cudaMemcpy2DFromArray ( void* dst, size_t dpitch, cudaArray_const_t src, size_t wOffset, size_t hOffset, size_t width, size_t height, cudaMemcpyKind kind )
 
+    // TODO - get input size from network.
     size_t input_size = 608;
     size_t width = input_size;
     size_t height = input_size;
     size_t pitch = width * sizeof(float);
 
     CHECK_CUDA(cudaMemcpy2DFromArray(
-            net.input_state_gpu,   // dst
-            pitch,                 // dst_pitch
-            dev_array,             // src
-            0,                     // width offset
-            0,                     // height offset
-            width * sizeof(float), // width (in bytes)
-            height * net.c,        // height (in rows)
-            cudaMemcpyDeviceToDevice
+            net.input_state_gpu,     // dst
+            pitch,                   // dst_pitch
+            dev_array,               // src
+            0,                       // width offset
+            0,                       // height offset
+            width * sizeof(float),   // width (in bytes)
+            height * net.c,          // height (in rows)
+            cudaMemcpyDeviceToDevice // Transfer type
     ));
-    // TODO - print the texture_size
 
     network_state state;
     state.index = 0;
     state.net = net;
-    //state.input = cuda_make_array(input, size);   // memory will be allocated in the parse_network_cfg_custom()
-    // state.input = (float*)dev_ptr; // TODO(bschwind)
     state.input = net.input_state_gpu;
-    // memcpy(net.input_pinned_cpu, input, size * sizeof(float));
     state.truth = 0;
     state.train = 0;
     state.delta = 0;
@@ -837,6 +830,7 @@ float *network_predict_gpu_texture(network net, uint32_t texture_id)
     reset_wait_stream_events();
     //cuda_free(state.input);   // will be freed in the free_network()
 
+    // Unmap the OpenGL texture.
     cudaGraphicsUnmapResources(1, &graphics_resource, 0);
     cudaGraphicsUnregisterResource(graphics_resource);
 

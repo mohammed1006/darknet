@@ -415,6 +415,17 @@ jobs:
       run: ${{ github.workspace }}/build.ps1 -EnableCUDA -DisableInteractive -DoNotUpdateTOOL
 
 
+  win-powershell51:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: lukka/get-cmake@latest
+
+    - name: 'Build'
+      run: ${{ github.workspace }}/build.ps1 -DisableInteractive -DoNotUpdateTOOL
+
+
   mingw:
     runs-on: windows-latest
     steps:

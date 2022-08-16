@@ -269,18 +269,33 @@ if (($IsLinux -or $IsMacOS) -and ($ForceGCCVersion -gt 0)) {
 }
 
 $vcpkg_triplet_set_by_this_script = $false
+$vcpkg_host_triplet_set_by_this_script = $false
 
 if (($IsWindows -or $IsWindowsPowerShell) -and (-Not $env:VCPKG_DEFAULT_TRIPLET)) {
   $env:VCPKG_DEFAULT_TRIPLET = "x64-windows-release"
   $vcpkg_triplet_set_by_this_script = $true
 }
-elseif ($IsMacOS -and (-Not $env:VCPKG_DEFAULT_TRIPLET)) {
+if (($IsWindows -or $IsWindowsPowerShell) -and (-Not $env:VCPKG_DEFAULT_HOST_TRIPLET)) {
+  $env:VCPKG_DEFAULT_HOST_TRIPLET = "x64-windows-release"
+  $vcpkg_host_triplet_set_by_this_script = $true
+}
+
+if ($IsMacOS -and (-Not $env:VCPKG_DEFAULT_TRIPLET)) {
   $env:VCPKG_DEFAULT_TRIPLET = "x64-osx-release"
   $vcpkg_triplet_set_by_this_script = $true
 }
-elseif ($IsLinux -and (-Not $env:VCPKG_DEFAULT_TRIPLET)) {
+if ($IsMacOS -and (-Not $env:VCPKG_DEFAULT_HOST_TRIPLET)) {
+  $env:VCPKG_DEFAULT_HOST_TRIPLET = "x64-osx-release"
+  $vcpkg_host_triplet_set_by_this_script = $true
+}
+
+if ($IsLinux -and (-Not $env:VCPKG_DEFAULT_TRIPLET)) {
   $env:VCPKG_DEFAULT_TRIPLET = "x64-linux-release"
   $vcpkg_triplet_set_by_this_script = $true
+}
+if ($IsLinux -and (-Not $env:VCPKG_DEFAULT_HOST_TRIPLET)) {
+  $env:VCPKG_DEFAULT_HOST_TRIPLET = "x64-linux-release"
+  $vcpkg_host_triplet_set_by_this_script = $true
 }
 
 if ($VCPKGSuffix -ne "" -and -not $UseVCPKG) {
@@ -868,6 +883,7 @@ else {
   Set-Location ..
 }
 
+Pop-Location
 
 if (-Not $DoNotDeleteBuildFolder) {
   Write-Host "Removing folder $build_folder" -ForegroundColor Yellow
@@ -875,7 +891,6 @@ if (-Not $DoNotDeleteBuildFolder) {
 }
 
 Write-Host "Build complete!" -ForegroundColor Green
-Pop-Location
 
 if ($ForceVCPKGBuildtreesRemoval -and (-Not $UseVCPKG)) {
   Write-Host "VCPKG is not enabled, so local vcpkg buildtrees folder will not be deleted even if requested" -ForegroundColor Yellow
@@ -910,6 +925,10 @@ if ($vcpkg_root_set_by_this_script) {
 if ($vcpkg_triplet_set_by_this_script) {
   $env:VCPKG_DEFAULT_TRIPLET = $null
 }
+if ($vcpkg_host_triplet_set_by_this_script) {
+  $env:VCPKG_DEFAULT_HOST_TRIPLET = $null
+}
+
 
 if ($vcpkg_branch_set_by_this_script) {
   Push-Location $vcpkg_path

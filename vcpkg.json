@@ -21,6 +21,13 @@
         "cudnn"
       ]
     },
+    "cuda-opengl-integration": {
+      "description": "Build darknet with support for running networks straight from OpenGL textures",
+      "dependencies": [
+        "cuda",
+        "opengl"
+      ]
+    },
     "full": {
       "description": "Build darknet fully featured",
       "dependencies": [
@@ -29,7 +36,8 @@
           "features": [
             "cuda",
             "cudnn",
-            "opencv-cuda"
+            "opencv-cuda",
+            "cuda-opengl-integration"
           ]
         }
       ]

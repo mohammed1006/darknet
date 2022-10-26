@@ -748,6 +748,7 @@ float *network_predict_gpu(network net, float *input)
     return out;
 }
 
+#ifdef CUDA_OPENGL_INTEGRATION
 float *network_predict_gpu_gl_texture(network net, uint32_t texture_id)
 {
     if (net.gpu_index != cuda_get_device())
@@ -834,3 +835,4 @@ float *network_predict_gpu_gl_texture(network net, uint32_t texture_id)
 
     return out;
 }
+#endif // CUDA_OPENGL_INTEGRATION

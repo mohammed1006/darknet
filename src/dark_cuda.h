@@ -26,6 +26,7 @@ extern int gpu_index;
 #include <cublas_v2.h>
 #include <cuda_runtime_api.h>
 
+#ifdef CUDA_OPENGL_INTEGRATION
 // On Windows, we need to include <windows.h> before
 // including OpenGL headers or else we will get various
 // compiler errors due to missing macros.
@@ -35,6 +36,7 @@ extern int gpu_index;
 #endif // _WIN32
 
 #include <cuda_gl_interop.h>
+#endif // CUDA_OPENGL_INTEGRATION
 //#include <driver_types.h>
 
 #ifdef CUDNN

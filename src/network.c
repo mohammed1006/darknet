@@ -776,7 +776,7 @@ float *network_predict(network net, float *input)
     return out;
 }
 
-#ifdef GPU
+#ifdef CUDA_OPENGL_INTEGRATION
 float *network_predict_gl_texture(network *net, uint32_t texture_id)
 {
     if(net->batch != 1) {
@@ -789,7 +789,7 @@ float *network_predict_gl_texture(network *net, uint32_t texture_id)
 
     return NULL;
 }
-#endif // GPU
+#endif // CUDA_OPENGL_INTEGRATION
 
 int num_detections(network *net, float thresh)
 {

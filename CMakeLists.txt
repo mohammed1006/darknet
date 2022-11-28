@@ -526,6 +526,11 @@ if(ENABLE_CUDA)
   target_compile_definitions(dark PUBLIC -DGPU)
 endif()
 
+if(ENABLE_CUDA_OPENGL_INTEGRATION)
+  target_compile_definitions(darknet PRIVATE -DCUDA_OPENGL_INTEGRATION)
+  target_compile_definitions(dark PUBLIC -DCUDA_OPENGL_INTEGRATION)
+endif()
+
 if(USE_INTEGRATED_LIBS AND WIN32)
   target_compile_definitions(darknet PRIVATE -D_TIMESPEC_DEFINED)
   target_compile_definitions(dark PRIVATE -D_TIMESPEC_DEFINED)

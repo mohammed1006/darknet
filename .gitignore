@@ -23,6 +23,7 @@ cfg/
 temp/
 build/darknet/*
 build_*/
+debug/
 ninja/
 ninja.zip
 vcpkg_installed/

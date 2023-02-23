@@ -931,9 +931,12 @@ else {
       Write-Host "-- Copying $_ to $DebugInstallPrefix/bin"
       Copy-Item $_ $DebugInstallPrefix/bin
     }
+    if (-Not $DoNotDeleteBuildFolder) {
+      Write-Host "Removing folder $debug_build_folder" -ForegroundColor Yellow
+      Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $debug_build_folder
+    }
   }
   $release_build_folder = "$PSCustomScriptRoot/build_release"
-
   if (-Not $DoNotDeleteBuildFolder) {
     Write-Host "Removing folder $release_build_folder" -ForegroundColor Yellow
     Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $release_build_folder
@@ -967,16 +970,14 @@ else {
       Copy-Item $dllfiles ..
     }
   }
+  if (-Not $DoNotDeleteBuildFolder) {
+    Write-Host "Removing folder $build_folder" -ForegroundColor Yellow
+    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $build_folder
+  }
   Set-Location ..
 }
 
 Pop-Location
-
-if (-Not $DoNotDeleteBuildFolder) {
-  Write-Host "Removing folder $build_folder" -ForegroundColor Yellow
-  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $build_folder
-}
-
 Write-Host "Build complete!" -ForegroundColor Green
 
 if ($ForceVCPKGBuildtreesRemoval -and (-Not $UseVCPKG)) {

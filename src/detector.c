@@ -827,7 +827,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
         fseek(fp, -2, SEEK_CUR);
 #endif
         fprintf(fp, "\n]\n");
-        fclose(fp);
+        // fclose(fp);
     }
 
     if (fp) fclose(fp);

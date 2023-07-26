@@ -323,7 +323,7 @@ matrix csv_to_matrix(char *filename, int header)
     return m;
 }
 
-// Arguement parsing
+// Argument parsing
 
 void del_arg(int argc, char **argv, int index)
 {

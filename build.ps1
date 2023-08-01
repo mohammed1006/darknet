@@ -264,7 +264,7 @@ elseif ($IsWindows -or $IsWindowsPowerShell) {
 if ($ForceLocalVCPKG -And -Not $UseVCPKG) {
   $UseVCPKG = $true
   Write-Host "ForceLocalVCPKG was true but UseVCPKG was false, setting UseVCPKG to true"
-
+}
 if ($InstallDARKNETdependenciesThroughVCPKGManifest -and -not $InstallDARKNETthroughVCPKG) {
   Write-Host "You requested darknet dependencies to be installed by vcpkg in manifest mode but you didn't enable installation through vcpkg, doing that for you"
   $InstallDARKNETthroughVCPKG = $true

@@ -712,7 +712,7 @@ if ($UseVCPKG -And -Not $ForceLocalVCPKG) {
     }
   }
 }
-if ($UseVCPKG -and $vcpkg_path -eq "") {
+if (($null -eq $vcpkg_path) -and $UseVCPKG) {
   if (-Not (Test-Path "$PWD/vcpkg${VCPKGSuffix}")) {
     $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "clone https://github.com/microsoft/vcpkg vcpkg${VCPKGSuffix}"
     $handle = $proc.Handle

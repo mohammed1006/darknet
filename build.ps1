@@ -1028,8 +1028,8 @@ else {
     }
   }
   if (-Not $DoNotDeleteBuildFolder) {
-    Write-Host "Removing folder $build_folder" -ForegroundColor Yellow
-    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $build_folder
+    Write-Host "Removing folder $release_build_folder" -ForegroundColor Yellow
+    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $release_build_folder
   }
   Set-Location ..
 }

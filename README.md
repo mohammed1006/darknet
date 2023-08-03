@@ -103,6 +103,7 @@ About Darknet framework: http://pjreddie.com/darknet/
     - [Using also PowerShell](#using-also-powershell)
     - [How to compile on Linux (using `make`)](#how-to-compile-on-linux-using-make)
     - [How to compile on Windows (using `CMake`)](#how-to-compile-on-windows-using-cmake)
+    - [How to compile on Windows (using `vcpkg`)](#how-to-compile-on-windows-using-vcpkg)
   - [How to train with multi-GPU](#how-to-train-with-multi-gpu)
   - [How to train (to detect your custom objects)](#how-to-train-to-detect-your-custom-objects)
     - [How to train tiny-yolo (to detect your custom objects)](#how-to-train-tiny-yolo-to-detect-your-custom-objects)
@@ -110,78 +111,10 @@ About Darknet framework: http://pjreddie.com/darknet/
     - [Custom object detection](#custom-object-detection)
   - [How to improve object detection](#how-to-improve-object-detection)
   - [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
-  - [How to use Yolo as a library](#how-to-use-yolo-as-a-library)
+  - [How to use Yolo as DLL and SO libraries](#how-to-use-yolo-as-dll-and-so-libraries)
   - [Citation](#citation)
 
 ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png)
-
-# Darknet #
-Darknet is an open source neural network framework written in C and CUDA. It is fast, easy to install, and supports CPU and GPU computation.
-
-**Discord** invite link for for communication and questions: https://discord.gg/zSq8rtW
-
-## YOLOv7: 
-
-* **paper** - YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors: https://arxiv.org/abs/2207.02696
-
-* **source code - Pytorch (use to reproduce results):** https://github.com/WongKinYiu/yolov7
-
-----
-
-Official YOLOv7 is more accurate and faster than YOLOv5 by **120%** FPS, than YOLOX by **180%** FPS, than Dual-Swin-T by **1200%** FPS, than ConvNext by **550%** FPS, than SWIN-L by **500%** FPS.
-
-YOLOv7 surpasses all known object detectors in both speed and accuracy in the range from 5 FPS to 160 FPS and has the highest accuracy 56.8% AP among all known real-time object detectors with 30 FPS or higher on GPU V100, batch=1.
-
-* YOLOv7-e6 (55.9% AP, 56 FPS V100 b=1) by `+500%` FPS faster than SWIN-L Cascade-Mask R-CNN (53.9% AP, 9.2 FPS A100 b=1)
-* YOLOv7-e6 (55.9% AP, 56 FPS V100 b=1) by `+550%` FPS faster than ConvNeXt-XL C-M-RCNN (55.2% AP, 8.6 FPS A100 b=1)
-* YOLOv7-w6 (54.6% AP, 84 FPS V100 b=1) by `+120%` FPS faster than YOLOv5-X6-r6.1 (55.0% AP, 38 FPS V100 b=1)
-* YOLOv7-w6 (54.6% AP, 84 FPS V100 b=1) by `+1200%` FPS faster than Dual-Swin-T C-M-RCNN (53.6% AP, 6.5 FPS V100 b=1)
-* YOLOv7x (52.9% AP, 114 FPS V100 b=1) by `+150%` FPS faster than PPYOLOE-X (51.9% AP, 45 FPS V100 b=1)
-* YOLOv7 (51.2% AP, 161 FPS V100 b=1) by `+180%` FPS faster than YOLOX-X (51.1% AP, 58 FPS V100 b=1)
-
-----
-
-![more5](https://user-images.githubusercontent.com/4096485/179425274-f55a36d4-8450-4471-816b-8c105841effd.jpg)
-
-----
-
-![image](https://user-images.githubusercontent.com/4096485/177675030-a929ee00-0eba-4d93-95c2-225231d0fd61.png)
-
-
-----
-
-![yolov7_640_1280](https://user-images.githubusercontent.com/4096485/177688869-d75e0c36-63af-46ec-bdbd-81dbb281f257.png)
-
-----
-
-## Scaled-YOLOv4: 
-
-* **paper (CVPR 2021)**: https://openaccess.thecvf.com/content/CVPR2021/html/Wang_Scaled-YOLOv4_Scaling_Cross_Stage_Partial_Network_CVPR_2021_paper.html
-
-* **source code - Pytorch (use to reproduce results):** https://github.com/WongKinYiu/ScaledYOLOv4
-
-* **source code - Darknet:** https://github.com/AlexeyAB/darknet
-
-* **Medium:** https://alexeyab84.medium.com/scaled-yolo-v4-is-the-best-neural-network-for-object-detection-on-ms-coco-dataset-39dfa22fa982?source=friends_link&sk=c8553bfed861b1a7932f739d26f487c8
-
-## YOLOv4:
-
-* **paper:** https://arxiv.org/abs/2004.10934
-
-* **source code:** https://github.com/AlexeyAB/darknet
-
-* **Wiki:** https://github.com/AlexeyAB/darknet/wiki
-
-* **useful links:** https://medium.com/@alexeyab84/yolov4-the-most-accurate-real-time-neural-network-on-ms-coco-dataset-73adfd3602fe?source=friends_link&sk=6039748846bbcf1d960c3061542591d7
-
-For more information see the [Darknet project website](http://pjreddie.com/darknet).
-
-
-<details><summary> <b>Expand</b> </summary>
-
-![yolo_progress](https://user-images.githubusercontent.com/4096485/146988929-1ed0cbec-1e01-4ad0-b42c-808dcef32994.png) https://paperswithcode.com/sota/object-detection-on-coco
-
-----
 
 ![scaled_yolov4](https://user-images.githubusercontent.com/4096485/112776361-281d8380-9048-11eb-8083-8728b12dcd55.png) AP50:95 - FPS (Tesla V100) Paper: https://arxiv.org/abs/2011.08036
 
@@ -502,12 +435,28 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
 Requires:
 
 - MSVC: https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=Community
-- CMake: `Windows win64-x64 Installer`https://cmake.org/download/
+- CMake GUI: `Windows win64-x64 Installer`https://cmake.org/download/
 - Download Darknet zip-archive with the latest commit and uncompress it: [master.zip](https://github.com/AlexeyAB/darknet/archive/master.zip)
+
+In Windows:
+
+- Start (button) -> All programs -> CMake -> CMake (gui) ->
+
+- [look at image](https://habrastorage.org/webt/pz/s1/uu/pzs1uu4heb7vflfcjqn-lxy-aqu.jpeg) In CMake: Enter input path to the darknet Source, and output path to the Binaries -> Configure (button) -> Optional platform for generator: `x64`  -> Finish -> Generate -> Open Project ->
+
+- in MS Visual Studio: Select: x64 and Release -> Build -> Build solution
+
+- find the executable file `darknet.exe` in the output path to the binaries you specified
+
+![x64 and Release](https://habrastorage.org/webt/ay/ty/f-/aytyf-8bufe7q-16yoecommlwys.jpeg)
+
+### How to compile on Windows (using `vcpkg`)
+
+This is the recommended approach to build Darknet on Windows.
 
 1. Install Visual Studio 2017 or 2019. In case you need to download it, please go here: [Visual Studio Community](http://visualstudio.com). Remember to install English language pack, this is mandatory for vcpkg!
 
-2. Install CUDA (at least v10.2) enabling VS Integration during installation and cuDNN
+2. Install CUDA enabling VS Integration during installation.
 
 3. Open Powershell (Start -> All programs -> Windows Powershell) and type these commands:
 
@@ -808,7 +757,16 @@ Different tools for marking objects in images:
 8. DL-Annotator for Windows ($30): [url](https://www.microsoft.com/en-us/p/dlannotator/9nsx79m7t8fn?activetab=pivot:overviewtab)
 9. v7labs - the greatest cloud labeling tool ($1.5 per hour): https://www.v7labs.com/
 
-## How to use Yolo as a library
+## How to use Yolo as DLL and SO libraries
+
+- on Linux
+  - using `build.sh` or
+  - build `darknet` using `cmake` or
+  - set `LIBSO=1` in the `Makefile` and do `make`
+- on Windows
+  - using `build.ps1` or
+  - build `darknet` using `cmake` or
+  - compile `build\darknet\yolo_cpp_dll.sln` solution or `build\darknet\yolo_cpp_dll_no_gpu.sln` solution
 
 There are 2 APIs:
 
@@ -822,13 +780,29 @@ There are 2 APIs:
 
 ----
 
+1. To compile Yolo as C++ DLL-file `yolo_cpp_dll.dll` - open the solution `build\darknet\yolo_cpp_dll.sln`, set **x64** and **Release**, and do the: Build -> Build yolo_cpp_dll
+    - You should have installed **CUDA 10.2**
+    - To use cuDNN do: (right click on project) -> properties -> C/C++ -> Preprocessor -> Preprocessor Definitions, and add at the beginning of line: `CUDNN;`
+
+2. To use Yolo as DLL-file in your C++ console application - open the solution `build\darknet\yolo_console_dll.sln`, set **x64** and **Release**, and do the: Build -> Build yolo_console_dll
+
+    - you can run your console application from Windows Explorer `build\darknet\x64\yolo_console_dll.exe`
+    **use this command**: `yolo_console_dll.exe data/coco.names yolov4.cfg yolov4.weights test.mp4`
+
+    - after launching your console application and entering the image file name - you will see info for each object:
+    `<obj_id> <left_x> <top_y> <width> <height> <probability>`
+    - to use simple OpenCV-GUI you should uncomment line `//#define OPENCV` in `yolo_console_dll.cpp`-file: [link](https://github.com/AlexeyAB/darknet/blob/a6cbaeecde40f91ddc3ea09aa26a03ab5bbf8ba8/src/yolo_console_dll.cpp#L5)
+    - you can see source code of simple example for detection on the video file: [link](https://github.com/AlexeyAB/darknet/blob/ab1c5f9e57b4175f29a6ef39e7e68987d3e98704/src/yolo_console_dll.cpp#L75)
+
+`yolo_cpp_dll.dll`-API: [link](https://github.com/AlexeyAB/darknet/blob/master/src/yolo_v2_class.hpp#L42)
+
 ```cpp
 struct bbox_t {
-    unsigned int x, y, w, h;       // (x,y) - top-left corner, (w, h) - width & height of bounded box
+    unsigned int x, y, w, h;    // (x,y) - top-left corner, (w, h) - width & height of bounded box
     float prob;                    // confidence - probability that the object was found correctly
-    unsigned int obj_id;           // class of object - from range [0, classes-1]
-    unsigned int track_id;         // tracking id for video (0 - untracked, 1 - inf - tracked object)
-    unsigned int frames_counter;   // counter of frames on which the object was detected
+    unsigned int obj_id;        // class of object - from range [0, classes-1]
+    unsigned int track_id;        // tracking id for video (0 - untracked, 1 - inf - tracked object)
+    unsigned int frames_counter;// counter of frames on which the object was detected
 };
 
 class Detector {
@@ -849,26 +823,6 @@ public:
 ```
 
 ## Citation
-
-```bibtex
-![OpenCV_TRT](https://user-images.githubusercontent.com/4096485/90338805-e5e18d80-dff4-11ea-8a68-5710956256ff.png)
-
-
-## Citation
-
-
-```
-@misc{https://doi.org/10.48550/arxiv.2207.02696,
-  doi = {10.48550/ARXIV.2207.02696},
-  url = {https://arxiv.org/abs/2207.02696},
-  author = {Wang, Chien-Yao and Bochkovskiy, Alexey and Liao, Hong-Yuan Mark},
-  keywords = {Computer Vision and Pattern Recognition (cs.CV), FOS: Computer and information sciences, FOS: Computer and information sciences},
-  title = {YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors},
-  publisher = {arXiv},
-  year = {2022}, 
-  copyright = {arXiv.org perpetual, non-exclusive license}
-}
-```
 
 ```
 @misc{bochkovskiy2020yolov4,

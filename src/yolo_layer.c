@@ -549,7 +549,7 @@ void *process_batch(void* ptr)
                     int markable = 666;
                     for(int mi = 0; mi < number; mi++) {
                         mloam mp = mloam_ptr[mi];
-                        if(mp.mask_n == mask_n && mp.x==i && mp.y==j) {
+                        if(mp.best_n==best_n && mp.mask_n == mask_n && mp.x==i && mp.y==j) {
                             markable = -666;
                             if(mp.best_iou < best_iou) {
                                 mloam choose = {truth, best_iou, i, j, 1, best_n, mask_n, t};
@@ -583,7 +583,7 @@ void *process_batch(void* ptr)
                             int markable = 666;
                             for(int mi = 0; mi < number; mi++) {
                                 mloam mp = mloam_ptr[mi];
-                                if(mp.mask_n == mask_n && mp.x==i && mp.y==j) {
+                                if(mp.best_n==n && mp.mask_n == mask_n && mp.x==i && mp.y==j) {
                                     markable = -666;
                                     if(mp.best_iou < iou) {
                                         mloam choose = {truth, iou, i, j, -1, n, mask_n, t};

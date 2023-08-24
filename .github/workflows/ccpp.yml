@@ -125,19 +125,19 @@ jobs:
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
       run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-cuda-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-cuda-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
@@ -266,19 +266,19 @@ jobs:
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
       run: ${{ github.workspace }}/build.ps1 -EnableOPENCV -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
@@ -315,19 +315,19 @@ jobs:
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
       run: ${{ github.workspace }}/build.ps1 -EnableOPENCV -EnableCUDA -EnableCUDNN -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-cuda-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-cuda-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
@@ -411,19 +411,19 @@ jobs:
       shell: pwsh
       run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
@@ -443,19 +443,19 @@ jobs:
       shell: pwsh
       run: ${{ github.workspace }}/build.ps1 -EnableOPENCV -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
@@ -507,23 +507,23 @@ jobs:
       shell: pwsh
       run: ${{ github.workspace }}/build.ps1 -UseVCPKG -ForceLocalVCPKG -DoNotUpdateVCPKG -EnableOPENCV -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: ${{ github.workspace }}/build_release/*.dll
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
@@ -569,23 +569,23 @@ jobs:
       shell: pwsh
       run: ${{ github.workspace }}/build.ps1 -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/3rdparty/pthreads/bin/*.dll
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
@@ -682,7 +682,7 @@ jobs:
     - uses: lukka/get-cmake@latest
 
     - name: 'Build with CMake'
-      uses: lukka/run-cmake@v3
+      uses: lukka/run-cmake@v10
       with:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'

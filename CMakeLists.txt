@@ -582,7 +582,7 @@ install(TARGETS dark EXPORT DarknetTargets
   PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}"
   COMPONENT dev
 )
-install(TARGETS uselib darknet
+install(TARGETS uselib darknet kmeansiou
   DESTINATION "${INSTALL_BIN_DIR}"
 )
 if(OpenCV_FOUND AND OpenCV_VERSION VERSION_GREATER "3.0" AND BUILD_USELIB_TRACK)

@@ -27,7 +27,11 @@ $CudaFeatures = " nvcc_${cuda_version_short} " + `
   " cuxxfilt_${cuda_version_short} " + `
   " npp_${cuda_version_short} " + `
   " npp_dev_${cuda_version_short} " + `
+  " nsight_compute_${cuda_version_short} " + `
+  " nsight_systems_${cuda_version_short} " + `
+  " nsight_vse_${cuda_version_short} " + `
   " nvdisasm_${cuda_version_short} " + `
+  " nvjitlink_${cuda_version_short} " + `
   " nvjpeg_${cuda_version_short} " + `
   " nvjpeg_dev_${cuda_version_short} " + `
   " nvml_dev_${cuda_version_short} " + `
@@ -37,7 +41,10 @@ $CudaFeatures = " nvcc_${cuda_version_short} " + `
   " nvrtc_dev_${cuda_version_short} " + `
   " nvtx_${cuda_version_short} " + `
   " occupancy_calculator_${cuda_version_short} " + `
-  " sanitizer_${cuda_version_short} "
+  " opencl_${cuda_version_short} " + `
+  " sanitizer_${cuda_version_short} " + `
+  " thrust_${cuda_version_short} " + `
+  " visual_profiler_${cuda_version_short} "
 
 if (-Not $DisableVisualStudioFeatures) {
   $CudaFeatures = $CudaFeatures + "visual_studio_integration_${cuda_version_short} visual_profiler_${cuda_version_short}  "

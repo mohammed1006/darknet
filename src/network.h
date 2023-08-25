@@ -144,7 +144,7 @@ int get_predicted_class_network(network net);
 void print_network(network net);
 void visualize_network(network net);
 int resize_network(network *net, int w, int h);
-void set_batch_network(network *net, int b);
+//LIB_API void set_batch_network(network *net, int b);
 int get_network_input_size(network net);
 float get_network_cost(network net);
 //LIB_API layer* get_network_layer(network* net, int i);
@@ -171,6 +171,11 @@ void free_network_recurrent_state(network net);
 void randomize_network_recurrent_state(network net);
 void remember_network_recurrent_state(network net);
 void restore_network_recurrent_state(network net);
+int is_ema_initialized(network net);
+void ema_update(network net, float ema_alpha);
+void ema_apply(network net);
+void reject_similar_weights(network net, float sim_threshold);
+
 
 #ifdef __cplusplus
 }

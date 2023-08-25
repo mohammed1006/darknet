@@ -169,6 +169,8 @@ set(INSTALL_LIB_DIR      "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Path where lib 
 set(INSTALL_INCLUDE_DIR  "include/darknet"           CACHE PATH "Path where headers will be installed")
 set(INSTALL_CMAKE_DIR    "share/darknet"             CACHE PATH "Path where cmake configs will be installed")
 
+find_library(MATH_LIBRARY m)
+
 if(ENABLE_CUDA)
   include(CheckLanguage)
   check_language(CUDA)
@@ -453,6 +455,11 @@ if(BUILD_AS_CPP)
   set_target_properties(darknet PROPERTIES LINKER_LANGUAGE CXX)
 endif()
 
+add_executable(kmeansiou ${CMAKE_CURRENT_LIST_DIR}/scripts/kmeansiou.c)
+if(MATH_LIBRARY)
+  target_link_libraries(kmeansiou PRIVATE ${MATH_LIBRARY})
+endif()
+
 target_include_directories(darknet PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
 target_include_directories(dark PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
 target_include_directories(uselib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
@@ -492,9 +499,9 @@ if(OPENMP_FOUND)
   target_link_libraries(dark PUBLIC OpenMP::OpenMP_C)
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCC)
-  target_link_libraries(darknet PRIVATE m)
-  target_link_libraries(dark PUBLIC m)
+if(CMAKE_COMPILER_IS_GNUCC AND MATH_LIBRARY)
+  target_link_libraries(darknet PRIVATE ${MATH_LIBRARY})
+  target_link_libraries(dark PUBLIC ${MATH_LIBRARY})
 endif()
 
 if(MSVC)

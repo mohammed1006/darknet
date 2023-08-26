@@ -1,16 +1,8 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.19)
 include(CMakeDependentOption)
 
-set(Darknet_MAJOR_VERSION 0)
-set(Darknet_MINOR_VERSION 2)
-set(Darknet_PATCH_VERSION 5)
-set(Darknet_TWEAK_VERSION 4)
-set(Darknet_VERSION ${Darknet_MAJOR_VERSION}.${Darknet_MINOR_VERSION}.${Darknet_PATCH_VERSION}.${Darknet_TWEAK_VERSION})
-
-message("Darknet_VERSION: ${Darknet_VERSION}")
-
-option(CMAKE_VERBOSE_MAKEFILE "Create verbose makefile" ON)
-option(CUDA_VERBOSE_BUILD "Create verbose CUDA build" ON)
+option(CMAKE_VERBOSE_MAKEFILE "Create verbose makefile" OFF)
+option(CUDA_VERBOSE_BUILD "Create verbose CUDA build" OFF)
 option(BUILD_SHARED_LIBS "Create dark as a shared library" ON)
 option(BUILD_AS_CPP "Build Darknet using C++ compiler also for C files" OFF)
 option(BUILD_USELIB_TRACK "Build uselib_track" ON)
@@ -21,7 +13,7 @@ cmake_dependent_option(ENABLE_CUDA_OPENGL_INTEGRATION "Build darknet with suppor
 option(ENABLE_CUDNN "Enable CUDNN" ON)
 option(ENABLE_CUDNN_HALF "Enable CUDNN Half precision" ON)
 option(ENABLE_ZED_CAMERA "Enable ZED Camera support" ON)
-option(ENABLE_VCPKG_INTEGRATION "Enable VCPKG integration" ON)
+option(ENABLE_VCPKG_INTEGRATION "Enable VCPKG integration" OFF)
 option(ENABLE_DEPLOY_CUSTOM_CMAKE_MODULES "Copy custom CMake modules for downstream integration" OFF)
 option(ENABLE_CSHARP_WRAPPER "Enable building a csharp wrapper" OFF)
 option(VCPKG_BUILD_OPENCV_WITH_CUDA "Build OpenCV with CUDA extension integration" ON)
@@ -83,20 +75,24 @@ else()
   set(IS_X86 FALSE)
 endif()
 
-cmake_dependent_option(ENABLE_SSE_AND_AVX_FLAGS "Enable AVX and SSE optimizations (x86-only)" ON "CMAKE_COMPILER_IS_GNUCC_OR_CLANG;IS_X86" OFF)
-
 if(ENABLE_VCPKG_INTEGRATION AND DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+  set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+  set(X_VCPKG_APPLOCAL_DEPS_INSTALL ON)
   set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
   #set(_VCPKG_INSTALLED_DIR ${CMAKE_CURRENT_LIST_DIR}/vcpkg CACHE STRING "")  #folder for manifest-installed dependencies
   message(STATUS "VCPKG found: $ENV{VCPKG_ROOT}")
   message(STATUS "Using VCPKG integration")
-  message(STATUS "VCPKG_MANIFEST_FEATURES: ${VCPKG_MANIFEST_FEATURES}")
   set(USE_INTEGRATED_LIBS "FALSE" CACHE BOOL "Use libs distributed with this repo")
+  if(VCPKG_MANIFEST_FEATURES)
+    message(STATUS "VCPKG_MANIFEST_FEATURES: ${VCPKG_MANIFEST_FEATURES}")
+  endif()
 elseif(DEFINED CMAKE_TOOLCHAIN_FILE)
   message(STATUS "Using toolchain: ${CMAKE_TOOLCHAIN_FILE}")
   if(CMAKE_TOOLCHAIN_FILE MATCHES "vcpkg.cmake")
     message(STATUS "Toolchain uses VCPKG integration")
-    message(STATUS "VCPKG_MANIFEST_FEATURES: ${VCPKG_MANIFEST_FEATURES}")
+    if(VCPKG_MANIFEST_FEATURES)
+      message(STATUS "VCPKG_MANIFEST_FEATURES: ${VCPKG_MANIFEST_FEATURES}")
+    endif()
   endif()
   set(USE_INTEGRATED_LIBS "FALSE" CACHE BOOL "Use libs distributed with this repo")
 elseif(WIN32)
@@ -106,6 +102,30 @@ else()
   message(WARNING "vcpkg not found, toolchain not defined, system not win32 so build might fail")
   set(USE_INTEGRATED_LIBS "TRUE" CACHE BOOL "Use libs distributed with this repo")
 endif()
+
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg.json)
+  file(READ ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg.json VCPKG_JSON_STRING)
+  string(JSON VERSION_STRING GET ${VCPKG_JSON_STRING} version)
+else()
+  set(VERSION_STRING "0.2.5.4")
+endif()
+
+string(REPLACE "." ";" VERSION_LIST ${VERSION_STRING})
+list(LENGTH VERSION_LIST VERSION_LIST_LENGTH)
+if(VERSION_LIST_LENGTH LESS 3)
+  message(FATAL_ERROR "Darknet needs at least major.minor.patch version numbers to properly configure")
+endif()
+list(GET VERSION_LIST 0 Darknet_MAJOR_VERSION)
+list(GET VERSION_LIST 1 Darknet_MINOR_VERSION)
+list(GET VERSION_LIST 2 Darknet_PATCH_VERSION)
+if(VERSION_LIST_LENGTH GREATER 3)
+  list(GET VERSION_LIST 3 Darknet_TWEAK_VERSION)
+else()
+  set(Darknet_TWEAK_VERSION 0)
+endif()
+
+set(Darknet_VERSION ${Darknet_MAJOR_VERSION}.${Darknet_MINOR_VERSION}.${Darknet_PATCH_VERSION}.${Darknet_TWEAK_VERSION})
+message("Darknet_VERSION: ${Darknet_VERSION}")
 
 project(Darknet VERSION ${Darknet_VERSION})
 
@@ -129,6 +149,8 @@ else()
   set(CMAKE_COMPILER_IS_CLANG FALSE)
 endif()
 
+cmake_dependent_option(ENABLE_SSE_AND_AVX_FLAGS "Enable AVX and SSE optimizations (x86-only)" ON "CMAKE_COMPILER_IS_GNUCC_OR_CLANG;IS_X86" OFF)
+
 set(default_build_type "Release")
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
@@ -147,6 +169,8 @@ set(INSTALL_BIN_DIR      "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Path where exe 
 set(INSTALL_LIB_DIR      "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Path where lib will be installed")
 set(INSTALL_INCLUDE_DIR  "include/darknet"           CACHE PATH "Path where headers will be installed")
 set(INSTALL_CMAKE_DIR    "share/darknet"             CACHE PATH "Path where cmake configs will be installed")
+
+find_library(MATH_LIBRARY m)
 
 if(ENABLE_CUDA)
   include(CheckLanguage)
@@ -254,8 +278,8 @@ if(UNIX AND BUILD_SHARED_LIBS AND NOT CMAKE_COMPILER_IS_CLANG)
 endif()
 
 if(MSVC)
-  set(ADDITIONAL_CXX_FLAGS "/wd4013 /wd4018 /wd4028 /wd4047 /wd4068 /wd4090 /wd4101 /wd4113 /wd4133 /wd4190 /wd4244 /wd4267 /wd4305 /wd4477 /wd4996 /wd4819 /fp:fast")
-  set(ADDITIONAL_C_FLAGS "/wd4013 /wd4018 /wd4028 /wd4047 /wd4068 /wd4090 /wd4101 /wd4113 /wd4133 /wd4190 /wd4244 /wd4267 /wd4305 /wd4477 /wd4996 /wd4819 /fp:fast")
+  set(ADDITIONAL_CXX_FLAGS " /nologo /wd4013 /wd4018 /wd4028 /wd4047 /wd4068 /wd4090 /wd4101 /wd4113 /wd4133 /wd4190 /wd4244 /wd4267 /wd4305 /wd4477 /wd4996 /wd4819 /fp:fast")
+  set(ADDITIONAL_C_FLAGS " /nologo /wd4013 /wd4018 /wd4028 /wd4047 /wd4068 /wd4090 /wd4101 /wd4113 /wd4133 /wd4190 /wd4244 /wd4267 /wd4305 /wd4477 /wd4996 /wd4819 /fp:fast")
   string(REGEX REPLACE "/O2" "/Ox" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
   string(REGEX REPLACE "/O2" "/Ox" CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
 endif()
@@ -442,6 +466,11 @@ if(BUILD_AS_CPP)
   set_target_properties(darknet PROPERTIES LINKER_LANGUAGE CXX)
 endif()
 
+add_executable(kmeansiou ${CMAKE_CURRENT_LIST_DIR}/scripts/kmeansiou.c)
+if(MATH_LIBRARY)
+  target_link_libraries(kmeansiou PRIVATE ${MATH_LIBRARY})
+endif()
+
 target_include_directories(darknet PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
 target_include_directories(dark PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
 target_include_directories(uselib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src> $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}> $<BUILD_INTERFACE:${Stb_INCLUDE_DIR}>)
@@ -481,9 +510,9 @@ if(OPENMP_FOUND)
   target_link_libraries(dark PUBLIC OpenMP::OpenMP_C)
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCC)
-  target_link_libraries(darknet PRIVATE m)
-  target_link_libraries(dark PUBLIC m)
+if(CMAKE_COMPILER_IS_GNUCC AND MATH_LIBRARY)
+  target_link_libraries(darknet PRIVATE ${MATH_LIBRARY})
+  target_link_libraries(dark PUBLIC ${MATH_LIBRARY})
 endif()
 
 if(MSVC)
@@ -569,7 +598,7 @@ install(TARGETS dark EXPORT DarknetTargets
   PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}"
   COMPONENT dev
 )
-install(TARGETS uselib darknet
+install(TARGETS uselib darknet kmeansiou
   DESTINATION "${INSTALL_BIN_DIR}"
 )
 if(OpenCV_FOUND AND OpenCV_VERSION VERSION_GREATER "3.0" AND BUILD_USELIB_TRACK)
@@ -618,3 +647,11 @@ endif()
 if(ENABLE_CSHARP_WRAPPER)
   add_subdirectory(src/csharp)
 endif()
+
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
+include(InstallRequiredSystemLibraries)
+
+install(
+    PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}
+    DESTINATION ${INSTALL_BIN_DIR}
+)

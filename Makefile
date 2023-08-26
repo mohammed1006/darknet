@@ -17,8 +17,7 @@ ZED_CAMERA_v2_8=0
 USE_CPP=0
 DEBUG=0
 
-ARCH= -gencode arch=compute_35,code=sm_35 \
-      -gencode arch=compute_50,code=[sm_50,compute_50] \
+ARCH= -gencode arch=compute_50,code=[sm_50,compute_50] \
       -gencode arch=compute_52,code=[sm_52,compute_52] \
 	    -gencode arch=compute_61,code=[sm_61,compute_61]
 
@@ -57,7 +56,7 @@ OS := $(shell uname)
 # GeForce Titan RTX, RTX 20x0, RTX 20x0 Ti, Quadro RTX x000, Tesla T4, XNOR Tensor Cores
 # ARCH= -gencode arch=compute_75,code=[sm_75,compute_75]
 
-# Tesla A100 (GA100), DGX-A100, A30, A100
+# Tesla A100 (GA100), DGX-A100, A30, A100, RTX 3080
 # ARCH= -gencode arch=compute_80,code=[sm_80,compute_80]
 
 # GeForce RTX 30x0, 30x0 Ti, Tesla GA10x, RTX Axxxx, A2, A10, A16, A40

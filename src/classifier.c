@@ -208,7 +208,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
         if (avg_time < 0) avg_time = time_remaining;
         else avg_time = alpha_time * time_remaining + (1 -  alpha_time) * avg_time;
         start = what_time_is_it_now();
-        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %ld images, %f hours left\n", get_current_batch(net), (float)(*net.seen)/ train_images_num, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen, avg_time);
+        printf("%d, %.3f: %f, %f avg, %f rate, %lf seconds, %" PRIu64 " images, %f hours left\n", get_current_batch(net), (float)(*net.seen)/ train_images_num, loss, avg_loss, get_current_rate(net), sec(clock()-time), *net.seen, avg_time);
 #ifdef OPENCV
         if (net.contrastive) {
             float cur_con_acc = -1;
@@ -1051,7 +1051,7 @@ void threat_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_i
 
     int* indexes = (int*)xcalloc(top, sizeof(int));
 
-    if(!cap) error("Couldn't connect to webcam.\n");
+    if(!cap) error("Couldn't connect to webcam.", DARKNET_LOC);
     create_window_cv("Threat", 0, 512, 512);
     float fps = 0;
     int i;
@@ -1190,7 +1190,7 @@ void gun_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
 
     int* indexes = (int*)xcalloc(top, sizeof(int));
 
-    if(!cap) error("Couldn't connect to webcam.\n");
+    if(!cap) error("Couldn't connect to webcam.", DARKNET_LOC);
     cvNamedWindow("Threat Detection", CV_WINDOW_NORMAL);
     cvResizeWindow("Threat Detection", 512, 512);
     float fps = 0;
@@ -1274,7 +1274,7 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
 
     int* indexes = (int*)xcalloc(top, sizeof(int));
 
-    if(!cap) error("Couldn't connect to webcam.\n");
+    if(!cap) error("Couldn't connect to webcam.", DARKNET_LOC);
     if (!benchmark) create_window_cv("Classifier", 0, 512, 512);
     float fps = 0;
     int i;

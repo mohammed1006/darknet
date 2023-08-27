@@ -4,58 +4,62 @@
 #include "activations.h"
 #include "stddef.h"
 #include "tree.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-struct network_state;
+//struct network_state;
 
-struct layer;
-typedef struct layer layer;
+//struct layer;
+//typedef struct layer layer;
 
-typedef enum {
-    CONVOLUTIONAL,
-    DECONVOLUTIONAL,
-    CONNECTED,
-    MAXPOOL,
-    SOFTMAX,
-    DETECTION,
-    DROPOUT,
-    CROP,
-    ROUTE,
-    COST,
-    NORMALIZATION,
-    AVGPOOL,
-    LOCAL,
-    SHORTCUT,
-    ACTIVE,
-    RNN,
-    GRU,
-    CRNN,
-    BATCHNORM,
-    NETWORK,
-    XNOR,
-    REGION,
-	YOLO,
-    REORG,
-	UPSAMPLE,
-	REORG_OLD,
-    BLANK
-} LAYER_TYPE;
+//typedef enum {
+//    CONVOLUTIONAL,
+//    DECONVOLUTIONAL,
+//    CONNECTED,
+//    MAXPOOL,
+//    SOFTMAX,
+//    DETECTION,
+//    DROPOUT,
+//    CROP,
+//    ROUTE,
+//    COST,
+//    NORMALIZATION,
+//    AVGPOOL,
+//    LOCAL,
+//    SHORTCUT,
+//    ACTIVE,
+//    RNN,
+//    GRU,
+//    CRNN,
+//    BATCHNORM,
+//    NETWORK,
+//    XNOR,
+//    REGION,
+//    YOLO,
+//    REORG,
+//    UPSAMPLE,
+//    REORG_OLD,
+//    BLANK
+//} LAYER_TYPE;
 
-typedef enum{
-    SSE, MASKED, SMOOTH
-} COST_TYPE;
+//typedef enum{
+//    SSE, MASKED, SMOOTH
+//} COST_TYPE;
 
-typedef struct {
-	int batch;
-	float learning_rate;
-	float momentum;
-	float decay;
-	int adam;
-	float B1;
-	float B2;
-	float eps;
-	int t;
-} update_args;
+//typedef struct {
+//    int batch;
+//    float learning_rate;
+//    float momentum;
+//    float decay;
+//    int adam;
+//    float B1;
+//    float B2;
+//    float eps;
+//    int t;
+//} update_args;
 
+/*
 struct layer{
     LAYER_TYPE type;
     ACTIVATION activation;
@@ -83,7 +87,7 @@ struct layer{
     int side;
     int stride;
     int reverse;
-	int spatial;
+    int spatial;
     int pad;
     int sqrt;
     int flip;
@@ -100,8 +104,9 @@ struct layer{
     float exposure;
     float shift;
     float ratio;
-	int focal_loss;
-	int noloss;
+    float learning_rate_scale;
+    int focal_loss;
+    int noloss;
     int softmax;
     int classes;
     int coords;
@@ -113,20 +118,23 @@ struct layer{
     int noadjust;
     int reorg;
     int log;
-	int tanh;
-	int *mask;
-	int total;
-	float bflops;
+    int tanh;
+    int *mask;
+    int total;
+    float bflops;
 
     int adam;
     float B1;
     float B2;
     float eps;
-    float *m_gpu;
-    float *v_gpu;
+
     int t;
     float *m;
     float *v;
+    float * bias_m;
+    float * bias_v;
+    float * scale_m;
+    float * scale_v;
 
     tree *softmax_tree;
     int  *map;
@@ -138,14 +146,14 @@ struct layer{
     float coord_scale;
     float object_scale;
     float noobject_scale;
-	float mask_scale;
+    float mask_scale;
     float class_scale;
     int bias_match;
     int random;
-	float ignore_thresh;
-	float truth_thresh;
+    float ignore_thresh;
+    float truth_thresh;
     float thresh;
-	float focus;
+    float focus;
     int classfix;
     int absolute;
 
@@ -200,7 +208,7 @@ struct layer{
     int   * input_sizes;
     float * delta;
     float * output;
-	float * loss;
+    float * loss;
     float * squared;
     float * norms;
 
@@ -245,7 +253,7 @@ struct layer{
 
     size_t workspace_size;
 
-    #ifdef GPU
+#ifdef GPU
     float *z_gpu;
     float *r_gpu;
     float *h_gpu;
@@ -262,6 +270,14 @@ struct layer{
     float * save_delta_gpu;
     float * concat_gpu;
     float * concat_delta_gpu;
+
+    // adam
+    float *m_gpu;
+    float *v_gpu;
+    float *bias_m_gpu;
+    float *scale_m_gpu;
+    float *bias_v_gpu;
+    float *scale_v_gpu;
 
     float *binary_input_gpu;
     float *binary_weights_gpu;
@@ -282,8 +298,8 @@ struct layer{
     float * weights_gpu;
     float * weight_updates_gpu;
 
-	float * weights_gpu16;
-	float * weight_updates_gpu16;
+    float * weights_gpu16;
+    float * weight_updates_gpu16;
 
     float * biases_gpu;
     float * bias_updates_gpu;
@@ -292,26 +308,31 @@ struct layer{
     float * scale_updates_gpu;
 
     float * output_gpu;
-	float * loss_gpu;
+    float * loss_gpu;
     float * delta_gpu;
     float * rand_gpu;
     float * squared_gpu;
     float * norms_gpu;
     #ifdef CUDNN
     cudnnTensorDescriptor_t srcTensorDesc, dstTensorDesc;
+    cudnnTensorDescriptor_t srcTensorDesc16, dstTensorDesc16;
     cudnnTensorDescriptor_t dsrcTensorDesc, ddstTensorDesc;
-	cudnnTensorDescriptor_t normTensorDesc, normDstTensorDesc, normDstTensorDescF16;
-    cudnnFilterDescriptor_t weightDesc;
-    cudnnFilterDescriptor_t dweightDesc;
+    cudnnTensorDescriptor_t dsrcTensorDesc16, ddstTensorDesc16;
+    cudnnTensorDescriptor_t normTensorDesc, normDstTensorDesc, normDstTensorDescF16;
+    cudnnFilterDescriptor_t weightDesc, weightDesc16;
+    cudnnFilterDescriptor_t dweightDesc, dweightDesc16;
     cudnnConvolutionDescriptor_t convDesc;
-    cudnnConvolutionFwdAlgo_t fw_algo;
-    cudnnConvolutionBwdDataAlgo_t bd_algo;
-    cudnnConvolutionBwdFilterAlgo_t bf_algo;
+    cudnnConvolutionFwdAlgo_t fw_algo, fw_algo16;
+    cudnnConvolutionBwdDataAlgo_t bd_algo, bd_algo16;
+    cudnnConvolutionBwdFilterAlgo_t bf_algo, bf_algo16;
     cudnnPoolingDescriptor_t poolingDesc;
-    #endif
-    #endif
+    #endif  // CUDNN
+#endif  // GPU
 };
+*/
+//void free_layer(layer);
 
-void free_layer(layer);
-
+#ifdef __cplusplus
+}
+#endif
 #endif

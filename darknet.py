@@ -389,4 +389,3 @@ network_predict_batch = lib.network_predict_batch
 network_predict_batch.argtypes = (ct.c_void_p, IMAGE, ct.c_int, ct.c_int, ct.c_int,
                                   ct.c_float, ct.c_float, IntPtr, ct.c_int, ct.c_int)
 network_predict_batch.restype = DETNUMPAIRPtr
-

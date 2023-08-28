@@ -19,61 +19,71 @@
 #  ``CUDNN_LIBRARIES``
 #    The CUDNN libraries.
 #
+#  ``CuDNN::CuDNN``
+#    The CUDNN target
+#
 
 include(FindPackageHandleStandardArgs)
 
-if(NOT CUDNN_INCLUDE_DIR)
-  find_path(CUDNN_INCLUDE_DIR cudnn.h
-    HINTS ${CUDA_HOME} ${CUDA_TOOLKIT_ROOT_DIR} $ENV{cudnn} $ENV{CUDNN}
-    PATH_SUFFIXES cuda/include include)
-endif()
-
-if(NOT CUDNN_LIBRARY)
-  find_library(CUDNN_LIBRARY cudnn
-    HINTS ${CUDA_HOME} ${CUDA_TOOLKIT_ROOT_DIR} $ENV{cudnn} $ENV{CUDNN}
-    PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 lib/x64)
-endif()
-
-find_package_handle_standard_args(
-    CUDNN DEFAULT_MSG CUDNN_INCLUDE_DIR CUDNN_LIBRARY)
-
-if(CUDNN_FOUND)
+find_path(CUDNN_INCLUDE_DIR NAMES cudnn.h cudnn_v8.h cudnn_v7.h
+  HINTS $ENV{CUDA_PATH} $ENV{CUDA_TOOLKIT_ROOT_DIR} $ENV{CUDA_HOME} $ENV{CUDNN_ROOT_DIR} /usr/include
+  PATH_SUFFIXES cuda/include include)
+find_library(CUDNN_LIBRARY NAMES cudnn cudnn8 cudnn7
+  HINTS $ENV{CUDA_PATH} $ENV{CUDA_TOOLKIT_ROOT_DIR} $ENV{CUDA_HOME} $ENV{CUDNN_ROOT_DIR} /usr/lib/x86_64-linux-gnu/
+  PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 lib/x64 cuda/lib/x64)
+if(EXISTS "${CUDNN_INCLUDE_DIR}/cudnn.h")
   file(READ ${CUDNN_INCLUDE_DIR}/cudnn.h CUDNN_HEADER_CONTENTS)
-    string(REGEX MATCH "define CUDNN_MAJOR * +([0-9]+)"
-                 CUDNN_VERSION_MAJOR "${CUDNN_HEADER_CONTENTS}")
-    string(REGEX REPLACE "define CUDNN_MAJOR * +([0-9]+)" "\\1"
-                 CUDNN_VERSION_MAJOR "${CUDNN_VERSION_MAJOR}")
-    string(REGEX MATCH "define CUDNN_MINOR * +([0-9]+)"
-                 CUDNN_VERSION_MINOR "${CUDNN_HEADER_CONTENTS}")
-    string(REGEX REPLACE "define CUDNN_MINOR * +([0-9]+)" "\\1"
-                 CUDNN_VERSION_MINOR "${CUDNN_VERSION_MINOR}")
-    string(REGEX MATCH "define CUDNN_PATCHLEVEL * +([0-9]+)"
-                 CUDNN_VERSION_PATCH "${CUDNN_HEADER_CONTENTS}")
-    string(REGEX REPLACE "define CUDNN_PATCHLEVEL * +([0-9]+)" "\\1"
-                 CUDNN_VERSION_PATCH "${CUDNN_VERSION_PATCH}")
-  if(NOT CUDNN_VERSION_MAJOR)
+elseif(EXISTS "${CUDNN_INCLUDE_DIR}/cudnn_v8.h")
+  file(READ ${CUDNN_INCLUDE_DIR}/cudnn_v8.h CUDNN_HEADER_CONTENTS)
+elseif(EXISTS "${CUDNN_INCLUDE_DIR}/cudnn_v7.h")
+  file(READ ${CUDNN_INCLUDE_DIR}/cudnn_v7.h CUDNN_HEADER_CONTENTS)
+endif()
+if(EXISTS "${CUDNN_INCLUDE_DIR}/cudnn_version.h")
+  file(READ "${CUDNN_INCLUDE_DIR}/cudnn_version.h" CUDNN_VERSION_H_CONTENTS)
+  string(APPEND CUDNN_HEADER_CONTENTS "${CUDNN_VERSION_H_CONTENTS}")
+  unset(CUDNN_VERSION_H_CONTENTS)
+elseif(EXISTS "${CUDNN_INCLUDE_DIR}/cudnn_version_v8.h")
+  file(READ "${CUDNN_INCLUDE_DIR}/cudnn_version_v8.h" CUDNN_VERSION_H_CONTENTS)
+  string(APPEND CUDNN_HEADER_CONTENTS "${CUDNN_VERSION_H_CONTENTS}")
+  unset(CUDNN_VERSION_H_CONTENTS)
+elseif(EXISTS "${CUDNN_INCLUDE_DIR}/cudnn_version_v7.h")
+  file(READ "${CUDNN_INCLUDE_DIR}/cudnn_version_v7.h" CUDNN_VERSION_H_CONTENTS)
+  string(APPEND CUDNN_HEADER_CONTENTS "${CUDNN_VERSION_H_CONTENTS}")
+  unset(CUDNN_VERSION_H_CONTENTS)
+endif()
+if(CUDNN_HEADER_CONTENTS)
+  string(REGEX MATCH "define CUDNN_MAJOR * +([0-9]+)"
+               _CUDNN_VERSION_MAJOR "${CUDNN_HEADER_CONTENTS}")
+  string(REGEX REPLACE "define CUDNN_MAJOR * +([0-9]+)" "\\1"
+               _CUDNN_VERSION_MAJOR "${_CUDNN_VERSION_MAJOR}")
+  string(REGEX MATCH "define CUDNN_MINOR * +([0-9]+)"
+               _CUDNN_VERSION_MINOR "${CUDNN_HEADER_CONTENTS}")
+  string(REGEX REPLACE "define CUDNN_MINOR * +([0-9]+)" "\\1"
+               _CUDNN_VERSION_MINOR "${_CUDNN_VERSION_MINOR}")
+  string(REGEX MATCH "define CUDNN_PATCHLEVEL * +([0-9]+)"
+               _CUDNN_VERSION_PATCH "${CUDNN_HEADER_CONTENTS}")
+  string(REGEX REPLACE "define CUDNN_PATCHLEVEL * +([0-9]+)" "\\1"
+               _CUDNN_VERSION_PATCH "${_CUDNN_VERSION_PATCH}")
+  if(NOT _CUDNN_VERSION_MAJOR)
     set(CUDNN_VERSION "?")
   else()
-    set(CUDNN_VERSION "${CUDNN_VERSION_MAJOR}.${CUDNN_VERSION_MINOR}.${CUDNN_VERSION_PATCH}")
+    set(CUDNN_VERSION "${_CUDNN_VERSION_MAJOR}.${_CUDNN_VERSION_MINOR}.${_CUDNN_VERSION_PATCH}")
   endif()
 endif()
 
 set(CUDNN_INCLUDE_DIRS ${CUDNN_INCLUDE_DIR})
 set(CUDNN_LIBRARIES ${CUDNN_LIBRARY})
-if(CUDNN_FOUND)
-  message(STATUS "Found cuDNN: v${CUDNN_VERSION}  (include: ${CUDNN_INCLUDE_DIR}, library: ${CUDNN_LIBRARY})")
-endif()
 mark_as_advanced(CUDNN_LIBRARY CUDNN_INCLUDE_DIR)
 
-# Register imported libraries:
-# 1. If we can find a Windows .dll file (or if we can find both Debug and
-#    Release libraries), we will set appropriate target properties for these.
-# 2. However, for most systems, we will only register the import location and
-#    include directory.
+find_package_handle_standard_args(CUDNN
+      REQUIRED_VARS  CUDNN_INCLUDE_DIR CUDNN_LIBRARY
+      VERSION_VAR    CUDNN_VERSION
+)
 
-# Look for dlls, for Release and Debug libraries.
 if(WIN32)
-  string( REPLACE ".lib" ".dll" CUDNN_LIBRARY_DLL "${CUDNN_LIBRARY}" )
+  set(CUDNN_DLL_DIR ${CUDNN_INCLUDE_DIR})
+  list(TRANSFORM CUDNN_DLL_DIR APPEND "/../bin")
+  find_file(CUDNN_LIBRARY_DLL NAMES cudnn64_${CUDNN_VERSION_MAJOR}.dll PATHS ${CUDNN_DLL_DIR})
 endif()
 
 if( CUDNN_FOUND AND NOT TARGET CuDNN::CuDNN )

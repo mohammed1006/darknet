@@ -20,10 +20,10 @@ float_pair get_rnn_vid_data(network net, char **files, int n, int batch, int ste
     image out_im = get_network_image(net);
     int output_size = out_im.w*out_im.h*out_im.c;
     printf("%d %d %d\n", out_im.w, out_im.h, out_im.c);
-    float* feats = (float*)calloc(net.batch * batch * output_size, sizeof(float));
+    float* feats = (float*)xcalloc(net.batch * batch * output_size, sizeof(float));
     for(b = 0; b < batch; ++b){
         int input_size = net.w*net.h*net.c;
-        float* input = (float*)calloc(input_size * net.batch, sizeof(float));
+        float* input = (float*)xcalloc(input_size * net.batch, sizeof(float));
         char *filename = files[rand()%n];
         cap_cv *cap = get_capture_video_stream(filename);
         int frames = get_capture_frame_count_cv(cap);
@@ -160,7 +160,7 @@ void generate_vid_rnn(char *cfgfile, char *weightfile)
     //CvCapture* cap = cvCaptureFromFile("extra/vid/ILSVRC2015/Data/VID/snippets/val/ILSVRC2015_val_00007030.mp4");
     float *feat;
     float *next;
-	next = NULL;
+    next = NULL;
     image last;
     for(i = 0; i < 25; ++i){
         image im = get_image_from_stream_cpp(cap);

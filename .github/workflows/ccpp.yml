@@ -1,41 +1,40 @@
 name: Darknet Continuous Integration
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
+  schedule:
+    - cron: '0 0 * * *'
 
 env:
-  #VCPKG_BINARY_SOURCES: 'clear;nuget,githubpackages,readwrite'
   VCPKG_BINARY_SOURCES: 'clear;nuget,vcpkgbinarycache,readwrite'
 
 jobs:
   ubuntu-makefile:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt install libopencv-dev
+      run: sudo apt install libopencv-dev libgles2-mesa-dev
 
     - name: 'Install CUDA'
+      run: ${{ github.workspace }}/scripts/deploy-cuda.sh
+
+    - name: 'Create softlinks for CUDA'
       run: |
-        sudo apt update
-        sudo apt-get dist-upgrade -y
-        sudo wget -O /etc/apt/preferences.d/cuda-repository-pin-600 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
-        sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub
-        sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
-        sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64/ /"
-        sudo apt-get install -y --no-install-recommends cuda-compiler-11-2 cuda-libraries-dev-11-2 cuda-driver-dev-11-2 cuda-cudart-dev-11-2
-        sudo apt-get install -y --no-install-recommends libcudnn8-dev
-        sudo rm -rf /usr/local/cuda
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
-        sudo ln -s /usr/local/cuda-11.2 /usr/local/cuda
-        export PATH=/usr/local/cuda/bin:$PATH
-        export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH
-        nvcc --version
-        gcc --version
+        source ${{ github.workspace }}/scripts/requested_cuda_version.sh
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
 
     - name: 'LIBSO=1 GPU=0 CUDNN=0 OPENCV=0'
       run: |
@@ -73,37 +72,31 @@ jobs:
         make clean
 
 
-  ubuntu-vcpkg-cuda:
+  ubuntu-vcpkg-opencv4-cuda:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+      if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled }}
+
+    - uses: lukka/get-cmake@latest
 
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt install yasm nasm
-
-    - uses: lukka/get-cmake@latest
+      run: sudo apt-get install -y yasm nasm gperf libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
 
     - name: 'Install CUDA'
+      run: ${{ github.workspace }}/scripts/deploy-cuda.sh
+
+    - name: 'Create softlinks for CUDA'
       run: |
-        sudo apt update
-        sudo apt-get dist-upgrade -y
-        sudo wget -O /etc/apt/preferences.d/cuda-repository-pin-600 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
-        sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub
-        sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
-        sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64/ /"
-        sudo apt-get install -y --no-install-recommends cuda-compiler-11-2 cuda-libraries-dev-11-2 cuda-driver-dev-11-2 cuda-cudart-dev-11-2
-        sudo apt-get install -y --no-install-recommends libcudnn8-dev
-        sudo rm -rf /usr/local/cuda
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
-        sudo ln -s /usr/local/cuda-11.2 /usr/local/cuda
-        export PATH=/usr/local/cuda/bin:$PATH
-        export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH
-        nvcc --version
-        gcc --version
+        source ${{ github.workspace }}/scripts/requested_cuda_version.sh
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
 
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
@@ -111,14 +104,15 @@ jobs:
         git clone https://github.com/microsoft/vcpkg ;
         ./vcpkg/bootstrap-vcpkg.sh ;
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
-        -Name "githubpackages"
-        -Source https://nuget.pkg.github.com/${{ github.repository_owner }} ;
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
-        setapikey ${{ secrets.GITHUB_TOKEN }}
-        -Source https://nuget.pkg.github.com/${{ github.repository_owner }} ;
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
-        -Source http://93.49.111.10:5555/v3/index.json ;
+        -Source http://93.49.111.10:5555/v3/index.json
+
+    - name: Setup NuGet API key if found
+      shell: bash
+      env:
+        BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
+      if: env.BAGET_API_KEY != null
+      run: >
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
         setapikey ${{ secrets.BAGET_API_KEY }}
         -Source http://93.49.111.10:5555/v3/index.json
@@ -130,30 +124,132 @@ jobs:
         CUDA_PATH: "/usr/local/cuda"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      run: ./build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -EnableCUDA -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-cuda-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-cuda-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
 
 
+  ubuntu-vcpkg-opencv3-cuda:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: lukka/get-cmake@latest
+
+    - name: Update apt
+      run: sudo apt update
+    - name: Install dependencies
+      run: sudo apt-get install -y yasm nasm gperf libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
+
+    - name: 'Install CUDA'
+      run: ${{ github.workspace }}/scripts/deploy-cuda.sh
+
+    - name: 'Create softlinks for CUDA'
+      run: |
+        source ${{ github.workspace }}/scripts/requested_cuda_version.sh
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
+
+    - name: 'Setup vcpkg and NuGet artifacts backend'
+      shell: bash
+      run: >
+        git clone https://github.com/microsoft/vcpkg ;
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        -Name "vcpkgbinarycache"
+        -Source http://93.49.111.10:5555/v3/index.json
+
+    - name: Setup NuGet API key if found
+      shell: bash
+      env:
+        BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
+      if: env.BAGET_API_KEY != null
+      run: >
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        setapikey ${{ secrets.BAGET_API_KEY }}
+        -Source http://93.49.111.10:5555/v3/index.json
+
+    - name: 'Build'
+      shell: pwsh
+      env:
+        CUDACXX: "/usr/local/cuda/bin/nvcc"
+        CUDA_PATH: "/usr/local/cuda"
+        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
+        LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
+      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN -ForceOpenCVVersion 3 -DisableInteractive -DoNotUpdateTOOL
+
+
+  ubuntu-vcpkg-opencv2-cuda:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: lukka/get-cmake@latest
+
+    - name: Update apt
+      run: sudo apt update
+    - name: Install dependencies
+      run: sudo apt-get install -y yasm nasm gperf libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
+
+    - name: 'Install CUDA'
+      run: ${{ github.workspace }}/scripts/deploy-cuda.sh
+
+    - name: 'Create softlinks for CUDA'
+      run: |
+        source ${{ github.workspace }}/scripts/requested_cuda_version.sh
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
+
+    - name: 'Setup vcpkg and NuGet artifacts backend'
+      shell: bash
+      run: >
+        git clone https://github.com/microsoft/vcpkg ;
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        -Name "vcpkgbinarycache"
+        -Source http://93.49.111.10:5555/v3/index.json
+
+    - name: Setup NuGet API key if found
+      shell: bash
+      env:
+        BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
+      if: env.BAGET_API_KEY != null
+      run: >
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        setapikey ${{ secrets.BAGET_API_KEY }}
+        -Source http://93.49.111.10:5555/v3/index.json
+
+    - name: 'Build'
+      shell: pwsh
+      env:
+        CUDACXX: "/usr/local/cuda/bin/nvcc"
+        CUDA_PATH: "/usr/local/cuda"
+        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
+        LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
+      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN -ForceOpenCVVersion 2 -DisableInteractive -DoNotUpdateTOOL
+
+
   ubuntu:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Update apt
       run: sudo apt update
@@ -169,21 +265,21 @@ jobs:
         CUDA_PATH: "/usr/local/cuda"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      run: ./build.ps1 -EnableOPENCV -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -EnableOPENCV -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
@@ -192,34 +288,24 @@ jobs:
   ubuntu-cuda:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt install libopencv-dev
+      run: sudo apt install libopencv-dev libgles2-mesa-dev
 
     - uses: lukka/get-cmake@latest
 
     - name: 'Install CUDA'
+      run: ${{ github.workspace }}/scripts/deploy-cuda.sh
+
+    - name: 'Create softlinks for CUDA'
       run: |
-        sudo apt update
-        sudo apt-get dist-upgrade -y
-        sudo wget -O /etc/apt/preferences.d/cuda-repository-pin-600 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
-        sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub
-        sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
-        sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64/ /"
-        sudo apt-get install -y --no-install-recommends cuda-compiler-11-2 cuda-libraries-dev-11-2 cuda-driver-dev-11-2 cuda-cudart-dev-11-2
-        sudo apt-get install -y --no-install-recommends libcudnn8-dev
-        sudo rm -rf /usr/local/cuda
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-11.2/lib64/stubs/libcuda.so /usr/local/cuda-11.2/lib64/libcuda.so
-        sudo ln -s /usr/local/cuda-11.2 /usr/local/cuda
-        export PATH=/usr/local/cuda/bin:$PATH
-        export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH
-        nvcc --version
-        gcc --version
+        source ${{ github.workspace }}/scripts/requested_cuda_version.sh
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
+        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
 
     - name: 'Build'
       shell: pwsh
@@ -228,21 +314,21 @@ jobs:
         CUDA_PATH: "/usr/local/cuda"
         CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
         LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      run: ./build.ps1 -EnableOPENCV -EnableCUDA -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -EnableOPENCV -EnableCUDA -EnableCUDNN -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-cuda-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-cuda-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-cuda-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
@@ -251,22 +337,55 @@ jobs:
   ubuntu-no-ocv-cpp:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: lukka/get-cmake@latest
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateTOOL
+
+
+  ubuntu-setup-sh:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: 'Setup vcpkg and NuGet artifacts backend'
+      shell: bash
+      run: >
+        git clone https://github.com/microsoft/vcpkg ;
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        -Name "vcpkgbinarycache"
+        -Source http://93.49.111.10:5555/v3/index.json
+
+    - name: Setup NuGet API key if found
+      shell: bash
+      env:
+        BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
+      if: env.BAGET_API_KEY != null
+      run: >
+        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        setapikey ${{ secrets.BAGET_API_KEY }}
+        -Source http://93.49.111.10:5555/v3/index.json
+
+    - name: 'Setup'
+      shell: bash
+      run: ${{ github.workspace }}/scripts/setup.sh -InstallTOOLS -InstallCUDA -BypassDRIVER
 
 
   osx-vcpkg:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+      if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled }}
 
     - name: Install dependencies
-      run: brew install libomp yasm nasm
+      run: brew install libomp yasm nasm pkg-config
 
     - uses: lukka/get-cmake@latest
 
@@ -276,35 +395,36 @@ jobs:
         git clone https://github.com/microsoft/vcpkg ;
         ./vcpkg/bootstrap-vcpkg.sh ;
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
-        -Name "githubpackages"
-        -Source https://nuget.pkg.github.com/${{ github.repository_owner }} ;
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
-        setapikey ${{ secrets.GITHUB_TOKEN }}
-        -Source https://nuget.pkg.github.com/${{ github.repository_owner }} ;
-        mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
-        -Source http://93.49.111.10:5555/v3/index.json ;
+        -Source http://93.49.111.10:5555/v3/index.json
+
+    - name: Setup NuGet API key if found
+      shell: bash
+      env:
+        BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
+      if: env.BAGET_API_KEY != null
+      run: >
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1)
         setapikey ${{ secrets.BAGET_API_KEY }}
         -Source http://93.49.111.10:5555/v3/index.json
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -UseVCPKG -DoNotUpdateVCPKG -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
@@ -313,7 +433,7 @@ jobs:
   osx:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Install dependencies
       run: brew install opencv libomp
@@ -322,21 +442,21 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -EnableOPENCV -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -EnableOPENCV -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
@@ -345,19 +465,23 @@ jobs:
   osx-no-ocv-no-omp-cpp:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: lukka/get-cmake@latest
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateTOOL
 
 
   win-vcpkg:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+      if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled }}
 
     - uses: lukka/get-cmake@latest
 
@@ -367,121 +491,200 @@ jobs:
         git clone https://github.com/microsoft/vcpkg ;
         ./vcpkg/bootstrap-vcpkg.sh ;
         $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
-        -Name "githubpackages"
-        -Source https://nuget.pkg.github.com/${{ github.repository_owner }} ;
-        $(./vcpkg/vcpkg fetch nuget | tail -n 1)
-        setapikey ${{ secrets.GITHUB_TOKEN }}
-        -Source https://nuget.pkg.github.com/${{ github.repository_owner }} ;
-        $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
-        -Source http://93.49.111.10:5555/v3/index.json ;
+        -Source http://93.49.111.10:5555/v3/index.json
+
+    - name: Setup NuGet API key if found
+      shell: bash
+      env:
+        BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
+      if: env.BAGET_API_KEY != null
+      run: >
         $(./vcpkg/vcpkg fetch nuget | tail -n 1)
         setapikey ${{ secrets.BAGET_API_KEY }}
         -Source http://93.49.111.10:5555/v3/index.json
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -ForceLocalVCPKG -DoNotUpdateVCPKG -EnableOPENCV -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
-        path: ${{ runner.workspace }}/buildDirectory/Release/*.dll
-    - uses: actions/upload-artifact@v2
+        path: ${{ github.workspace }}/build_release/*.dll
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-vcpkg-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
+
+
+  win-vcpkg-port:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: 'Setup vcpkg and NuGet artifacts backend'
+      shell: bash
+      run: >
+        git clone https://github.com/microsoft/vcpkg ;
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        -Name "vcpkgbinarycache"
+        -Source http://93.49.111.10:5555/v3/index.json
+
+    - name: Setup NuGet API key if found
+      shell: bash
+      env:
+        BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
+      if: env.BAGET_API_KEY != null
+      run: >
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        setapikey ${{ secrets.BAGET_API_KEY }}
+        -Source http://93.49.111.10:5555/v3/index.json
+
+    - name: 'Build'
+      shell: pwsh
+      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -ForceLocalVCPKG -InstallDARKNETthroughVCPKG -ForceVCPKGDarknetHEAD -EnableOPENCV -DisableInteractive -DoNotUpdateTOOL
 
 
   win-intlibs:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: lukka/get-cmake@latest
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -DisableInteractive -DoNotUpdateTOOL
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: cfg
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: data
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/*dark*
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/3rdparty/pthreads/bin/*.dll
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: darknet-${{ runner.os }}
         path: ${{ github.workspace }}/uselib*
 
 
+  win-setup-ps1:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: 'Setup vcpkg and NuGet artifacts backend'
+      shell: bash
+      run: >
+        git clone https://github.com/microsoft/vcpkg ;
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        -Name "vcpkgbinarycache"
+        -Source http://93.49.111.10:5555/v3/index.json
+
+    - name: Setup NuGet API key if found
+      shell: bash
+      env:
+        BAGET_API_KEY: ${{ secrets.BAGET_API_KEY }}
+      if: env.BAGET_API_KEY != null
+      run: >
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1)
+        setapikey ${{ secrets.BAGET_API_KEY }}
+        -Source http://93.49.111.10:5555/v3/index.json
+
+    - name: 'Setup'
+      shell: pwsh
+      run: ${{ github.workspace }}/scripts/setup.ps1 -InstallCUDA
+
+
   win-intlibs-cpp:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: lukka/get-cmake@latest
 
     - name: 'Build'
       shell: pwsh
-      run: ./build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateTOOL
+
+
+  win-csharp:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: lukka/get-cmake@latest
+
+    - name: 'Build'
+      shell: pwsh
+      run: ${{ github.workspace }}/build.ps1 -EnableCSharpWrapper -DisableInteractive -DoNotUpdateTOOL
 
 
   win-intlibs-cuda:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: 'Install CUDA'
-      run: ./scripts/deploy-cuda.ps1
+      run: ${{ github.workspace }}/scripts/deploy-cuda.ps1
 
     - uses: lukka/get-cmake@latest
 
     - name: 'Build'
       env:
-        CUDA_PATH: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.3"
-        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.3"
-        CUDACXX: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.3\\bin\\nvcc.exe"
+        CUDA_PATH: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.2"
+        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.2"
+        CUDACXX: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.2\\bin\\nvcc.exe"
       shell: pwsh
-      run: ./build.ps1 -EnableCUDA -DisableInteractive -DoNotUpdateDARKNET
+      run: ${{ github.workspace }}/build.ps1 -EnableCUDA -DisableInteractive -DoNotUpdateTOOL
+
+
+  win-powershell51:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: lukka/get-cmake@latest
+
+    - name: 'Build'
+      shell: powershell
+      run: ${{ github.workspace }}/build.ps1 -DisableInteractive -DoNotUpdateTOOL
 
 
   mingw:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: lukka/get-cmake@latest
 
     - name: 'Build with CMake'
-      uses: lukka/run-cmake@v3
-      with:
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-        useVcpkgToolchainFile: true
-        buildDirectory: '${{ runner.workspace }}/buildDirectory'
-        cmakeAppendedArgs: "-G\"MinGW Makefiles\" -DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=OFF -DENABLE_CUDNN=OFF -DENABLE_OPENCV=OFF"
-        cmakeBuildType: 'Release'
-        buildWithCMakeArgs: '--config Release --target install'
+      run: |
+        mkdir build_release
+        cd build_release
+        cmake .. -G"MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=OFF -DENABLE_CUDNN=OFF -DENABLE_OPENCV=OFF
+        cmake --build . --config Release --target install

@@ -1,13 +1,13 @@
-GPU=1
-CUDNN=1
+GPU=0
+CUDNN=0
 CUDNN_HALF=0
-OPENCV=1
+OPENCV=0
 AVX=0
-OPENMP=1
+OPENMP=0
 LIBSO=0
 ZED_CAMERA=0
 ZED_CAMERA_v2_8=0
-REALSENSE2_CAMERA=1
+REALSENSE2_CAMERA=0
 
 # set GPU=1 and CUDNN=1 to speedup on GPU
 # set CUDNN_HALF=1 to further speedup 3 x times (Mixed-precision on Tensor Cores) GPU: Volta, Xavier, Turing, Ampere, Ada and higher
@@ -15,7 +15,7 @@ REALSENSE2_CAMERA=1
 # set ZED_CAMERA=1 to enable ZED SDK 3.0 and above
 # set ZED_CAMERA_v2_8=1 to enable ZED SDK 2.X
 
-USE_CPP=1
+USE_CPP=0
 
 ifeq ($(REALSENSE2_CAMERA), 1)
 USE_CPP=1
@@ -186,7 +186,7 @@ OBJ+=convolutional_kernels.o activation_kernels.o im2col_kernels.o col2im_kernel
 endif
 
 ifeq ($(REALSENSE2_CAMERA), 1)
-CFLAGS+= -DREALSENSE2 -I./src/rdv_GetRealsense 
+CFLAGS+= -DREALSENSE2 -I./src/rdv_GetRealsense
 LDFLAGS+= -Xlinker --start-group -lpthread -ldl -lm -lrt -lc -lstdc++ -lboost_system -lboost_thread -lboost_filesystem -lboost_regex -lboost_date_time -lboost_program_options -lstdc++fs -lrealsense2 -Xlinker --end-group
 OBJ+=rdv_GetRealsense.o
 endif

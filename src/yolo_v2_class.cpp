@@ -44,7 +44,7 @@ int detect_image(const char *filename, bbox_t_container &container)
 int detect_mat(const uint8_t* data, const size_t data_length, bbox_t_container &container) {
 #ifdef OPENCV
     std::vector<char> vdata(data, data + data_length);
-    cv::Mat image image = imdecode(cv::Mat(vdata), 1);
+    cv::Mat image = imdecode(cv::Mat(vdata), 1);
 
     std::vector<bbox_t> detection = detector->detect(image);
     for (size_t i = 0; i < detection.size() && i < C_SHARP_MAX_OBJECTS; ++i)
@@ -279,7 +279,7 @@ static image load_image_stb(char *filename, int channels)
 
 
 LIB_API image_t Detector::load_image(const uint8_t* datain, const size_t data_length)
-{    
+{
     image im = load_image_stb(datain, data_length, 3);
 
     image_t img;

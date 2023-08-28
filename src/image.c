@@ -22,7 +22,9 @@
 #endif
 
 // specific to jWrite.c and jWrite.h
-#define _CRT_SECURE_NO_WARNINGS         // stop complaining about deprecated functions
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
 #include "jWrite.h"
 // END specific to jWrite.c and jWrite.h
 

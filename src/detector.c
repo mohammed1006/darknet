@@ -100,7 +100,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     }
 
     int save_after_iterations = option_find_int(options, "saveweights", (net.max_batches < 10000) ? 1000 : 10000 );  // configure when to write weights. Very useful for smaller datasets!
-	int save_last_weights_after = option_find_int(options, "savelast", 100);
+    int save_last_weights_after = option_find_int(options, "savelast", 100);
     printf("Weights are saved after: %d iterations. Last weights (*_last.weight) are stored every %d iterations. \n", save_after_iterations, save_last_weights_after );
 
 
@@ -1858,7 +1858,7 @@ void test_headless(char *datacfg, char *cfgfile, char *weightfile, float thresh,
     fclose(outputfile);
     fclose(inputfile);
 
-    free_ptrs(names, net.layers[net.n - 1].classes);
+    free_ptrs((void**)names, net.layers[net.n - 1].classes);
     free_network(net);
 
 }

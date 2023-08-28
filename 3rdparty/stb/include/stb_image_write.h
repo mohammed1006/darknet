@@ -10,11 +10,6 @@
 
    Will probably not work correctly with strict-aliasing optimizations.
 
-   If using a modern Microsoft Compiler, non-safe versions of CRT calls may cause
-   compilation warnings or even errors. To avoid this, also before #including,
-
-       #define STBI_MSC_SECURE_CRT
-
 ABOUT:
 
    This header file is a library for writing images to C stdio or a callback.
@@ -1103,6 +1098,7 @@ static void stbiw__encode_png_line(unsigned char *pixels, int stride_bytes, int 
    int type = mymap[filter_type];
    unsigned char *z = pixels + stride_bytes * (stbi__flip_vertically_on_write ? height-1-y : y);
    int signed_stride = stbi__flip_vertically_on_write ? -stride_bytes : stride_bytes;
+
    if (type==0) {
       memcpy(line_buffer, z, width*n);
       return;

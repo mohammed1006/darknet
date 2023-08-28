@@ -1,4 +1,5 @@
 #include "route_layer.h"
+#include "utils.h"
 #include "dark_cuda.h"
 #include "blas.h"
 #include <stdio.h>
@@ -14,6 +15,7 @@ route_layer make_route_layer(int batch, int n, int *input_layers, int *input_siz
     l.input_sizes = input_sizes;
     l.groups = groups;
     l.group_id = group_id;
+    l.wait_stream_id = -1;
     int i;
     int outputs = 0;
     for(i = 0; i < n; ++i){
@@ -24,8 +26,8 @@ route_layer make_route_layer(int batch, int n, int *input_layers, int *input_siz
     l.outputs = outputs;
     l.inputs = outputs;
     //fprintf(stderr, " inputs = %d \t outputs = %d, groups = %d, group_id = %d \n", l.inputs, l.outputs, l.groups, l.group_id);
-    l.delta = (float*)calloc(outputs * batch, sizeof(float));
-    l.output = (float*)calloc(outputs * batch, sizeof(float));
+    l.delta = (float*)xcalloc(outputs * batch, sizeof(float));
+    l.output = (float*)xcalloc(outputs * batch, sizeof(float));
 
     l.forward = forward_route_layer;
     l.backward = backward_route_layer;
@@ -56,15 +58,16 @@ void resize_route_layer(route_layer *l, network *net)
         if(next.out_w == first.out_w && next.out_h == first.out_h){
             l->out_c += next.out_c;
         }else{
-            printf("%d %d, %d %d\n", next.out_w, next.out_h, first.out_w, first.out_h);
+            printf("Error: Different size of input layers: %d x %d, %d x %d\n", next.out_w, next.out_h, first.out_w, first.out_h);
             l->out_h = l->out_w = l->out_c = 0;
+            exit(EXIT_FAILURE);
         }
     }
     l->out_c = l->out_c / l->groups;
     l->outputs = l->outputs / l->groups;
     l->inputs = l->outputs;
-    l->delta = (float*)realloc(l->delta, l->outputs * l->batch * sizeof(float));
-    l->output = (float*)realloc(l->output, l->outputs * l->batch * sizeof(float));
+    l->delta = (float*)xrealloc(l->delta, l->outputs * l->batch * sizeof(float));
+    l->output = (float*)xrealloc(l->output, l->outputs * l->batch * sizeof(float));
 
 #ifdef GPU
     cuda_free(l->output_gpu);
@@ -114,6 +117,14 @@ void backward_route_layer(const route_layer l, network_state state)
 #ifdef GPU
 void forward_route_layer_gpu(const route_layer l, network_state state)
 {
+    if (l.stream >= 0) {
+        switch_stream(l.stream);
+    }
+
+    if (l.wait_stream_id >= 0) {
+        wait_stream(l.wait_stream_id);
+    }
+
     int i, j;
     int offset = 0;
     for(i = 0; i < l.n; ++i){

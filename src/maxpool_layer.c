@@ -1,6 +1,7 @@
 #include "maxpool_layer.h"
 #include "convolutional_layer.h"
 #include "dark_cuda.h"
+#include "utils.h"
 #include "gemm.h"
 #include <stdio.h>
 
@@ -109,10 +110,10 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
     int output_size = l.out_h * l.out_w * l.out_c * batch;
 
     if (train) {
-        if (!avgpool) l.indexes = (int*)calloc(output_size, sizeof(int));
-        l.delta = (float*)calloc(output_size, sizeof(float));
+        if (!avgpool) l.indexes = (int*)xcalloc(output_size, sizeof(int));
+        l.delta = (float*)xcalloc(output_size, sizeof(float));
     }
-    l.output = (float*)calloc(output_size, sizeof(float));
+    l.output = (float*)xcalloc(output_size, sizeof(float));
     if (avgpool) {
         l.forward = forward_local_avgpool_layer;
         l.backward = backward_local_avgpool_layer;
@@ -141,7 +142,7 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
     else cudnn_maxpool_setup(&l);
 
 #endif  // GPU
-	l.bflops = (l.size*l.size*l.c * l.out_h*l.out_w) / 1000000000.;
+    l.bflops = (l.size*l.size*l.c * l.out_h*l.out_w) / 1000000000.;
     if (avgpool) {
         if (stride_x == stride_y)
             fprintf(stderr, "avg               %2dx%2d/%2d   %4d x%4d x%4d -> %4d x%4d x%4d %5.3f BF\n", size, size, stride_x, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
@@ -216,10 +217,10 @@ void resize_maxpool_layer(maxpool_layer *l, int w, int h)
     int output_size = l->outputs * l->batch;
 
     if (l->train) {
-        if (!l->avgpool) l->indexes = (int*)realloc(l->indexes, output_size * sizeof(int));
-        l->delta = (float*)realloc(l->delta, output_size * sizeof(float));
+        if (!l->avgpool) l->indexes = (int*)xrealloc(l->indexes, output_size * sizeof(int));
+        l->delta = (float*)xrealloc(l->delta, output_size * sizeof(float));
     }
-    l->output = (float*)realloc(l->output, output_size * sizeof(float));
+    l->output = (float*)xrealloc(l->output, output_size * sizeof(float));
 
 #ifdef GPU
     CHECK_CUDA(cudaFree(l->output_gpu));

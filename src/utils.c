@@ -1,3 +1,6 @@
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 #include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,12 +18,37 @@
 #else
 #include <sys/time.h>
 #include <sys/stat.h>
+#include <execinfo.h>
 #endif
 
 
 #ifndef USE_CMAKE_LIBS
 #pragma warning(disable: 4996)
 #endif
+
+void *xmalloc_location(const size_t size, const char * const filename, const char * const funcname, const int line) {
+    void *ptr=malloc(size);
+    if(!ptr) {
+        malloc_error(size, filename, funcname, line);
+    }
+    return ptr;
+}
+
+void *xcalloc_location(const size_t nmemb, const size_t size, const char * const filename, const char * const funcname, const int line) {
+    void *ptr=calloc(nmemb, size);
+    if(!ptr) {
+        calloc_error(nmemb * size, filename, funcname, line);
+    }
+    return ptr;
+}
+
+void *xrealloc_location(void *ptr, const size_t size, const char * const filename, const char * const funcname, const int line) {
+    ptr=realloc(ptr,size);
+    if(!ptr) {
+        realloc_error(size, filename, funcname, line);
+    }
+    return ptr;
+}
 
 double what_time_is_it_now()
 {
@@ -40,8 +68,9 @@ int *read_map(char *filename)
     if(!file) file_error(filename);
     while((str=fgetl(file))){
         ++n;
-        map = (int*)realloc(map, n * sizeof(int));
+        map = (int*)xrealloc(map, n * sizeof(int));
         map[n-1] = atoi(str);
+        free(str);
     }
     if (file) fclose(file);
     return map;
@@ -61,7 +90,7 @@ void sorta_shuffle(void *arr, size_t n, size_t size, size_t sections)
 void shuffle(void *arr, size_t n, size_t size)
 {
     size_t i;
-    void* swp = (void*)calloc(1, size);
+    void* swp = (void*)xcalloc(1, size);
     for(i = 0; i < n-1; ++i){
         size_t j = i + random_gen()/(RAND_MAX / (n-i)+1);
         memcpy(swp,            (char*)arr+(j*size), size);
@@ -181,7 +210,7 @@ void find_replace(const char* str, char* orig, char* rep, char* output)
     char *p;
 
     sprintf(buffer, "%s", str);
-    if(!(p = strstr(buffer, orig))){  // Is 'orig' even in 'str'?
+    if (!(p = strstr(buffer, orig))) {  // Is 'orig' even in 'str'?
         sprintf(output, "%s", buffer);
         free(buffer);
         return;
@@ -189,13 +218,13 @@ void find_replace(const char* str, char* orig, char* rep, char* output)
 
     *p = '\0';
 
-    sprintf(output, "%s%s%s", buffer, rep, p+strlen(orig));
+    sprintf(output, "%s%s%s", buffer, rep, p + strlen(orig));
     free(buffer);
 }
 
 void trim(char *str)
 {
-    char* buffer = (char*)calloc(8192, sizeof(char));
+    char* buffer = (char*)xcalloc(8192, sizeof(char));
     sprintf(buffer, "%s", str);
 
     char *p = buffer;
@@ -211,12 +240,23 @@ void trim(char *str)
     free(buffer);
 }
 
+char *strlaststr(char *haystack, char *needle)
+{
+    char *p = strstr(haystack, needle), *r = NULL;
+    while (p != NULL)
+    {
+        r = p;
+        p = strstr(p + 1, needle);
+    }
+    return r;
+}
+
 void find_replace_extension(char *str, char *orig, char *rep, char *output)
 {
     char* buffer = (char*)calloc(8192, sizeof(char));
 
     sprintf(buffer, "%s", str);
-    char *p = strstr(buffer, orig);
+    char *p = strlaststr(buffer, orig);
     int offset = (p - buffer);
     int chars_from_end = strlen(buffer) - offset;
     if (!p || chars_from_end != strlen(orig)) {  // Is 'orig' even in 'str' AND is 'orig' found at the end of 'str'?
@@ -232,11 +272,17 @@ void find_replace_extension(char *str, char *orig, char *rep, char *output)
 
 void replace_image_to_label(const char* input_path, char* output_path)
 {
-    find_replace(input_path, "/images/train2014/", "/labels/train2014/", output_path);    // COCO
-    find_replace(output_path, "/images/val2014/", "/labels/val2014/", output_path);        // COCO
+    find_replace(input_path, "/images/train2017/", "/labels/train2017/", output_path);    // COCO
+    find_replace(output_path, "/images/val2017/", "/labels/val2017/", output_path);        // COCO
     find_replace(output_path, "/JPEGImages/", "/labels/", output_path);    // PascalVOC
+    find_replace(output_path, "\\images\\train2017\\", "\\labels\\train2017\\", output_path);    // COCO
+    find_replace(output_path, "\\images\\val2017\\", "\\labels\\val2017\\", output_path);        // COCO
+
     find_replace(output_path, "\\images\\train2014\\", "\\labels\\train2014\\", output_path);    // COCO
     find_replace(output_path, "\\images\\val2014\\", "\\labels\\val2014\\", output_path);        // COCO
+    find_replace(output_path, "/images/train2014/", "/labels/train2014/", output_path);    // COCO
+    find_replace(output_path, "/images/val2014/", "/labels/val2014/", output_path);        // COCO
+
     find_replace(output_path, "\\JPEGImages\\", "\\labels\\", output_path);    // PascalVOC
     //find_replace(output_path, "/images/", "/labels/", output_path);    // COCO
     //find_replace(output_path, "/VOC2007/JPEGImages/", "/VOC2007/labels/", output_path);        // PascalVOC
@@ -291,20 +337,68 @@ void top_k(float *a, int n, int k, int *index)
     }
 }
 
-void error(const char *s)
+
+void log_backtrace()
 {
-    perror(s);
-    assert(0);
+#ifndef WIN32
+    void * buffer[50];
+    int count = backtrace(buffer, sizeof(buffer));
+    char **symbols = backtrace_symbols(buffer, count);
+
+    fprintf(stderr, "backtrace (%d entries)\n", count);
+
+    for (int idx = 0; idx < count; idx ++)
+    {
+        fprintf(stderr, "%d/%d: %s\n", idx + 1, count, symbols[idx]);
+    }
+
+    free(symbols);
+#endif
+}
+
+void error(const char * const msg, const char * const filename, const char * const funcname, const int line)
+{
+    fprintf(stderr, "Darknet error location: %s, %s(), line #%d\n", filename, funcname, line);
+    perror(msg);
+    log_backtrace();
     exit(EXIT_FAILURE);
 }
 
-void malloc_error()
+const char * size_to_IEC_string(const size_t size)
 {
-    fprintf(stderr, "Malloc error\n");
-    exit(EXIT_FAILURE);
+    const float bytes = (double)size;
+    const float KiB = 1024;
+    const float MiB = 1024 * KiB;
+    const float GiB = 1024 * MiB;
+
+    static char buffer[25];
+    if (size < KiB)         sprintf(buffer, "%ld bytes", size);
+    else if (size < MiB)    sprintf(buffer, "%1.1f KiB", bytes / KiB);
+    else if (size < GiB)    sprintf(buffer, "%1.1f MiB", bytes / MiB);
+    else                    sprintf(buffer, "%1.1f GiB", bytes / GiB);
+
+    return buffer;
 }
 
-void file_error(char *s)
+void malloc_error(const size_t size, const char * const filename, const char * const funcname, const int line)
+{
+    fprintf(stderr, "Failed to malloc %s\n", size_to_IEC_string(size));
+    error("Malloc error - possibly out of CPU RAM", filename, funcname, line);
+}
+
+void calloc_error(const size_t size, const char * const filename, const char * const funcname, const int line)
+{
+    fprintf(stderr, "Failed to calloc %s\n", size_to_IEC_string(size));
+    error("Calloc error - possibly out of CPU RAM", filename, funcname, line);
+}
+
+void realloc_error(const size_t size, const char * const filename, const char * const funcname, const int line)
+{
+    fprintf(stderr, "Failed to realloc %s\n", size_to_IEC_string(size));
+    error("Realloc error - possibly out of CPU RAM", filename, funcname, line);
+}
+
+void file_error(const char * const s)
 {
     fprintf(stderr, "Couldn't open file: %s\n", s);
     exit(EXIT_FAILURE);
@@ -376,7 +470,7 @@ char *fgetl(FILE *fp)
 {
     if(feof(fp)) return 0;
     size_t size = 512;
-    char* line = (char*)malloc(size * sizeof(char));
+    char* line = (char*)xmalloc(size * sizeof(char));
     if(!fgets(line, size, fp)){
         free(line);
         return 0;
@@ -387,11 +481,7 @@ char *fgetl(FILE *fp)
     while((line[curr-1] != '\n') && !feof(fp)){
         if(curr == size-1){
             size *= 2;
-            line = (char*)realloc(line, size * sizeof(char));
-            if(!line) {
-                printf("%ld\n", size);
-                malloc_error();
-            }
+            line = (char*)xrealloc(line, size * sizeof(char));
         }
         size_t readsize = size-curr;
         if(readsize > INT_MAX) readsize = INT_MAX-1;
@@ -418,7 +508,7 @@ int read_int(int fd)
 void write_int(int fd, int n)
 {
     int next = write(fd, &n, sizeof(int));
-    if(next <= 0) error("read failed");
+    if(next <= 0) error("read failed", DARKNET_LOC);
 }
 
 int read_all_fail(int fd, char *buffer, size_t bytes)
@@ -448,7 +538,7 @@ void read_all(int fd, char *buffer, size_t bytes)
     size_t n = 0;
     while(n < bytes){
         int next = read(fd, buffer + n, bytes-n);
-        if(next <= 0) error("read failed");
+        if(next <= 0) error("read failed", DARKNET_LOC);
         n += next;
     }
 }
@@ -458,7 +548,7 @@ void write_all(int fd, char *buffer, size_t bytes)
     size_t n = 0;
     while(n < bytes){
         size_t next = write(fd, buffer + n, bytes-n);
-        if(next <= 0) error("write failed");
+        if(next <= 0) error("write failed", DARKNET_LOC);
         n += next;
     }
 }
@@ -466,7 +556,10 @@ void write_all(int fd, char *buffer, size_t bytes)
 
 char *copy_string(char *s)
 {
-    char* copy = (char*)malloc(strlen(s) + 1);
+    if(!s) {
+        return NULL;
+    }
+    char* copy = (char*)xmalloc(strlen(s) + 1);
     strncpy(copy, s, strlen(s)+1);
     return copy;
 }
@@ -502,7 +595,7 @@ int count_fields(char *line)
 
 float *parse_fields(char *line, int n)
 {
-    float* field = (float*)calloc(n, sizeof(float));
+    float* field = (float*)xcalloc(n, sizeof(float));
     char *c, *p, *end;
     int count = 0;
     int done = 0;
@@ -603,8 +696,8 @@ void normalize_array(float *a, int n)
     for(i = 0; i < n; ++i){
         a[i] = (a[i] - mu)/sigma;
     }
-    mu = mean_array(a,n);
-    sigma = sqrt(variance_array(a,n));
+    //mu = mean_array(a,n);
+    //sigma = sqrt(variance_array(a,n));
 }
 
 void translate_array(float *a, int n, float s)
@@ -690,8 +783,8 @@ int max_index(float *a, int n)
 int top_max_index(float *a, int n, int k)
 {
     if (n <= 0) return -1;
-    float *values = (float*)calloc(k, sizeof(float));
-    int *indexes = (int*)calloc(k, sizeof(int));
+    float *values = (float*)xcalloc(k, sizeof(float));
+    int *indexes = (int*)xcalloc(k, sizeof(int));
     int i, j;
     for (i = 0; i < n; ++i) {
         for (j = 0; j < k; ++j) {
@@ -804,9 +897,9 @@ float rand_scale(float s)
 float **one_hot_encode(float *a, int n, int k)
 {
     int i;
-    float** t = (float**)calloc(n, sizeof(float*));
+    float** t = (float**)xcalloc(n, sizeof(float*));
     for(i = 0; i < n; ++i){
-        t[i] = (float*)calloc(k, sizeof(float));
+        t[i] = (float*)xcalloc(k, sizeof(float));
         int index = (int)a[i];
         t[i][index] = 1;
     }
@@ -935,7 +1028,7 @@ int check_array_is_inf(float *arr, int size)
 
 int *random_index_order(int min, int max)
 {
-    int *inds = (int *)calloc(max - min, sizeof(int));
+    int *inds = (int *)xcalloc(max - min, sizeof(int));
     int i;
     for (i = min; i < max; ++i) {
         inds[i - min] = i;
@@ -963,6 +1056,7 @@ int max_int_index(int *a, int n)
     return max_i;
 }
 
+
 // Absolute box from relative coordinate bounding box and image size
 boxabs box_to_boxabs(const box* b, const int img_w, const int img_h, const int bounds_check)
 {
@@ -989,4 +1083,20 @@ int make_directory(char *path, int mode)
 #else
     return mkdir(path, mode);
 #endif
+}
+
+unsigned long custom_hash(char *str)
+{
+    unsigned long hash = 5381;
+    int c;
+
+    while (c = *str++)
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+
+    return hash;
+}
+
+bool is_live_stream(const char * path){
+    const char *url_schema = "://";
+    return (NULL != strstr(path, url_schema));
 }

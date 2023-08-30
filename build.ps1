@@ -1010,8 +1010,6 @@ else {
   if (-Not ($exitCode -eq 0)) {
     MyThrow("Build failed! Exited with error code $exitCode.")
   }
-  Remove-Item -Force -ErrorAction SilentlyContinue DarknetConfig.cmake
-  Remove-Item -Force -ErrorAction SilentlyContinue DarknetConfigVersion.cmake
   if (-Not $UseVCPKG -And -Not $DisableDLLcopy) {
     $dllfiles = Get-ChildItem ./${dllfolder}/*.dll
     if ($dllfiles) {

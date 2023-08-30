@@ -433,10 +433,6 @@ if(NOT MSVC)
     ${CMAKE_CURRENT_LIST_DIR}/src/gettimeofday.c
     ${CMAKE_CURRENT_LIST_DIR}/src/getopt.c
   )
-else()
-  list(APPEND sources
-    ${CMAKE_CURRENT_LIST_DIR}/src/darknet.rc
-  )
 endif()
 
 if(ENABLE_CUDA)
@@ -473,6 +469,9 @@ add_executable(darknet ${CMAKE_CURRENT_LIST_DIR}/src/darknet.c ${sources} ${head
 if(BUILD_AS_CPP)
   set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/src/darknet.c PROPERTIES LANGUAGE CXX)
   set_target_properties(darknet PROPERTIES LINKER_LANGUAGE CXX)
+endif()
+if(MSVC)
+  target_sources(darknet PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/darknet.rc)
 endif()
 
 add_executable(kmeansiou ${CMAKE_CURRENT_LIST_DIR}/scripts/kmeansiou.c)

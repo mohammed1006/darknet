@@ -394,6 +394,17 @@ extern "C" void resize_window_cv(char const* window_name, int width, int height)
 }
 // ----------------------------------------
 
+extern "C" void move_window_cv(char const* window_name, int x, int y)
+{
+    try {
+        cv::moveWindow(window_name, x, y);
+    }
+    catch (...) {
+        cerr << "OpenCV exception: create_window_cv \n";
+    }
+}
+// ----------------------------------------
+
 extern "C" void destroy_all_windows_cv()
 {
     try {
@@ -842,6 +853,15 @@ extern "C" image get_image_from_stream_letterbox(cap_cv *cap, int w, int h, int 
     return im;
 }
 // ----------------------------------------
+
+extern "C" void consume_frame(cap_cv *cap){
+    cv::Mat *src = NULL;
+    src = (cv::Mat *)get_capture_frame_cv(cap);
+    if (src)
+        delete src;
+}
+// ----------------------------------------
+
 
 // ====================================================================
 // Image Saving
@@ -1456,9 +1476,9 @@ extern "C" void cv_draw_object(image sized, float *truth_cpu, int max_boxes, int
 
     while (!selected) {
 #ifndef CV_VERSION_EPOCH
-        int pressed_key = cv::waitKeyEx(20);	// OpenCV 3.x
+        int pressed_key = cv::waitKeyEx(20);    // OpenCV 3.x
 #else
-        int pressed_key = cv::waitKey(20);		// OpenCV 2.x
+        int pressed_key = cv::waitKey(20);        // OpenCV 2.x
 #endif
         if (pressed_key == 27 || pressed_key == 1048603) break;// break;  // ESC - save & exit
 
@@ -1589,5 +1609,3 @@ extern "C" int wait_until_press_key_cv() { return 0; }
 extern "C" void destroy_all_windows_cv() {}
 extern "C" void resize_window_cv(char const* window_name, int width, int height) {}
 #endif // OPENCV
-
-

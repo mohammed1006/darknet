@@ -362,17 +362,17 @@ connected_layer parse_connected(list *options, size_params params)
 
 softmax_layer parse_softmax(list *options, size_params params)
 {
-	int groups = option_find_int_quiet(options, "groups", 1);
-	softmax_layer layer = make_softmax_layer(params.batch, params.inputs, groups);
-	layer.temperature = option_find_float_quiet(options, "temperature", 1);
-	char *tree_file = option_find_str(options, "tree", 0);
-	if (tree_file) layer.softmax_tree = read_tree(tree_file);
-	layer.w = params.w;
-	layer.h = params.h;
-	layer.c = params.c;
-	layer.spatial = option_find_float_quiet(options, "spatial", 0);
-	layer.noloss = option_find_int_quiet(options, "noloss", 0);
-	return layer;
+    int groups = option_find_int_quiet(options, "groups", 1);
+    softmax_layer layer = make_softmax_layer(params.batch, params.inputs, groups);
+    layer.temperature = option_find_float_quiet(options, "temperature", 1);
+    char *tree_file = option_find_str(options, "tree", 0);
+    if (tree_file) layer.softmax_tree = read_tree(tree_file);
+    layer.w = params.w;
+    layer.h = params.h;
+    layer.c = params.c;
+    layer.spatial = option_find_float_quiet(options, "spatial", 0);
+    layer.noloss = option_find_int_quiet(options, "noloss", 0);
+    return layer;
 }
 
 contrastive_layer parse_contrastive(list *options, size_params params)
@@ -517,7 +517,7 @@ layer parse_yolo(list *options, size_params params)
     l.random = option_find_float_quiet(options, "random", 0);
 
     l.track_history_size = option_find_int_quiet(options, "track_history_size", 5);
-    l.sim_thresh = option_find_int_quiet(options, "sim_thresh", 0.8);
+    l.sim_thresh = option_find_float_quiet(options, "sim_thresh", 0.8);
     l.dets_for_track = option_find_int_quiet(options, "dets_for_track", 1);
     l.dets_for_show = option_find_int_quiet(options, "dets_for_show", 1);
     l.track_ciou_norm = option_find_float_quiet(options, "track_ciou_norm", 0.01);

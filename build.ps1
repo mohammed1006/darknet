@@ -110,6 +110,9 @@ Download pre-trained weight files
 .PARAMETER Use32bitTriplet
 Use 32 bit triplet for target build (windows-only)
 
+.PARAMETER BuildInstaller
+Build an installer using CPack
+
 .PARAMETER ForceGCCVersion
 Force a specific GCC version
 
@@ -182,6 +185,7 @@ param (
   [switch]$EnableCSharpWrapper = $false,
   [switch]$DownloadWeights = $false,
   [switch]$Use32bitTriplet = $false,
+  [switch]$BuildInstaller = $false,
   [Int32]$ForceGCCVersion = 0,
   [Int32]$NumberOfBuildWorkers = 8,
   [string]$AdditionalBuildSetup = ""  # "-DCMAKE_CUDA_ARCHITECTURES=30"
@@ -189,7 +193,7 @@ param (
 
 $global:DisableInteractive = $DisableInteractive
 
-$build_ps1_version = "3.4.1"
+$build_ps1_version = "3.5.0"
 $script_name = $MyInvocation.MyCommand.Name
 
 Import-Module -Name $PSScriptRoot/scripts/utils.psm1 -Force
@@ -1014,6 +1018,16 @@ else {
     $dllfiles = Get-ChildItem ./${dllfolder}/*.dll
     if ($dllfiles) {
       Copy-Item $dllfiles ..
+    }
+  }
+  if ($BuildInstaller) {
+    Write-Host "Building package with CPack" -ForegroundColor Green
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . --target package"
+    $handle = $proc.Handle
+    $proc.WaitForExit()
+    $exitCode = $proc.ExitCode
+    if (-Not ($exitCode -eq 0)) {
+      MyThrow("Packaging failed! Exited with error code $exitCode.")
     }
   }
   if (-Not $DoNotDeleteBuildFolder) {

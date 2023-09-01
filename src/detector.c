@@ -8,7 +8,10 @@
 #include "box.h"
 #include "demo.h"
 #include "option_list.h"
+
+#ifndef _WIN32
 #include <dirent.h>
+#endif
 
 #ifndef __COMPAR_FN_T
 #define __COMPAR_FN_T
@@ -21,12 +24,12 @@ typedef __compar_fn_t comparison_fn_t;
 #include "http_stream.h"
 
 void removeSubstrr (char *string, char *sub) {
-	char *match;
-	int len = strlen(sub);
-	while ((match = strstr(string, sub))) {
-		*match = '\0';
-		strcat(string, match+len);
-	}
+    char *match;
+    int len = strlen(sub);
+    while ((match = strstr(string, sub))) {
+        *match = '\0';
+        strcat(string, match+len);
+    }
 }
 
 int check_mistakes = 0;
@@ -110,7 +113,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     }
 
     int save_after_iterations = option_find_int(options, "saveweights", (net.max_batches < 10000) ? 1000 : 10000 );  // configure when to write weights. Very useful for smaller datasets!
-	int save_last_weights_after = option_find_int(options, "savelast", 100);
+    int save_last_weights_after = option_find_int(options, "savelast", 100);
     printf("Weights are saved after: %d iterations. Last weights (*_last.weight) are stored every %d iterations. \n", save_after_iterations, save_last_weights_after );
 
 
@@ -1673,7 +1676,9 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     }
     int j;
     float nms = .45;    // 0.4F
+#ifndef _WIN32
     if(folder_inference==NULL){
+#endif
         while (1) {
             if (filename) {
                 strncpy(input, filename, 256);
@@ -1801,6 +1806,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         free(alphabet);
 
         free_network(net);
+#ifndef _WIN32
     }
     else{
         DIR *folder;
@@ -1818,14 +1824,14 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
                     if(strcmp(cwd,".")==0 || strcmp(cwd,"..")==0){
                         continue;
                         }
-            
+
                     strcat(str1, entry->d_name);
                     strncpy(input, str1, 256);
                     //closedir(folder);
                     if (strlen(input) > 0)
                     if (input[strlen(input) - 1] == 0x0d) input[strlen(input) - 1] = 0;
-        
-        
+
+
                     //image im;
                     //image sized = load_image_resize(input, net.w, net.h, net.c, &im);
                     image im = load_image(input, 0, 0, net.c);
@@ -1901,10 +1907,10 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
                             sprintf(buff, "%d %2.4f %2.4f %2.4f %2.4f\n", class_id, dets[i].bbox.x, dets[i].bbox.y, dets[i].bbox.w, dets[i].bbox.h);
                             fwrite(buff, sizeof(char), strlen(buff), fw);
                         }
-                        }       
+                        }
                         fclose(fw);
                     }
-        
+
 
                 free_detections(dets, nboxes);
                 free_image(im);
@@ -1923,31 +1929,30 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
             }
         }
 
-    if (json_file) {
-        char *tmp = "\n]";
-        fwrite(tmp, sizeof(char), strlen(tmp), json_file);
-        fclose(json_file);
-    }
-
-    // free memory
-    free_ptrs((void**)names, net.layers[net.n - 1].classes);
-    free_list_contents_kvp(options);
-    free_list(options);
-
-    int i;
-    const int nsize = 8;
-    for (j = 0; j < nsize; ++j) {
-        for (i = 32; i < 127; ++i) {
-            free_image(alphabet[j][i]);
+        if (json_file) {
+            char *tmp = "\n]";
+            fwrite(tmp, sizeof(char), strlen(tmp), json_file);
+            fclose(json_file);
         }
-        free(alphabet[j]);
+
+        // free memory
+        free_ptrs((void**)names, net.layers[net.n - 1].classes);
+        free_list_contents_kvp(options);
+        free_list(options);
+
+        int i;
+        const int nsize = 8;
+        for (j = 0; j < nsize; ++j) {
+            for (i = 32; i < 127; ++i) {
+                free_image(alphabet[j][i]);
+            }
+            free(alphabet[j]);
+        }
+        free(alphabet);
+
+        free_network(net);
     }
-    free(alphabet);
-
-    free_network(net);
-
-
-    }
+#endif
 }
 
 #if defined(OPENCV) && defined(GPU)
@@ -2197,7 +2202,7 @@ void run_detector(int argc, char **argv)
             if (weights[strlen(weights) - 1] == 0x0d) weights[strlen(weights) - 1] = 0;
     char *filename = (argc > 6) ? argv[6] : 0;
     if (0 == strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, dont_show, ext_output, save_labels, outfile, letter_box, benchmark_layers, folder_inference);
-    else if (0 == strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear, dont_show, calc_map, mjpeg_port, show_imgs, benchmark_layers, chart_path);
+    else if (0 == strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear, dont_show, calc_map, thresh, iou_thresh,mjpeg_port, show_imgs, benchmark_layers, chart_path);
     else if (0 == strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if (0 == strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);
     else if (0 == strcmp(argv[2], "map")) validate_detector_map(datacfg, cfg, weights, thresh, iou_thresh, map_points, letter_box, NULL);

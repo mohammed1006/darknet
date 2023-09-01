@@ -1273,7 +1273,7 @@ extern "C" image image_data_augmentation(mat_cv* mat, int w, int h,
                 std::vector<cv::Point2f> points{tl,tr,bl,br};
                 cv::Rect r = cv::boundingRect(points);
                 r = r & cv::Rect(0,0,sized.cols,sized.rows);
-                cv::rectangle(sized,r,cv::Scalar(0,255,0),2,cv::LINE_AA);
+                cv::rectangle(sized,r,cv::Scalar(0,255,0),2,CV_AA);
 
                 float* locs=truth+t*truth_size;
                 locs[0]=static_cast<float>((r.x+r.width/2))/sized.cols;

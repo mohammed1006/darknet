@@ -512,8 +512,7 @@ float *cuda_make_array_init2zero(size_t n) {
   // status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
   status =cudaMemsetAsync(x_gpu, 0, size, 0);
   CHECK_CUDA(status);
-  if (!x_gpu)
-    error("Cuda malloc failed\n");
+  if (!x_gpu) error("Cuda malloc failed", DARKNET_LOC);
   return x_gpu;
 }
 

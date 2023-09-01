@@ -1836,7 +1836,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
     /* copy the file into the buffer */
     if( fread( data , data_size, 1 , fp) != 1)
     {
-        error("Copy file to buffer failed");
+        error("Copy file to buffer failed", DARKNET_LOC);
     }
 
     data[data_size] = '\0'; // NUL-terminate!
@@ -1850,7 +1850,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
 
 list *read_cfg_mem(const char* str)
 {
-    if(str == NULL) error("string is NULL!");
+    if(str == NULL) error("string is NULL!", DARKNET_LOC);
 
     list *sections = make_list();
     section *current = 0;
@@ -1910,7 +1910,7 @@ list *read_cfg(char *filename)
     /* copy the file into the buffer */
     if( fread( data , data_size, 1 , fp) != 1)
     {
-        error("Copy file to buffer failed");
+        error("Copy file to buffer failed", DARKNET_LOC);
     }
 
     data[data_size] = '\0'; // NUL-terminate!
@@ -2305,7 +2305,21 @@ void load_shortcut_weights(layer l, const char* data, int data_size, int* data_i
     }
 #endif
 }
-
+void load_implicit_weights(layer l, const char* data, int data_size, int* data_index)
+{
+    int num = l.nweights;
+    int read_bytes;
+    read_bytes = mread(l.weights, sizeof(float), num, data, data_size, data_index);
+    if (read_bytes > 0 && read_bytes < num)
+        printf("\n Warning: Unexpected end of wights-file! l.weights - l.index = %d \n", l.index);
+        // for (int i = 0; i < l.nweights; ++i) printf(" %f, ", l.weights[i]);
+        // printf(" read_bytes = %d \n\n", read_bytes);
+#ifdef GPU
+    if (gpu_index >= 0) {
+        push_implicit_layer(l);
+    }
+#endif
+}
 void load_weights_upto_mem(network *net, const char *data, int data_size, int cutoff)
 {
 #ifdef GPU
@@ -2313,7 +2327,7 @@ void load_weights_upto_mem(network *net, const char *data, int data_size, int cu
         cuda_set_device(net->gpu_index);
     }
 #endif
-    if(!data) error("Weights data is NULL");
+    if(!data) error("Weights data is NULL", DARKNET_LOC);
 
     int major;
     int minor;
@@ -2350,7 +2364,7 @@ void load_weights_upto_mem(network *net, const char *data, int data_size, int cu
             load_shortcut_weights(l, data, data_size, &data_index);
         }
         if (l.type == IMPLICIT) {
-            load_implicit_weights(l, fp);
+            load_implicit_weights(l, data, data_size, &data_index);
         }
         if(l.type == CONNECTED){
             load_connected_weights(l, data, data_size, &data_index, transpose);
@@ -2445,7 +2459,7 @@ void load_weights_upto(network *net, char *filename, int cutoff)
     /* copy the file into the buffer */
     if( fread( data , data_size, 1 , fp) != 1)
     {
-        error("Copy file to buffer failed");
+        error("Copy file to buffer failed", DARKNET_LOC);
     }
 
     fclose(fp);

@@ -11,7 +11,7 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps);
 network parse_network_cfg_custom_mem(const char *str, int batch, int time_steps);
 void save_network(network net, char *filename);
 void save_weights(network net, char *filename);
-void save_weights_upto(network net, char *filename, int cutoff);
+void save_weights_upto(network net, char *filename, int cutoff, int save_ema);
 void save_weights_double(network net, char *filename);
 void load_weights(network *net, char *filename);
 void load_weights_mem(network *net, const char *data, int data_size);

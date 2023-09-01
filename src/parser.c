@@ -2305,6 +2305,7 @@ void load_shortcut_weights(layer l, const char* data, int data_size, int* data_i
     }
 #endif
 }
+
 void load_implicit_weights(layer l, const char* data, int data_size, int* data_index)
 {
     int num = l.nweights;
@@ -2320,6 +2321,7 @@ void load_implicit_weights(layer l, const char* data, int data_size, int* data_i
     }
 #endif
 }
+
 void load_weights_upto_mem(network *net, const char *data, int data_size, int cutoff)
 {
 #ifdef GPU
@@ -2329,9 +2331,9 @@ void load_weights_upto_mem(network *net, const char *data, int data_size, int cu
 #endif
     if(!data) error("Weights data is NULL", DARKNET_LOC);
 
-    int major;
-    int minor;
-    int revision;
+    int32_t major;
+    int32_t minor;
+    int32_t revision;
     int data_index = 0;
 
     mread(&major, sizeof(int), 1, data, data_size, &data_index);

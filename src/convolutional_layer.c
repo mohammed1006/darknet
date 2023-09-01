@@ -241,7 +241,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference, size_t workspace_
 #endif
 #else   //if(CUDNN_MAJOR >= 7)
     if (l->groups > 1) {
-        error("CUDNN < 7 doesn't support groups, please upgrade!");
+        error("CUDNN < 7 doesn't support groups, please upgrade!", DARKNET_LOC);
     }
 #endif
 
@@ -523,6 +523,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
         stride_x = stride_y = l.stride = l.stride_x = l.stride_y = 1; // use stride=1 in host-layer
     }
 
+    l.wait_stream_id = -1;
     l.deform = deform;
     l.assisted_excitation = assisted_excitation;
     l.share_layer = share_layer;
@@ -566,6 +567,9 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
         if (train) {
             l.weight_updates = (float*)xcalloc(l.nweights, sizeof(float));
             l.bias_updates = (float*)xcalloc(n, sizeof(float));
+
+            l.weights_ema = (float*)xcalloc(l.nweights, sizeof(float));
+            l.biases_ema = (float*)xcalloc(n, sizeof(float));
         }
     }
 
@@ -637,6 +641,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
                 l.scales[i] = 1;
             }
             if (train) {
+                l.scales_ema = (float*)xcalloc(n, sizeof(float));
                 l.scale_updates = (float*)xcalloc(n, sizeof(float));
 
                 l.mean = (float*)xcalloc(n, sizeof(float));
@@ -1683,4 +1688,3 @@ image *visualize_convolutional_layer(convolutional_layer l, char *window, image 
     free_image(dc);
     return single_weights;
 }
-

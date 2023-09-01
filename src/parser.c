@@ -2336,9 +2336,9 @@ void load_weights_upto_mem(network *net, const char *data, int data_size, int cu
     int32_t revision;
     int data_index = 0;
 
-    mread(&major, sizeof(int), 1, data, data_size, &data_index);
-    mread(&minor, sizeof(int), 1, data, data_size, &data_index);
-    mread(&revision, sizeof(int), 1, data, data_size, &data_index);
+    mread(&major, sizeof(int32_t), 1, data, data_size, &data_index);
+    mread(&minor, sizeof(int32_t), 1, data, data_size, &data_index);
+    mread(&revision, sizeof(int32_t), 1, data, data_size, &data_index);
     if ((major * 10 + minor) >= 2) {
         printf("\n seen 64");
         uint64_t iseen = 0;

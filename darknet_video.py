@@ -65,6 +65,18 @@ def str2int(video_path):
         return video_path
 
 
+def check_arguments_errors(args):
+    assert 0 < args.thresh < 1, "Threshold should be a float between zero and one (non-inclusive)"
+    if not os.path.exists(args.config_file):
+        raise(ValueError("Invalid config path {}".format(os.path.abspath(args.config_file))))
+    if not os.path.exists(args.weights):
+        raise(ValueError("Invalid weight path {}".format(os.path.abspath(args.weights))))
+    if not os.path.exists(args.data_file):
+        raise(ValueError("Invalid data file path {}".format(os.path.abspath(args.data_file))))
+    if str2int(args.input) == str and not os.path.exists(args.input):
+        raise(ValueError("Invalid video path {}".format(os.path.abspath(args.input))))
+
+
 netMain = None
 metaMain = None
 altNames = None
@@ -145,18 +157,19 @@ def YOLO():
                                    interpolation=cv2.INTER_LINEAR)
 
         darknet.copy_image_from_bytes(darknet_image,frame_resized.tobytes())
+
         detections = darknet.detect_image(netMain, metaMain, darknet_image, thresh=0.25)
         image = cvDrawBoxes(detections, frame_resized)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image = cv2.resize(image, (w, h))
+
         out.write(image)
         print(1/(time.time()-prev_time))
         cv2.imshow('Demo', image)
         cv2.waitKey(3)
 
     cap.release()
-    video.release()
-    cv2.destroyAllWindows()
+    out.release()
 
 def set_saved_video(output_video, size, fps):
     fourcc = cv2.VideoWriter_fourcc(*"MJPG")

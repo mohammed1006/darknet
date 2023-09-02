@@ -70,8 +70,12 @@ static int close_socket(SOCKET s) {
 #define SOCKADDR    struct sockaddr
 #define SOCKADDR_IN  struct sockaddr_in
 #define ADDRPOINTER  unsigned int*
+#ifndef INVALID_SOCKET
 #define INVALID_SOCKET -1
+#endif
+#ifndef SOCKET_ERROR
 #define SOCKET_ERROR   -1
+#endif
 struct _IGNORE_PIPE_SIGNAL
 {
     struct sigaction new_actn, old_actn;
@@ -504,7 +508,7 @@ public:
                 }
 
                 char head[400];
-                sprintf(head, "--mjpegstream\r\nContent-Type: image/jpeg\r\nContent-Length: %zu\r\n\r\n", outlen);
+                sprintf(head, "--mjpegstream\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n", outlen);
                 _write(s, head, 0);
                 int n = _write(s, (char*)(&outbuf[0]), outlen);
                 cerr << "known client: " << s << ", sent = " << n << ", must be sent outlen = " << outlen << endl;
@@ -934,4 +938,3 @@ void set_track_id(detection *new_dets, int new_dets_num, float thresh, float sim
         }
     }
 }
-

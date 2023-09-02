@@ -280,8 +280,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
             if (l.embedding_size) set_track_id(local_dets, local_nboxes, demo_thresh, l.sim_thresh, l.track_ciou_norm, l.track_history_size, l.dets_for_track, l.dets_for_show);
 
-            //printf("\033[2J");
-            //printf("\033[1;1H");
+            printf("\033[H\033[J");
             //printf("\nFPS:%.1f\n", fps);
             printf("Objects:\n\n");
 
@@ -414,14 +413,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
     free_ptrs((void **)names, net.layers[net.n - 1].classes);
 
-    const int nsize = 8;
-    for (j = 0; j < nsize; ++j) {
-        for (i = 32; i < 127; ++i) {
-            free_image(alphabet[j][i]);
-        }
-        free(alphabet[j]);
-    }
-    free(alphabet);
+    free_alphabet(alphabet);
     free_network(net);
     //cudaProfilerStop();
 }

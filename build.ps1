@@ -6,7 +6,7 @@
         build
         Created By: Stefano Sinigardi
         Created Date: February 18, 2019
-        Last Modified Date: August 31, 2023
+        Last Modified Date: September 10, 2023
 
 .DESCRIPTION
 Build tool using CMake, trying to properly setup the environment around compiler
@@ -1020,7 +1020,12 @@ else {
     MyThrow("Config failed! Exited with error code $exitCode.")
   }
   Write-Host "Building release CMake project" -ForegroundColor Green
-  $proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . ${releaseConfig} --parallel ${NumberOfBuildWorkers} --target install"
+  if ($BuildInstaller) {
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . ${releaseConfig} --parallel ${NumberOfBuildWorkers}"
+  }
+  else {
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . ${releaseConfig} --parallel ${NumberOfBuildWorkers} --target install"
+  }
   $handle = $proc.Handle
   $proc.WaitForExit()
   $exitCode = $proc.ExitCode

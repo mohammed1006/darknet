@@ -193,7 +193,7 @@ param (
 
 $global:DisableInteractive = $DisableInteractive
 
-$build_ps1_version = "3.5.0"
+$build_ps1_version = "3.5.1"
 $script_name = $MyInvocation.MyCommand.Name
 
 Import-Module -Name $PSScriptRoot/scripts/utils.psm1 -Force
@@ -210,9 +210,12 @@ else {
 $BuildLogPath = "$PSCustomScriptRoot/build.log"
 $ReleaseInstallPrefix = "$PSCustomScriptRoot"
 $DebugInstallPrefix = "$PSCustomScriptRoot/debug"
-$DebugBuildSetup = " -DCMAKE_INSTALL_PREFIX=$DebugInstallPrefix -DCMAKE_BUILD_TYPE=Debug"
-$ReleaseBuildSetup = " -DCMAKE_INSTALL_PREFIX=$ReleaseInstallPrefix -DCMAKE_BUILD_TYPE=Release"
-
+$DebugBuildSetup = " -DCMAKE_BUILD_TYPE=Debug "
+$ReleaseBuildSetup = " -DCMAKE_BUILD_TYPE=Release "
+if (-Not $BuildInstaller) {
+  $DebugBuildSetup = $DebugBuildSetup + " -DCMAKE_INSTALL_PREFIX=$DebugInstallPrefix "
+  $ReleaseBuildSetup = $ReleaseBuildSetup + " -DCMAKE_INSTALL_PREFIX=$ReleaseInstallPrefix "
+}
 Start-Transcript -Path $BuildLogPath
 
 Write-Host "Build script version ${build_ps1_version}, utils module version ${utils_psm1_version}"
@@ -817,6 +820,11 @@ if ($UseVCPKG -and ($vcpkg_path.length -gt 40) -and ($IsWindows -or $IsWindowsPo
 
 if ($ForceVCPKGCacheRemoval -and (-Not $UseVCPKG)) {
   Write-Host "VCPKG is not enabled, so local vcpkg binary cache will not be deleted even if requested" -ForegroundColor Yellow
+}
+
+if ($BuildInstaller) {
+  Write-Host "You requested to build an installer, so enabling this option if supported" -ForegroundColor Yellow
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_INSTALLER=ON"
 }
 
 if (($ForceOpenCVVersion -eq 2) -and $UseVCPKG) {

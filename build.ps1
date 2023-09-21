@@ -721,7 +721,7 @@ if ($UseVCPKG -And -Not $ForceLocalVCPKG) {
 }
 if (($null -eq $vcpkg_path) -and $UseVCPKG) {
   if (-Not (Test-Path "$PWD/vcpkg${VCPKGSuffix}")) {
-    $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "clone https://github.com/microsoft/vcpkg vcpkg${VCPKGSuffix}"
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "clone --depth 1 https://github.com/microsoft/vcpkg vcpkg${VCPKGSuffix}"
     $handle = $proc.Handle
     $proc.WaitForExit()
     $exitCode = $proc.ExitCode

@@ -397,7 +397,7 @@ void run_coco(int argc, char **argv)
     float hier_thresh = find_float_arg(argc, argv, "-hier", .5);
     int cam_index = find_int_arg(argc, argv, "-c", 0);
     int frame_skip = find_int_arg(argc, argv, "-s", 0);
-	int ext_output = find_arg(argc, argv, "-ext_output");
+    int ext_output = find_arg(argc, argv, "-ext_output");
     char *json_file_output = find_char_arg(argc, argv, "-json_file_output", 0);
 
     if(argc < 4){

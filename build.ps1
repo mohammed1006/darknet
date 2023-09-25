@@ -197,8 +197,8 @@ $build_ps1_version = "3.6.1"
 $script_name = $MyInvocation.MyCommand.Name
 $utils_psm1_avail = $false
 
-if (Test-Path $PSScriptRoot/utils.psm1) {
-  Import-Module -Name $PSScriptRoot/utils.psm1 -Force
+if (Test-Path $PSScriptRoot/scripts/utils.psm1) {
+  Import-Module -Name $PSScriptRoot/scripts/utils.psm1 -Force
   $utils_psm1_avail = $true
 }
 else {

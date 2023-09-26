@@ -460,3 +460,10 @@ jobs:
     - uses: actions/checkout@v3
 
     - uses: lukka/get-cmake@latest
+
+    - name: 'Build with CMake'
+      run: |
+        mkdir build_release
+        cd build_release
+        cmake .. -G"MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DENABLE_CUDA=OFF -DENABLE_CUDNN=OFF -DENABLE_OPENCV=OFF
+        cmake --build . --config Release --target install

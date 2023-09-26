@@ -280,6 +280,19 @@ image **load_alphabet()
     return alphabets;
 }
 
+void free_alphabet(image **alphabet)
+{
+    int i, j;
+    const int nsize = 8;
+    for (j = 0; j < nsize; ++j) {
+        for (i = 32; i < 127; ++i) {
+            free_image(alphabet[j][i]);
+        }
+        free(alphabet[j]);
+    }
+    free(alphabet);
+}
+
 
 
 // Creates array of detections with prob > thresh and fills best_class for them
@@ -705,7 +718,7 @@ void show_image(image p, const char *name)
 #ifdef OPENCV
     show_image_cv(p, name);
 #else
-    fprintf(stderr, "Not compiled with OpenCV, saving to %s.png instead\n", name);
+    fprintf(stderr, "Not compiled with OpenCV, saving to %s.jpg instead\n", name);
     save_image(p, name);
 #endif  // OPENCV
 }

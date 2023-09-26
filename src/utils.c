@@ -358,7 +358,8 @@ void log_backtrace()
 
 void error(const char * const msg, const char * const filename, const char * const funcname, const int line)
 {
-    fprintf(stderr, "Darknet error location: %s, %s(), line #%d\n", filename, funcname, line);
+    printf("Darknet error location: %s, %s(), line #%d\n", filename, funcname, line);
+    fflush(stdout);
     perror(msg);
     log_backtrace();
     exit(EXIT_FAILURE);

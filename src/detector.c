@@ -1800,6 +1800,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 #ifndef _WIN32
     }
     else{
+
         DIR *folder;
         struct dirent *entry;
         int files = 0;
@@ -1943,6 +1944,8 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     free_list(options);
     free_alphabet(alphabet);
     free_network(net);
+}
+#endif
 }
 
 #if defined(OPENCV) && defined(GPU)

@@ -301,7 +301,7 @@ You can get cfg-files by path: `darknet/cfg/`
 - OpenImages: use `python ./scripts/get_openimages_dataset.py` for labeling train detection dataset
 - Pascal VOC: use `python ./scripts/voc_label.py` for labeling Train/Test/Val detection datasets
 - ILSVRC2012 (ImageNet classification): use `./scripts/get_imagenet_train.sh` (also `imagenet_label.sh` for labeling valid set)
-- German/Belgium/Russian/LISA/MASTIF Traffic Sign Datasets for Detection - use this parsers: https://github.com/angeligareta/Datasets2Darknet#detection-task
+- German/Belgium/Russian/LISA/MASTIF Traffic Sign Datasets for Detection - use this parser: https://github.com/angeligareta/Datasets2Darknet#detection-task
 - List of other datasets: https://github.com/AlexeyAB/darknet/tree/master/scripts#datasets
 
 ### Improvements in this repository
@@ -359,6 +359,7 @@ If you customize build with CMake GUI, darknet executable will be installed in y
     `./darknet detector test cfg/coco.data cfg/yolov4.cfg yolov4.weights -ext_output -dont_show -out result.json < data/train.txt`
 - To process a list of images `data/train.txt` and save results of detection to `result.txt` use:
     `./darknet detector test cfg/coco.data cfg/yolov4.cfg yolov4.weights -dont_show -ext_output < data/train.txt > result.txt`
+- To process a video and output results to a json file use: `darknet.exe detector demo cfg/coco.data cfg/yolov3.cfg yolov3.weights file.mp4 -dont_show -json_file_output results.json`
 - Pseudo-labelling - to process a list of images `data/new_train.txt` and save results of detection in Yolo training format for each image as label `<image_name>.txt` (in this way you can increase the amount of training data) use:
     `./darknet detector test cfg/coco.data cfg/yolov4.cfg yolov4.weights -thresh 0.25 -dont_show -save_labels < data/new_train.txt`
 - To calculate anchors: `./darknet detector calc_anchors data/obj.data -num_of_clusters 9 -width 416 -height 416`
@@ -372,9 +373,9 @@ If you customize build with CMake GUI, darknet executable will be installed in y
     - Smart WebCam - preferably: https://play.google.com/store/apps/details?id=com.acontech.android.SmartWebCam2
     - IP Webcam: https://play.google.com/store/apps/details?id=com.pas.webcam
 
-2. Connect your Android phone to computer by WiFi (through a WiFi-router) or USB
+2. Connect your Android phone to the computer by WiFi (through a WiFi-router) or USB
 3. Start Smart WebCam on your phone
-4. Replace the address below, on shown in the phone application (Smart WebCam) and launch:
+4. Replace the address below, shown in the phone application (Smart WebCam) and launch:
 
 - Yolo v4 COCO-model: `./darknet detector demo data/coco.data yolov4.cfg yolov4.weights http://192.168.0.80:8080/video?dummy=param.mjpg -i 0`
 
@@ -428,7 +429,7 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
     or use in such a way: `LD_LIBRARY_PATH=./:$LD_LIBRARY_PATH ./uselib data/coco.names cfg/yolov4.cfg yolov4.weights test.mp4`
 - `ZED_CAMERA=1` to build a library with ZED-3D-camera support (should be ZED SDK installed), then run
     `LD_LIBRARY_PATH=./:$LD_LIBRARY_PATH ./uselib data/coco.names cfg/yolov4.cfg yolov4.weights zed_camera`
-- You also need to specify for which graphics card the code is generated. This is done by setting `ARCH=`. If you use a never version than CUDA 11 you further need to edit line 20 from Makefile and remove `-gencode arch=compute_30,code=sm_30 \` as Kepler GPU support was dropped in CUDA 11. You can also drop the general `ARCH=` and just uncomment `ARCH=` for your graphics card.
+- You also need to specify for which graphics card the code is generated. This is done by setting `ARCH=`. If you use a newer version than CUDA 11 you further need to edit line 20 from Makefile and remove `-gencode arch=compute_30,code=sm_30 \` as Kepler GPU support was dropped in CUDA 11. You can also drop the general `ARCH=` and just uncomment `ARCH=` for your graphics card.
 
 ### How to compile on Windows (using `CMake`)
 
@@ -581,6 +582,8 @@ It will create `.txt`-file for each `.jpg`-image-file - in the same directory an
 
 8.1. For training with mAP (mean average precisions) calculation for each 4 Epochs (set `valid=valid.txt` or `train.txt` in `obj.data` file) and run: `darknet.exe detector train data/obj.data yolo-obj.cfg yolov4.conv.137 -map`
 
+8.2. One can also set the `-mAP_epochs` in the training command if less or more frequent mAP calculation is needed. For example in order to calculate mAP for each 2 Epochs run `darknet.exe detector train data/obj.data yolo-obj.cfg yolov4.conv.137 -map -mAP_epochs 2`
+
 9. After training is complete - get result `yolo-obj_final.weights` from path `build\darknet\x64\backup\`
 
    - After each 100 iterations you can stop and later start training from this point. For example, after 2000 iterations you can stop training, and later just start training using: `darknet.exe detector train data/obj.data yolo-obj.cfg backup\yolo-obj_2000.weights`
@@ -611,7 +614,7 @@ If you made you custom model that isn't based on other models, then you can trai
 
 ## When should I stop training
 
-Usually sufficient 2000 iterations for each class(object), but not less than number of training images and not less than 6000 iterations in total. But for a more precise definition when you should stop training, use the following manual:
+Usually sufficient 2000 iterations for each class(object), but not less than number of training images and not less than 6000 iterations in total. But for a more precise definition of when you should stop training, use the following manual:
 
 1. During training, you will see varying indicators of error, and you should stop when no longer decreases **0.XXXXXXX avg**:
 

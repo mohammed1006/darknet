@@ -245,10 +245,6 @@ box_label *read_boxes_class(char *filename, int *n, int max_num_classes)
         char *new_line = "\n";
         fwrite(new_line, sizeof(char), strlen(new_line), fw);
         fclose(fw);
-        if (check_mistakes) {
-            printf("\n Error in read_boxes_class() \n");
-            getchar();
-        }
 
         *n = 0;
         return boxes;

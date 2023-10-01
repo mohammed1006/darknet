@@ -776,6 +776,21 @@ float *network_predict(network net, float *input)
     return out;
 }
 
+#ifdef CUDA_OPENGL_INTEGRATION
+float *network_predict_gl_texture(network *net, uint32_t texture_id)
+{
+    if(net->batch != 1) {
+        set_batch_network(net, 1);
+    }
+
+    if(gpu_index >= 0) {
+        return network_predict_gpu_gl_texture(*net, texture_id);
+    }
+
+    return NULL;
+}
+#endif // CUDA_OPENGL_INTEGRATION
+
 int num_detections(network *net, float thresh)
 {
     int i;
@@ -1033,7 +1048,7 @@ char *detection_to_json(detection *dets, int nboxes, int classes, char **names, 
                 send_buf = (char *)realloc(send_buf, total_len * sizeof(char));
                 if (!send_buf) {
                     if (buf) free(buf);
-                    return 0;// exit(-1);
+                    return 0;
                 }
                 strcat(send_buf, buf);
                 free(buf);

@@ -6,7 +6,7 @@
         build
         Created By: Stefano Sinigardi
         Created Date: February 18, 2019
-        Last Modified Date: August 31, 2023
+        Last Modified Date: September 25, 2023
 
 .DESCRIPTION
 Build tool using CMake, trying to properly setup the environment around compiler
@@ -193,10 +193,24 @@ param (
 
 $global:DisableInteractive = $DisableInteractive
 
-$build_ps1_version = "3.5.0"
+$build_ps1_version = "3.6.1"
 $script_name = $MyInvocation.MyCommand.Name
+$utils_psm1_avail = $false
 
-Import-Module -Name $PSScriptRoot/scripts/utils.psm1 -Force
+if (Test-Path $PSScriptRoot/scripts/utils.psm1) {
+  Import-Module -Name $PSScriptRoot/scripts/utils.psm1 -Force
+  $utils_psm1_avail = $true
+}
+else {
+  $utils_psm1_version = "unavail"
+  $IsWindowsPowerShell = $false
+  $IsInGitSubmodule = $false
+}
+
+if (-Not $utils_psm1_avail) {
+  $DoNotSetupVS = $true
+  $ForceCMakeFromVS = $false
+}
 
 $ErrorActionPreference = "SilentlyContinue"
 Stop-Transcript | out-null
@@ -210,12 +224,18 @@ else {
 $BuildLogPath = "$PSCustomScriptRoot/build.log"
 $ReleaseInstallPrefix = "$PSCustomScriptRoot"
 $DebugInstallPrefix = "$PSCustomScriptRoot/debug"
-$DebugBuildSetup = " -DCMAKE_INSTALL_PREFIX=$DebugInstallPrefix -DCMAKE_BUILD_TYPE=Debug"
-$ReleaseBuildSetup = " -DCMAKE_INSTALL_PREFIX=$ReleaseInstallPrefix -DCMAKE_BUILD_TYPE=Release"
-
+$DebugBuildSetup = " -DCMAKE_BUILD_TYPE=Debug "
+$ReleaseBuildSetup = " -DCMAKE_BUILD_TYPE=Release "
+if (-Not $BuildInstaller) {
+  $DebugBuildSetup = $DebugBuildSetup + " -DCMAKE_INSTALL_PREFIX=$DebugInstallPrefix "
+  $ReleaseBuildSetup = $ReleaseBuildSetup + " -DCMAKE_INSTALL_PREFIX=$ReleaseInstallPrefix "
+}
 Start-Transcript -Path $BuildLogPath
 
 Write-Host "Build script version ${build_ps1_version}, utils module version ${utils_psm1_version}"
+if (-Not $utils_psm1_avail) {
+  Write-Host "utils.psm1 is not available, so VS integration is forcefully disabled" -ForegroundColor Yellow
+}
 Write-Host "Working directory: $PSCustomScriptRoot, log file: $BuildLogPath, $script_name is in submodule: $IsInGitSubmodule"
 
 if ((-Not $global:DisableInteractive) -and (-Not $UseVCPKG)) {
@@ -718,7 +738,11 @@ if ($UseVCPKG -And -Not $ForceLocalVCPKG) {
 }
 if (($null -eq $vcpkg_path) -and $UseVCPKG) {
   if (-Not (Test-Path "$PWD/vcpkg${VCPKGSuffix}")) {
-    $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "clone https://github.com/microsoft/vcpkg vcpkg${VCPKGSuffix}"
+    $shallow_copy = ""
+    if(($ForceOpenCVVersion -eq 0)) {
+      $shallow_copy = " --depth 1 "
+    }
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath $GIT_EXE -ArgumentList "clone $shallow_copy https://github.com/microsoft/vcpkg vcpkg${VCPKGSuffix}"
     $handle = $proc.Handle
     $proc.WaitForExit()
     $exitCode = $proc.ExitCode
@@ -819,6 +843,11 @@ if ($ForceVCPKGCacheRemoval -and (-Not $UseVCPKG)) {
   Write-Host "VCPKG is not enabled, so local vcpkg binary cache will not be deleted even if requested" -ForegroundColor Yellow
 }
 
+if ($BuildInstaller) {
+  Write-Host "You requested to build an installer, so enabling this option if supported" -ForegroundColor Yellow
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_INSTALLER=ON"
+}
+
 if (($ForceOpenCVVersion -eq 2) -and $UseVCPKG) {
   Write-Host "You requested OpenCV version 2, so vcpkg will install that version" -ForegroundColor Yellow
   Write-Host "This requires using vcpkg.json.opencv23 as manifest file" -ForegroundColor Yellow
@@ -885,13 +914,16 @@ if (-Not $InstallDARKNETthroughVCPKG) {
   $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_DEPLOY_CUSTOM_CMAKE_MODULES:BOOL=ON"
 }
 
-if ($ForceVCPKGBuildtreesPath -ne "") {
-  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DVCPKG_INSTALL_OPTIONS=`"--x-buildtrees-root=$ForceVCPKGBuildtreesPath`" "
-  New-Item -Path $ForceVCPKGBuildtreesPath -ItemType directory -Force | Out-Null
-  $vcpkgbuildtreespath = "$ForceVCPKGBuildtreesPath"
-}
-else {
-  $vcpkgbuildtreespath = "$vcpkg_path/buildtrees"
+if($UseVCPKG) {
+  if ($ForceVCPKGBuildtreesPath -ne "") {
+    $AdditionalBuildSetup = $AdditionalBuildSetup + " -DVCPKG_INSTALL_OPTIONS=--clean-buildtrees-after-build;--x-buildtrees-root=`"$ForceVCPKGBuildtreesPath`""
+    New-Item -Path $ForceVCPKGBuildtreesPath -ItemType directory -Force | Out-Null
+    $vcpkgbuildtreespath = "$ForceVCPKGBuildtreesPath"
+  }
+  else {
+    $AdditionalBuildSetup = $AdditionalBuildSetup + " -DVCPKG_INSTALL_OPTIONS=--clean-buildtrees-after-build"
+    $vcpkgbuildtreespath = "$vcpkg_path/buildtrees"
+  }
 }
 
 if ($InstallDARKNETthroughVCPKG) {
@@ -1012,7 +1044,12 @@ else {
     MyThrow("Config failed! Exited with error code $exitCode.")
   }
   Write-Host "Building release CMake project" -ForegroundColor Green
-  $proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . ${releaseConfig} --parallel ${NumberOfBuildWorkers} --target install"
+  if ($BuildInstaller) {
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . ${releaseConfig} --parallel ${NumberOfBuildWorkers}"
+  }
+  else {
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . ${releaseConfig} --parallel ${NumberOfBuildWorkers} --target install"
+  }
   $handle = $proc.Handle
   $proc.WaitForExit()
   $exitCode = $proc.ExitCode

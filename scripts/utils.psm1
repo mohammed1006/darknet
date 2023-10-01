@@ -22,9 +22,41 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 #>
 
-$utils_psm1_version = "0.0.2"
-$cuda_version_full = "11.7.0"
-$cuda_version_short = "11.7"
+$utils_psm1_version = "0.3.0"
+$IsWindowsPowerShell = switch ( $PSVersionTable.PSVersion.Major ) {
+  5 { $true }
+  4 { $true }
+  3 { $true }
+  2 { $true }
+  default { $false }
+}
+
+$ExecutableSuffix = ""
+if ($IsWindowsPowerShell -or $IsWindows) {
+  $ExecutableSuffix = ".exe"
+}
+
+$64bitPwsh = $([Environment]::Is64BitProcess)
+$64bitOS = $([Environment]::Is64BitOperatingSystem)
+
+Push-Location $PSScriptRoot
+$GIT_EXE = Get-Command "git" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
+if ($GIT_EXE) {
+  $IsInGitSubmoduleString = $(git rev-parse --show-superproject-working-tree 2> $null)
+  if ($IsInGitSubmoduleString.Length -eq 0) {
+    $IsInGitSubmodule = $false
+  }
+  else {
+    $IsInGitSubmodule = $true
+  }
+}
+else {
+  $IsInGitSubmodule = $false
+}
+Pop-Location
+
+$cuda_version_full = "12.2.0"
+$cuda_version_short = "12.2"
 $cuda_version_full_dashed = $cuda_version_full.replace('.', '-')
 $cuda_version_short_dashed = $cuda_version_short.replace('.', '-')
 
@@ -41,7 +73,7 @@ function getProgramFiles32bit() {
   return $out
 }
 
-function getLatestVisualStudioWithDesktopWorkloadPath() {
+function getLatestVisualStudioWithDesktopWorkloadPath([bool]$required = $true) {
   $programFiles = getProgramFiles32bit
   $vswhereExe = "$programFiles\Microsoft Visual Studio\Installer\vswhere.exe"
   if (Test-Path $vswhereExe) {
@@ -51,7 +83,7 @@ function getLatestVisualStudioWithDesktopWorkloadPath() {
       $installationPath = $instance.InstallationPath -replace "\\$" # Remove potential trailing backslash
     }
     if (!$installationPath) {
-      Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also partial installations" -ForegroundColor Yellow
+      #Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also partial installations" -ForegroundColor Yellow
       $output = & $vswhereExe -products * -latest -format xml
       [xml]$asXml = $output
       foreach ($instance in $asXml.instances.instance) {
@@ -59,7 +91,7 @@ function getLatestVisualStudioWithDesktopWorkloadPath() {
       }
     }
     if (!$installationPath) {
-      Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also pre-release installations" -ForegroundColor Yellow
+      #Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also pre-release installations" -ForegroundColor Yellow
       $output = & $vswhereExe -prerelease -products * -latest -format xml
       [xml]$asXml = $output
       foreach ($instance in $asXml.instances.instance) {
@@ -67,16 +99,28 @@ function getLatestVisualStudioWithDesktopWorkloadPath() {
       }
     }
     if (!$installationPath) {
-      MyThrow("Could not locate any installation of Visual Studio")
+      if ($required) {
+        MyThrow("Could not locate any installation of Visual Studio")
+      }
+      else {
+        Write-Host "Could not locate any installation of Visual Studio" -ForegroundColor Red
+        return $null
+      }
     }
   }
   else {
-    MyThrow("Could not locate vswhere at $vswhereExe")
+    if ($required) {
+      MyThrow("Could not locate vswhere at $vswhereExe")
+    }
+    else {
+      Write-Host "Could not locate vswhere at $vswhereExe" -ForegroundColor Red
+      return $null
+    }
   }
   return $installationPath
 }
 
-function getLatestVisualStudioWithDesktopWorkloadVersion() {
+function getLatestVisualStudioWithDesktopWorkloadVersion([bool]$required = $true) {
   $programFiles = getProgramFiles32bit
   $vswhereExe = "$programFiles\Microsoft Visual Studio\Installer\vswhere.exe"
   if (Test-Path $vswhereExe) {
@@ -86,7 +130,7 @@ function getLatestVisualStudioWithDesktopWorkloadVersion() {
       $installationVersion = $instance.InstallationVersion
     }
     if (!$installationVersion) {
-      Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also partial installations" -ForegroundColor Yellow
+      #Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also partial installations" -ForegroundColor Yellow
       $output = & $vswhereExe -products * -latest -format xml
       [xml]$asXml = $output
       foreach ($instance in $asXml.instances.instance) {
@@ -94,7 +138,7 @@ function getLatestVisualStudioWithDesktopWorkloadVersion() {
       }
     }
     if (!$installationVersion) {
-      Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also pre-release installations" -ForegroundColor Yellow
+      #Write-Host "Warning: no full Visual Studio setup has been found, extending search to include also pre-release installations" -ForegroundColor Yellow
       $output = & $vswhereExe -prerelease -products * -latest -format xml
       [xml]$asXml = $output
       foreach ($instance in $asXml.instances.instance) {
@@ -102,17 +146,29 @@ function getLatestVisualStudioWithDesktopWorkloadVersion() {
       }
     }
     if (!$installationVersion) {
-      MyThrow("Could not locate any installation of Visual Studio")
+      if ($required) {
+        MyThrow("Could not locate any installation of Visual Studio")
+      }
+      else {
+        Write-Host "Could not locate any installation of Visual Studio" -ForegroundColor Red
+        return $null
+      }
     }
   }
   else {
-    MyThrow("Could not locate vswhere at $vswhereExe")
+    if ($required) {
+      MyThrow("Could not locate vswhere at $vswhereExe")
+    }
+    else {
+      Write-Host "Could not locate vswhere at $vswhereExe" -ForegroundColor Red
+      return $null
+    }
   }
   return $installationVersion
 }
 
 function DownloadNinja() {
-  Write-Host "Unable to find Ninja, downloading a portable version on-the-fly" -ForegroundColor Yellow
+  Write-Host "Downloading a portable version of Ninja" -ForegroundColor Yellow
   Remove-Item -Force -Recurse -ErrorAction SilentlyContinue ninja
   Remove-Item -Force -ErrorAction SilentlyContinue ninja.zip
   if ($IsWindows -or $IsWindowsPowerShell) {
@@ -130,10 +186,92 @@ function DownloadNinja() {
   Invoke-RestMethod -Uri $url -Method Get -ContentType application/zip -OutFile "ninja.zip"
   Expand-Archive -Path ninja.zip
   Remove-Item -Force -ErrorAction SilentlyContinue ninja.zip
+  return "./ninja${ExecutableSuffix}"
+}
+
+function DownloadAria2() {
+  Write-Host "Downloading a portable version of Aria2" -ForegroundColor Yellow
+  if ($IsWindows -or $IsWindowsPowerShell) {
+    $basename = "aria2-1.35.0-win-32bit-build1"
+    $zipName = "${basename}.zip"
+    $outFolder = "$basename/$basename"
+    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $outFolder
+    Remove-Item -Force -ErrorAction SilentlyContinue $zipName
+    $url = "https://github.com/aria2/aria2/releases/download/release-1.35.0/$zipName"
+    Invoke-RestMethod -Uri $url -Method Get -ContentType application/zip -OutFile $zipName
+    Expand-Archive -Path $zipName
+  }
+  elseif ($IsLinux) {
+    $basename = "aria2-1.36.0-linux-gnu-64bit-build1"
+    $zipName = "${basename}.tar.bz2"
+    $outFolder = $basename
+    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $outFolder
+    Remove-Item -Force -ErrorAction SilentlyContinue $zipName
+    $url = "https://github.com/q3aql/aria2-static-builds/releases/download/v1.36.0/$zipName"
+    Invoke-RestMethod -Uri $url -Method Get -ContentType application/zip -OutFile $zipName
+    tar xf $zipName
+  }
+  elseif ($IsMacOS) {
+    $basename = "aria2-1.35.0-osx-darwin"
+    $zipName = "${basename}.tar.bz2"
+    $outFolder = "aria2-1.35.0/bin"
+    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $outFolder
+    Remove-Item -Force -ErrorAction SilentlyContinue $zipName
+    $url = "https://github.com/aria2/aria2/releases/download/release-1.35.0/$zipName"
+    Invoke-RestMethod -Uri $url -Method Get -ContentType application/zip -OutFile $zipName
+    tar xf $zipName
+  }
+  else {
+    MyThrow("Unknown OS, unsupported")
+  }
+  Remove-Item -Force -ErrorAction SilentlyContinue $zipName
+  return "./$outFolder/aria2c${ExecutableSuffix}"
+}
+
+function Download7Zip() {
+  Write-Host "Downloading a portable version of 7-Zip" -ForegroundColor Yellow
+  if ($IsWindows -or $IsWindowsPowerShell) {
+    $basename = "7za920"
+    $zipName = "${basename}.zip"
+    $outFolder = "$basename"
+    $outSuffix = "a"
+    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $outFolder
+    Remove-Item -Force -ErrorAction SilentlyContinue $zipName
+    $url = "https://www.7-zip.org/a/$zipName"
+    Invoke-RestMethod -Uri $url -Method Get -ContentType application/zip -OutFile $zipName
+    Expand-Archive -Path $zipName
+  }
+  elseif ($IsLinux) {
+    $basename = "7z2201-linux-x64"
+    $zipName = "${basename}.tar.xz"
+    $outFolder = $basename
+    $outSuffix = "z"
+    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $outFolder
+    Remove-Item -Force -ErrorAction SilentlyContinue $zipName
+    $url = "https://www.7-zip.org/a/$zipName"
+    Invoke-RestMethod -Uri $url -Method Get -ContentType application/zip -OutFile $zipName
+    tar xf $zipName
+  }
+  elseif ($IsMacOS) {
+    $basename = "7z2107-mac"
+    $zipName = "${basename}.tar.xz"
+    $outFolder = $basename
+    $outSuffix = "z"
+    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $outFolder
+    Remove-Item -Force -ErrorAction SilentlyContinue $zipName
+    $url = "https://www.7-zip.org/a/$zipName"
+    Invoke-RestMethod -Uri $url -Method Get -ContentType application/zip -OutFile $zipName
+    tar xf $zipName
+  }
+  else {
+    MyThrow("Unknown OS, unsupported")
+  }
+  Remove-Item -Force -ErrorAction SilentlyContinue $zipName
+  return "./$outFolder/7z${outSuffix}${ExecutableSuffix}"
 }
 
 Function MyThrow ($Message) {
-  if ($DisableInteractive) {
+  if ($global:DisableInteractive) {
     Write-Host $Message -ForegroundColor Red
     throw
   }
@@ -187,14 +325,18 @@ Function MyThrow ($Message) {
 }
 
 Export-ModuleMember -Variable utils_psm1_version
+Export-ModuleMember -Variable IsWindowsPowerShell
+Export-ModuleMember -Variable IsInGitSubmodule
+Export-ModuleMember -Variable 64bitPwsh
+Export-ModuleMember -Variable 64bitOS
 Export-ModuleMember -Variable cuda_version_full
 Export-ModuleMember -Variable cuda_version_short
 Export-ModuleMember -Variable cuda_version_full_dashed
 Export-ModuleMember -Variable cuda_version_short_dashed
-
 Export-ModuleMember -Function getProgramFiles32bit
 Export-ModuleMember -Function getLatestVisualStudioWithDesktopWorkloadPath
 Export-ModuleMember -Function getLatestVisualStudioWithDesktopWorkloadVersion
 Export-ModuleMember -Function DownloadNinja
+Export-ModuleMember -Function DownloadAria2
+Export-ModuleMember -Function Download7Zip
 Export-ModuleMember -Function MyThrow
-Export-ModuleMember -Function CopyTexFile

@@ -88,7 +88,7 @@ elif [[ $(cut -f2 <<< $(lsb_release -i)) == "Ubuntu" ]]; then
     sudo apt-get install -y --no-install-recommends cmake
     sudo apt-get install -y --no-install-recommends powershell
     sudo apt-get install -y --no-install-recommends curl zip unzip tar
-    sudo apt-get install -y --no-install-recommends pkg-config autoconf libtool bison
+    sudo apt-get install -y --no-install-recommends pkg-config autoconf libtool bison automake
     sudo apt-get clean
   fi
 else

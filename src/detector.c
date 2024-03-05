@@ -1644,6 +1644,10 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     char *json_buf = NULL;
     int json_image_id = 0;
     FILE* json_file = NULL;
+
+    //ADDED CODE
+    char outfile[] = "/mydrive/yolov4-tiny/outfile.json";
+    printf("\nI ADDED THE OUTFILE PATH\n");
     if (outfile) {
         json_file = fopen(outfile, "wb");
         if(!json_file) {

@@ -152,7 +152,7 @@ float box_iou_kind(box a, box b, IOU_LOSS iou_kind)
 {
     //IOU, GIOU, MSE, DIOU, CIOU
     switch(iou_kind) {
-	case MSE: assert(0);
+        case MSE: assert(0);
         case IOU: return box_iou(a, b);
         case GIOU: return box_giou(a, b);
         case DIOU: return box_diou(a, b);

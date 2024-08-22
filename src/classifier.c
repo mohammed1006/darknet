@@ -768,7 +768,7 @@ void try_classifier(char *datacfg, char *cfgfile, char *weightfile, char *filena
     char *input = buff;
     while(1){
         if(filename){
-            strncpy(input, filename, 255);
+            strncpy(input, filename, sizeof buff - 1);
         }else{
             printf("Enter Image Path: ");
             fflush(stdout);

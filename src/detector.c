@@ -2046,3 +2046,134 @@ void run_detector(int argc, char **argv)
 
     if (gpus && gpu_list && ngpus > 1) free(gpus);
 }
+
+int detect_person(char *datacfg, char *cfgfile, char *weightfile,
+    char *filename, float thresh, float hier_thresh, int dont_show,
+    int ext_output, int save_labels, char *outfile, int letter_box,
+    int benchmark_layers) {
+    
+    printf("\n[[[ detect_object ]]]\n");
+
+    list *options = read_data_cfg(datacfg);
+    char *name_list = option_find_str(options, "names", "data/names.list");
+    int names_size = 0;
+    printf("\n1111111\n");
+    char **names = get_labels_custom(name_list, &names_size); //get_labels(name_list);
+
+    printf("[BEFORE load_alphabet]");
+    image **alphabet = load_alphabet();
+    network net = parse_network_cfg_custom(cfgfile, 1, 1); // set batch=1
+    if (weightfile) {
+        load_weights(&net, weightfile);
+    }
+    if (net.letter_box) letter_box = 1;
+    net.benchmark_layers = benchmark_layers;
+    fuse_conv_batchnorm(net);
+    calculate_binary_weights(net);
+    if (net.layers[net.n - 1].classes != names_size) {
+        printf("\n Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n",
+            name_list, names_size, net.layers[net.n - 1].classes, cfgfile);
+    }
+    srand(2222222);
+    char buff[256];
+    char *input = buff;
+    char *json_buf = NULL;
+    int json_image_id = 0;
+    FILE* json_file = NULL;
+    int j;
+    float nms = .45;    // 0.4F
+    printf("\n[BEFORE load_image]\n");
+    image im = load_image(filename, 0, 0, net.c);
+    image sized;
+    if(letter_box) sized = letterbox_image(im, net.w, net.h);
+    else sized = resize_image(im, net.w, net.h);
+
+    layer l = net.layers[net.n - 1];
+    int k;
+    for (k = 0; k < net.n; ++k) {
+        layer lk = net.layers[k];
+        if (lk.type == YOLO || lk.type == GAUSSIAN_YOLO || lk.type == REGION) {
+            l = lk;
+            printf(" Detection layer: %d - type = %d \n", k, l.type);
+        }
+    }
+
+    float *X = sized.data;
+
+    double time = get_time_point();
+    network_predict(net, X);
+    printf("%s: Predicted in %lf milli-seconds.\n", filename, ((double)get_time_point() - time) / 1000);
+    
+    int nboxes = 0;
+    detection *dets = get_network_boxes(&net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes, letter_box);
+    if (nms) {
+        if (l.nms_kind == DEFAULT_NMS) do_nms_sort(dets, nboxes, l.classes, nms);
+        else diounms_sort(dets, nboxes, l.classes, nms, l.nms_kind, l.beta_nms);
+    }
+    draw_detections_v3(im, dets, nboxes, thresh, names, alphabet, l.classes, ext_output);
+    save_image(im, "output");
+
+    if (json_file) {
+        if (json_buf) {
+            char *tmp = ", \n";
+            fwrite(tmp, sizeof(char), strlen(tmp), json_file);
+        }
+        ++json_image_id;
+        json_buf = detection_to_json(dets, nboxes, l.classes, names, json_image_id, input);
+
+        fwrite(json_buf, sizeof(char), strlen(json_buf), json_file);
+        free(json_buf);
+    }
+
+    // pseudo labeling concept - fast.ai
+    if (save_labels)
+    {
+        char labelpath[4096];
+        replace_image_to_label(input, labelpath);
+
+        FILE* fw = fopen(labelpath, "wb");
+        int i;
+        for (i = 0; i < nboxes; ++i) {
+            char buff[1024];
+            int class_id = -1;
+            float prob = 0;
+            for (j = 0; j < l.classes; ++j) {
+                if (dets[i].prob[j] > thresh && dets[i].prob[j] > prob) {
+                    prob = dets[i].prob[j];
+                    class_id = j;
+                }
+            }
+            if (class_id >= 0) {
+                sprintf(buff, "%d %2.4f %2.4f %2.4f %2.4f\n", class_id, dets[i].bbox.x, dets[i].bbox.y, dets[i].bbox.w, dets[i].bbox.h);
+                fwrite(buff, sizeof(char), strlen(buff), fw);
+            }
+        }
+        fclose(fw);
+    }
+
+    free_detections(dets, nboxes);
+    free_image(im);
+    free_image(sized);
+
+    if (json_file) {
+        char *tmp = "\n]";
+        fwrite(tmp, sizeof(char), strlen(tmp), json_file);
+        fclose(json_file);
+    }
+
+    // free memory
+    free_ptrs((void**)names, net.layers[net.n - 1].classes);
+    free_list_contents_kvp(options);
+    free_list(options);
+    free_alphabet(alphabet);
+    free_network(net);
+}
+
+void yolo_detection() {
+    int ret = detect_person("/home/chani/Ubuntu/Advisory/YOLO/rust_darknet/darknet/cfg/coco.data",
+        "/home/chani/Ubuntu/Advisory/YOLO/rust_darknet/darknet/cfg/yolov7-tiny.cfg",
+        "/home/chani/Ubuntu/Advisory/YOLO/rust_darknet/darknet/cfg/yolov7-tiny.weights",
+        "/home/chani/Ubuntu/Advisory/YOLO/rust_darknet/darknet/data/person.jpg", 0.24, 0.5, 0,
+        0, 0, NULL, 0,
+        0);       
+}

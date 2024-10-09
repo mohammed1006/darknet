@@ -1015,11 +1015,15 @@ typedef struct box_label {
 // -----------------------------------------------------
 
 
+void yolo_detection();
+
 // parser.c
 LIB_API network *load_network(char *cfg, char *weights, int clear);
 LIB_API network *load_network_custom(char *cfg, char *weights, int clear, int batch);
 LIB_API void free_network(network net);
 LIB_API void free_network_ptr(network* net);
+
+LIB_API void load_weights(network *net, char *filename);
 
 // network.c
 LIB_API load_args get_base_args(network *net);
@@ -1073,6 +1077,13 @@ LIB_API void free_image(image m);
 LIB_API image crop_image(image im, int dx, int dy, int w, int h);
 LIB_API image resize_min(image im, int min);
 
+LIB_API void draw_detections(image im, int num, float thresh, box *boxes, float **probs, char **names, image **labels, int classes);
+LIB_API void draw_detections_v3(image im, detection *dets, int num, float thresh, char **names, image **alphabet, int classes, int ext_output);
+LIB_API void show_image(image p, const char *name);
+LIB_API void save_image(image p, const char *name);
+LIB_API image **load_alphabet();
+LIB_API void free_alphabet(image **alphabet);
+
 // layer.h
 LIB_API void free_layer_custom(layer l, int keep_cudnn_desc);
 LIB_API void free_layer(layer l);
@@ -1094,12 +1105,13 @@ LIB_API void *cuda_get_context();
 LIB_API void free_ptrs(void **ptrs, int n);
 LIB_API void top_k(float *a, int n, int k, int *index);
 
+LIB_API void replace_image_to_label(const char* input_path, char* output_path);
+
 // tree.h
 LIB_API tree *read_tree(char *filename);
 
 // option_list.h
 LIB_API metadata get_metadata(char *file);
-
 
 // http_stream.h
 LIB_API void delete_json_sender();

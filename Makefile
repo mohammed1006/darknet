@@ -75,6 +75,7 @@ OS := $(shell uname)
 # ARCH= -gencode arch=compute_90,code=[sm_90,compute_90]
 
 VPATH=./src/
+SLIB=libdarknet.so
 EXEC=darknet
 OBJDIR=./obj/
 
@@ -176,7 +177,7 @@ endif
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
 DEPS = $(wildcard src/*.h) Makefile include/darknet.h
 
-all: $(OBJDIR) backup results setchmod $(EXEC) $(LIBNAMESO) $(APPNAMESO)
+all: $(OBJDIR) backup results setchmod $(EXEC) $(SLIB) $(LIBNAMESO) $(APPNAMESO)
 
 ifeq ($(LIBSO), 1)
 CFLAGS+= -fPIC
@@ -190,6 +191,9 @@ endif
 
 $(EXEC): $(OBJS)
 	$(CPP) -std=c++11 $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+
+$(SLIB): $(OBJS)
+	$(CC) $(CFLAGS) -shared $^ -o $@ $(LDFLAGS)
 
 $(OBJDIR)%.o: %.c $(DEPS)
 	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@

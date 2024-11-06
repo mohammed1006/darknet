@@ -4,6 +4,7 @@ on: [pull_request]
 
 env:
   VCPKG_BINARY_SOURCES: 'clear;nuget,vcpkgbinarycache,read'
+  VCPKG_FORCE_DOWNLOADED_BINARIES: "TRUE"
 
 jobs:
   ubuntu-makefile:
@@ -72,7 +73,9 @@ jobs:
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt-get install -y yasm nasm gperf libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
+      run: sudo apt-get install -y --no-install-recommends yasm nasm gperf automake autoconf libtool pkg-config autoconf-archive libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
+    - name: Clean downloads
+      run: sudo apt-get clean
 
     - name: 'Install CUDA'
       run: ${{ github.workspace }}/scripts/deploy-cuda.sh
@@ -87,7 +90,7 @@ jobs:
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
       run: >
-        git clone https://github.com/microsoft/vcpkg ;
+        git clone --depth 1 https://github.com/microsoft/vcpkg ;
         ./vcpkg/bootstrap-vcpkg.sh ;
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
@@ -103,7 +106,7 @@ jobs:
       run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN -DisableInteractive -DoNotUpdateTOOL
 
 
-  ubuntu-vcpkg-opencv3-cuda:
+  ubuntu-vcpkg-opencv3:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v3
@@ -113,17 +116,9 @@ jobs:
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt-get install -y yasm nasm gperf libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
-
-    - name: 'Install CUDA'
-      run: ${{ github.workspace }}/scripts/deploy-cuda.sh
-
-    - name: 'Create softlinks for CUDA'
-      run: |
-        source ${{ github.workspace }}/scripts/requested_cuda_version.sh
-        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
+      run: sudo apt-get install -y --no-install-recommends yasm nasm gperf automake autoconf libtool pkg-config autoconf-archive libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
+    - name: Clean downloads
+      run: sudo apt-get clean
 
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
@@ -136,15 +131,10 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      env:
-        CUDACXX: "/usr/local/cuda/bin/nvcc"
-        CUDA_PATH: "/usr/local/cuda"
-        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
-        LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN -ForceOpenCVVersion 3 -DisableInteractive -DoNotUpdateTOOL
+      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -ForceOpenCVVersion 3 -DisableInteractive -DoNotUpdateTOOL
 
 
-  ubuntu-vcpkg-opencv2-cuda:
+  ubuntu-vcpkg-opencv2:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v3
@@ -154,17 +144,9 @@ jobs:
     - name: Update apt
       run: sudo apt update
     - name: Install dependencies
-      run: sudo apt-get install -y yasm nasm gperf libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
-
-    - name: 'Install CUDA'
-      run: ${{ github.workspace }}/scripts/deploy-cuda.sh
-
-    - name: 'Create softlinks for CUDA'
-      run: |
-        source ${{ github.workspace }}/scripts/requested_cuda_version.sh
-        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so.1
-        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so.1
-        sudo ln -s /usr/local/cuda-${CUDA_VERSION}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA_VERSION}/lib64/libcuda.so
+      run: sudo apt-get install -y --no-install-recommends yasm nasm gperf automake autoconf libtool pkg-config autoconf-archive libgles2-mesa-dev libx11-dev libxft-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxdamage-dev libxinerama-dev libdbus-1-dev libxtst-dev
+    - name: Clean downloads
+      run: sudo apt-get clean
 
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
@@ -177,12 +159,7 @@ jobs:
 
     - name: 'Build'
       shell: pwsh
-      env:
-        CUDACXX: "/usr/local/cuda/bin/nvcc"
-        CUDA_PATH: "/usr/local/cuda"
-        CUDA_TOOLKIT_ROOT_DIR: "/usr/local/cuda"
-        LD_LIBRARY_PATH: "/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH"
-      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -EnableCUDA -EnableCUDNN -ForceOpenCVVersion 2 -DisableInteractive -DoNotUpdateTOOL
+      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -DoNotUpdateVCPKG -EnableOPENCV -ForceOpenCVVersion 2 -DisableInteractive -DoNotUpdateTOOL
 
 
   ubuntu:
@@ -250,6 +227,12 @@ jobs:
       shell: pwsh
       run: ${{ github.workspace }}/build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateTOOL
 
+    - name: Test on data/dog.jpg
+      shell: bash
+      run: >
+        wget https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-tiny.weights -O ${{ github.workspace }}/yolov4-tiny.weights;
+        ${{ github.workspace }}/build_release/darknet detect ${{ github.workspace }}/cfg/yolov4-tiny.cfg ${{ github.workspace }}/yolov4-tiny.weights ${{ github.workspace }}/data/dog.jpg -dont_show
+
 
   ubuntu-setup-sh:
     runs-on: ubuntu-20.04
@@ -259,7 +242,7 @@ jobs:
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
       run: >
-        git clone https://github.com/microsoft/vcpkg ;
+        git clone --depth 1 https://github.com/microsoft/vcpkg ;
         ./vcpkg/bootstrap-vcpkg.sh ;
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
@@ -276,14 +259,14 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Install dependencies
-      run: brew install libomp yasm nasm pkg-config
+      run: brew install libomp yasm nasm pkg-config automake autoconf-archive
 
     - uses: lukka/get-cmake@latest
 
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
       run: >
-        git clone https://github.com/microsoft/vcpkg ;
+        git clone --depth 1 https://github.com/microsoft/vcpkg ;
         ./vcpkg/bootstrap-vcpkg.sh ;
         mono $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
@@ -331,7 +314,7 @@ jobs:
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
       run: >
-        git clone https://github.com/microsoft/vcpkg ;
+        git clone --depth 1 https://github.com/microsoft/vcpkg ;
         ./vcpkg/bootstrap-vcpkg.sh ;
         $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
@@ -362,7 +345,7 @@ jobs:
     - name: 'Setup vcpkg and NuGet artifacts backend'
       shell: bash
       run: >
-        git clone https://github.com/microsoft/vcpkg ;
+        git clone --depth 1 https://github.com/microsoft/vcpkg ;
         ./vcpkg/bootstrap-vcpkg.sh ;
         $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
         -Name "vcpkgbinarycache"
@@ -373,16 +356,30 @@ jobs:
       run: ${{ github.workspace }}/scripts/setup.ps1 -InstallCUDA
 
 
-  win-intlibs-cpp:
+  win-vcpkg-base-cpp:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
 
     - uses: lukka/get-cmake@latest
 
+    - name: 'Setup vcpkg and NuGet artifacts backend'
+      shell: bash
+      run: >
+        git clone --depth 1 https://github.com/microsoft/vcpkg ;
+        ./vcpkg/bootstrap-vcpkg.sh ;
+        $(./vcpkg/vcpkg fetch nuget | tail -n 1) sources add
+        -Name "vcpkgbinarycache"
+        -Source http://93.49.111.10:5555/v3/index.json
+
     - name: 'Build'
       shell: pwsh
-      run: ${{ github.workspace }}/build.ps1 -ForceCPP -DisableInteractive -DoNotUpdateTOOL
+      run: ${{ github.workspace }}/build.ps1 -UseVCPKG -ForceLocalVCPKG -DoNotUpdateVCPKG -ForceCPP -DisableInteractive -DoNotUpdateTOOL
+
+    - name: Download yolov4-tiny.weights
+      run: curl.exe -L https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-tiny.weights -o ${{ github.workspace }}\yolov4-tiny.weights
+    - name: Test on data/dog.jpg
+      run: ${{ github.workspace }}\build_release\darknet.exe detect ${{ github.workspace }}\cfg\yolov4-tiny.cfg ${{ github.workspace }}\yolov4-tiny.weights ${{ github.workspace }}\data\dog.jpg
 
 
   win-csharp:
@@ -408,9 +405,9 @@ jobs:
 
     - name: 'Build'
       env:
-        CUDA_PATH: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.2"
-        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.2"
-        CUDACXX: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.2\\bin\\nvcc.exe"
+        CUDA_PATH: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6"
+        CUDA_TOOLKIT_ROOT_DIR: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6"
+        CUDACXX: "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v12.6\\bin\\nvcc.exe"
       shell: pwsh
       run: ${{ github.workspace }}/build.ps1 -EnableCUDA -DisableInteractive -DoNotUpdateTOOL
 

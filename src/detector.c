@@ -19,8 +19,6 @@ typedef __compar_fn_t comparison_fn_t;
 
 #include "http_stream.h"
 
-int check_mistakes = 0;
-
 static int coco_ids[] = { 1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90 };
 
 void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int calc_map, float thresh, float iou_thresh, int mjpeg_port, int show_imgs, int benchmark_layers, char* chart_path, int mAP_epochs, float mAP_thresh, int min_iters)
@@ -36,8 +34,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         FILE* valid_file = fopen(valid_images, "r");
         if (!valid_file) {
             printf("\n Error: There is no %s file for mAP calculation!\n Don't use -map flag.\n Or set valid=%s in your %s file. \n", valid_images, train_images, datacfg);
-            getchar();
-            exit(-1);
+            error("Error!", DARKNET_LOC);
         }
         else fclose(valid_file);
 
@@ -56,7 +53,6 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         if (net_classes != names_size) {
             printf("\n Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n",
                 name_list, names_size, net_classes, cfgfile);
-            if (net_classes > names_size) getchar();
         }
         free_ptrs((void**)names, net_map.layers[net_map.n - 1].classes);
     }
@@ -92,8 +88,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 
     const int actual_batch_size = net.batch * net.subdivisions;
     if (actual_batch_size == 1) {
-        printf("\n Error: You set incorrect value batch=1 for Training! You should set batch=64 subdivision=64 \n");
-        getchar();
+        error("Error: You set incorrect value batch=1 for Training! You should set batch=64 subdivision=64", DARKNET_LOC);
     }
     else if (actual_batch_size < 8) {
         printf("\n Warning: You set batch=%d lower than 64! It is recommended to set batch=64 subdivision=64 \n", actual_batch_size);
@@ -981,7 +976,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     if (net.layers[net.n - 1].classes != names_size) {
         printf("\n Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n",
             name_list, names_size, net.layers[net.n - 1].classes, cfgfile);
-        getchar();
+        error("Error!", DARKNET_LOC);
     }
     srand(time(0));
     printf("\n calculation mAP (mean average precision)...\n");
@@ -1495,7 +1490,6 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
                 sprintf(buff, "echo \"Wrong label: %s - j = %d, x = %f, y = %f, width = %f, height = %f\" >> bad_label.list",
                     labelpath, j, truth[j].x, truth[j].y, truth[j].w, truth[j].h);
                 system(buff);
-                if (check_mistakes) getchar();
             }
             if (truth[j].id >= classes) {
                 classes = truth[j].id + 1;
@@ -1627,8 +1621,6 @@ void calc_anchors(char *datacfg, int num_of_clusters, int width, int height, int
     }
     free(rel_width_height_array);
     free(counter_per_class);
-
-    getchar();
 }
 
 
@@ -1652,7 +1644,6 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     if (net.layers[net.n - 1].classes != names_size) {
         printf("\n Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n",
             name_list, names_size, net.layers[net.n - 1].classes, cfgfile);
-        if (net.layers[net.n - 1].classes > names_size) getchar();
     }
     srand(2222222);
     char buff[256];
@@ -1785,17 +1776,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
     free_ptrs((void**)names, net.layers[net.n - 1].classes);
     free_list_contents_kvp(options);
     free_list(options);
-
-    int i;
-    const int nsize = 8;
-    for (j = 0; j < nsize; ++j) {
-        for (i = 32; i < 127; ++i) {
-            free_image(alphabet[j][i]);
-        }
-        free(alphabet[j]);
-    }
-    free(alphabet);
-
+    free_alphabet(alphabet);
     free_network(net);
 }
 
@@ -1823,7 +1804,6 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
     if (net.layers[net.n - 1].classes != names_size) {
         printf("\n Error: in the file %s number of names %d that isn't equal to classes=%d in the file %s \n",
             name_list, names_size, net.layers[net.n - 1].classes, cfgfile);
-        if (net.layers[net.n - 1].classes > names_size) getchar();
     }
 
     srand(2222222);
@@ -1967,8 +1947,7 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
 void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, int dont_show, int it_num,
     int letter_box, int benchmark_layers)
 {
-    printf(" ./darknet detector draw ... can't be used without OpenCV and CUDA! \n");
-    getchar();
+    error("darknet detector draw ... can't be used without OpenCV and CUDA", DARKNET_LOC);
 }
 #endif // defined(OPENCV) && defined(GPU)
 
@@ -1983,7 +1962,6 @@ void run_detector(int argc, char **argv)
     int letter_box = find_arg(argc, argv, "-letter_box");
     int calc_map = find_arg(argc, argv, "-map");
     int map_points = find_int_arg(argc, argv, "-points", 0);
-    check_mistakes = find_arg(argc, argv, "-check_mistakes");
     int show_imgs = find_arg(argc, argv, "-show_imgs");
     int mjpeg_port = find_int_arg(argc, argv, "-mjpeg_port", -1);
     int avgframes = find_int_arg(argc, argv, "-avgframes", 3);
@@ -1992,6 +1970,7 @@ void run_detector(int argc, char **argv)
     char *http_post_host = find_char_arg(argc, argv, "-http_post_host", 0);
     int time_limit_sec = find_int_arg(argc, argv, "-time_limit_sec", 0);
     char *out_filename = find_char_arg(argc, argv, "-out_filename", 0);
+    char *json_file_output = find_char_arg(argc, argv, "-json_file_output", 0);
     char *outfile = find_char_arg(argc, argv, "-out", 0);
     char *prefix = find_char_arg(argc, argv, "-prefix", 0);
     float thresh = find_float_arg(argc, argv, "-thresh", .25);    // 0.24
@@ -2068,7 +2047,7 @@ void run_detector(int argc, char **argv)
             if (strlen(filename) > 0)
                 if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
         demo(cfg, weights, thresh, hier_thresh, cam_index, filename, names, classes, avgframes, frame_skip, prefix, out_filename,
-            mjpeg_port, dontdraw_bbox, json_port, dont_show, ext_output, letter_box, time_limit_sec, http_post_host, benchmark, benchmark_layers);
+            mjpeg_port, dontdraw_bbox, json_port, dont_show, ext_output, letter_box, time_limit_sec, http_post_host, benchmark, benchmark_layers, json_file_output);
 
         free_list_contents_kvp(options);
         free_list(options);
